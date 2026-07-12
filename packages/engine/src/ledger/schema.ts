@@ -29,7 +29,11 @@ function matchesType(type: FieldType, value: unknown): boolean {
   }
 }
 
-export function validatePayload(schema: PayloadSchema, payload: Record<string, unknown>): ValidationResult {
+export function validatePayload(
+  schema: PayloadSchema,
+  payload: Record<string, unknown>,
+  exactlyOneOf: readonly (readonly string[])[] = [],
+): ValidationResult {
   const errors: string[] = [];
 
   for (const [field, fieldSchema] of Object.entries(schema)) {
@@ -48,6 +52,14 @@ export function validatePayload(schema: PayloadSchema, payload: Record<string, u
   for (const field of Object.keys(payload)) {
     if (!(field in schema)) {
       errors.push(`unexpected field "${field}" (payloads are exact, Spec §2 fact-kinds-v0)`);
+    }
+  }
+
+  for (const group of exactlyOneOf) {
+    const present = group.filter((field) => payload[field] !== undefined);
+    if (present.length !== 1) {
+      const label = group.map((field) => `"${field}"`).join(", ");
+      errors.push(`exactly one of ${label} must be set, got ${present.length}`);
     }
   }
 

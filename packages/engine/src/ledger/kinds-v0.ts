@@ -28,7 +28,12 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), tally: f("object"), captainBreak: f("boolean", true) } },
 
   // position / access
-  { kind: "presence.declared", defaultVisibility: "table", payload: { actor: f("string"), station: f("string", true), hex: f("string", true), day: f("number"), slot: f("string") } },
+  {
+    kind: "presence.declared",
+    defaultVisibility: "table",
+    payload: { actor: f("string"), station: f("string", true), hex: f("string", true), day: f("number"), slot: f("string") },
+    exactlyOneOf: [["station", "hex"]],
+  },
   { kind: "access.granted", defaultVisibility: "referee", payload: { actor: f("string"), codeClass: f("string"), grantor: f("string") } },
 
   // trade / economy
