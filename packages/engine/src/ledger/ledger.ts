@@ -59,21 +59,26 @@ export function createLedger(registry: KindRegistry): Ledger {
     return facts.slice();
   }
 
-  function activeFacts(): readonly Fact[] {
-    const superseded = new Set<FactID>();
-    for (const fact of facts) {
-      if (fact.kind === "correction" && typeof fact.payload.supersedes === "string") {
-        superseded.add(fact.payload.supersedes);
-      }
-    }
-    return facts.filter((fact) => !superseded.has(fact.id));
-  }
-
   function visibleTo(viewer: Viewer): readonly Fact[] {
     return facts.filter((fact) => isVisibleTo(fact.visibility, viewer));
   }
 
-  return { append, all, activeFacts, visibleTo };
+  return { append, all, activeFacts: () => activeFactsOf(facts), visibleTo };
+}
+
+/**
+ * The correction-supersession rule (a fact targeted by a later kind:'correction' fact is
+ * excluded), factored out so both Ledger.activeFacts() and reducers/projections (M0-03) share
+ * one definition of "active" instead of two.
+ */
+export function activeFactsOf(facts: readonly Fact[]): readonly Fact[] {
+  const superseded = new Set<FactID>();
+  for (const fact of facts) {
+    if (fact.kind === "correction" && typeof fact.payload.supersedes === "string") {
+      superseded.add(fact.payload.supersedes);
+    }
+  }
+  return facts.filter((fact) => !superseded.has(fact.id));
 }
 
 function isVisibleTo(visibility: Visibility, viewer: Viewer): boolean {
