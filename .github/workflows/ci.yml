@@ -43,11 +43,21 @@ jobs:
       - name: Detect content/ changes
         id: changes
         env:
-          # PR events diff against the PR's base branch; plain pushes (e.g. to a milestone
-          # branch, which has no PR base_ref) diff against main.
-          BASE_REF: ${{ github.base_ref || 'main' }}
+          # PR events diff against the PR's base branch. Pushes diff against the tip before
+          # the push (github.event.before): on a push to main, origin/main already points at
+          # HEAD, so origin/main...HEAD is empty and would skip the gate on the very branch
+          # that deploys. A missing/zero before-tip (new branch, force-push) runs the gate.
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          if git diff --name-only "origin/$BASE_REF"...HEAD | grep -q '^content/'; then
+          if [ -n "$BASE_REF" ]; then
+            range="origin/$BASE_REF...HEAD"
+          elif git rev-parse --quiet --verify "$PUSH_BEFORE^{commit}" >/dev/null 2>&1; then
+            range="$PUSH_BEFORE...HEAD"
+          else
+            range=""
+          fi
+          if [ -z "$range" ] || git diff --name-only "$range" | grep -q '^content/'; then
             echo "content_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "content_changed=false" >> "$GITHUB_OUTPUT"
