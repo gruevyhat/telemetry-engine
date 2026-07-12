@@ -13,6 +13,8 @@
     "sim:smoke": "node packages/sim/bin/sim.mjs --campaigns 50",
     "sim:full": "node packages/sim/bin/sim.mjs --campaigns 1000",
     "build:stub": "node scripts/build-stub.mjs",
+    "build:pages": "pnpm --filter @telemetry/ui-shared build",
+    "test:e2e": "node scripts/pages-smoke.mjs",
     "dev:shared": "pnpm --filter @telemetry/ui-shared dev",
     "dev:phone": "pnpm --filter @telemetry/ui-phone dev"
   },
