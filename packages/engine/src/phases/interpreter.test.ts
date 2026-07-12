@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createKindRegistry } from "../ledger/registry.js";
 import { KINDS_V0 } from "../ledger/kinds-v0.js";
 import { createLedger, type Ledger } from "../ledger/ledger.js";
+import type { IncidentFrame } from "../generate/frame.js";
+import { createRng } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import { loadPhaseScript } from "./load.js";
 import { createPhaseInterpreter, currentStepOf } from "./interpreter.js";
@@ -105,5 +107,60 @@ describe("phase interpreter integration [Spec §4]: scripted fixture turn DOCKSI
     expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
       uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
     );
+  });
+});
+
+const GENERATE_FIXTURE_FRAME: IncidentFrame = {
+  id: "fixture:bay-lock-cycle",
+  pillar: "trade",
+  surfaceTables: {
+    actor: [{ id: "npc:kessler", factFields: {}, surfaceFields: {} }],
+    motive: [{ id: "unexplained", factFields: {}, surfaceFields: {} }],
+    method: [{ id: "off-schedule-cycle", factFields: {}, surfaceFields: { detail: "off-schedule" } }],
+    location: [{ id: "aft-bay", factFields: {}, surfaceFields: {} }],
+    trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+  },
+  innocentTwin: [
+    {
+      kind: "lock.cycled",
+      tables: {
+        actor: [{ id: "npc:kessler", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "routine", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "captain-override", factFields: { door: "aft-bay-door", codeClass: "CAPT-OVR", time: "0340" }, surfaceFields: {} }],
+        location: [{ id: "aft-bay", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+  ],
+  evidenceTrail: [{ id: "camera-log", description: "aft bay camera" }],
+  cooldownWeeks: 2,
+};
+
+const GENERATE_SCRIPT: PhaseScript = {
+  frame: "generate-fixture",
+  start: "incident",
+  steps: [{ id: "incident", kind: "generate", gen: { frameId: GENERATE_FIXTURE_FRAME.id }, next: "incident" }],
+};
+
+describe("phase interpreter integration [Spec §8.2, M1-05]: a generate step fires an incident frame", () => {
+  it("commits the twin's cause facts referee-scoped and surfaces a stub-rendered line", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERATE_FIXTURE_FRAME] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const causeFact = ledger.all().find((f) => f.kind === "lock.cycled");
+    expect(causeFact).toBeDefined();
+    expect(causeFact!.visibility).toEqual({ level: "referee" });
+    expect(causeFact!.payload.codeClass).toBe("CAPT-OVR");
+    expect(result.rendered).toContain("off-schedule");
+  });
+
+  it("throws a clear error if a generate step fires with no rng/deck wired in", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+    expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng.*deck|deck.*rng/i);
   });
 });
