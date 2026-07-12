@@ -32,11 +32,12 @@ function hashSeed(campaignSeed: string, streamName: string): number {
   return hash >>> 0;
 }
 
-function createStream(campaignSeed: string, streamName: string, shared: () => number): RngStream {
-  void hashSeed;
-  const next = shared;
+function createStream(campaignSeed: string, streamName: string): RngStream {
+  const next = createXoshiro128(hashSeed(campaignSeed, streamName));
+  let drawCount = 0;
 
   function draw(): number {
+    drawCount += 1;
     return next();
   }
 
@@ -44,23 +45,22 @@ function createStream(campaignSeed: string, streamName: string, shared: () => nu
     name: streamName,
     next: draw,
     nextInt(maxExclusive: number): number {
-      return maxExclusive;
+      return Math.floor(draw() * maxExclusive);
     },
     get drawCount(): number {
-      return 0;
+      return drawCount;
     },
   };
 }
 
 export function createRng(campaignSeed: string): Rng {
   const streams = new Map<string, RngStream>();
-  const shared = createXoshiro128(hashSeed(campaignSeed, "shared"));
 
   return {
     derive(streamName: string): RngStream {
       let stream = streams.get(streamName);
       if (!stream) {
-        stream = createStream(campaignSeed, streamName, shared);
+        stream = createStream(campaignSeed, streamName);
         streams.set(streamName, stream);
       }
       return stream;
