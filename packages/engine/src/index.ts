@@ -6,3 +6,4 @@ export * from "./position/index.js";
 export * from "./phases/index.js";
 export * from "./rng/index.js";
 export * from "./persistence/index.js";
+export * from "./plugin-api/index.js";
