@@ -40,13 +40,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
       - name: Detect content/ changes
         id: changes
         env:
@@ -59,6 +52,15 @@ jobs:
           else
             echo "content_changed=false" >> "$GITHUB_OUTPUT"
           fi
+      - if: steps.changes.outputs.content_changed == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - if: steps.changes.outputs.content_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
       - if: steps.changes.outputs.content_changed == 'true'
         run: pnpm install --frozen-lockfile
       - if: steps.changes.outputs.content_changed == 'true'
