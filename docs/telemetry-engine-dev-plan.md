@@ -135,7 +135,9 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 ## Appendix A impact
 <updated / not touched, and why>
 ```
-**Reviewer checklist:** red commit genuinely precedes green · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe.
+Each section leads with one plain-English sentence — what actually changed or what actually happens — before citing Spec sections or invariant codes; a citation is not an explanation. Gloss any invariant code in a few plain words on first use in the PR. Avoid unexplained jargon/shorthand; define it inline or say the plain thing instead. A PR description is written for a human inspecting the change, not just an implementer holding the Spec in their head.
+
+**Reviewer checklist:** red commit genuinely precedes green · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · PR description is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
 
 ### 6.2 Milestone gate (owner, manual)
 Runs the Spec §21.3 acceptance list for the milestone · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · one live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. **A milestone does not close until its retro (§8) is written.**
