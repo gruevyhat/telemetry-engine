@@ -40,7 +40,7 @@
       "required": ["id", "kind", "next"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["announce", "generate", "check", "vote", "commsWindow", "confrontation", "branch", "tickClock"] },
+        "kind": { "enum": ["announce", "generate", "check", "vote", "commsWindow", "confrontation", "branch", "tickClock", "oracle"] },
         "render": { "type": "string", "minLength": 1 },
         "slot": { "enum": ["DOCKSIDE", "COMMS", "TRANSIT", "ARRIVAL", "DOWNTIME"] },
         "automatic": { "type": "boolean" },
@@ -50,7 +50,8 @@
         "next": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 }, "minProperties": 1 }] },
         "check": { "type": "object", "additionalProperties": false, "required": ["skillSlot", "difficulty", "onFail", "onSuccess"], "properties": { "skillSlot": { "type": "string" }, "difficulty": { "type": "number" }, "onFail": { "type": "string" }, "onSuccess": { "type": "string" } } },
         "tick": { "type": "object", "additionalProperties": false, "required": ["clockId", "delta"], "properties": { "clockId": { "type": "string" }, "delta": { "type": "number" } } },
-        "gen": { "type": "object", "additionalProperties": false, "required": ["frameId"], "properties": { "frameId": { "type": "string", "minLength": 1 } } }
+        "gen": { "type": "object", "additionalProperties": false, "required": ["frameId"], "properties": { "frameId": { "type": "string", "minLength": 1 } } },
+        "oracle": { "type": "object", "additionalProperties": false, "required": ["question", "likelihood"], "properties": { "question": { "type": "string", "minLength": 1 }, "likelihood": { "enum": ["certain", "likely", "even", "unlikely", "remote"] } } }
       }
     }
   }

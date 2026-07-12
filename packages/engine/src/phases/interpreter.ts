@@ -2,6 +2,7 @@ import { derive, type Projection } from "../ledger/derive.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
+import { ask } from "../oracle/oracle.js";
 import type { Rng } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { LoadedPhaseScript } from "./load.js";
@@ -123,6 +124,19 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
       }
       const fired = fireFrame(frame, t, deps.rng);
       return resolved(requirePlainNext(step), [...fired.causeProposals], renderSurfaceStub(fired.surface.fields));
+    }
+    case "oracle": {
+      const oracleSpec = step.oracle;
+      if (!oracleSpec) {
+        throw new Error(`step "${step.id}": missing oracle (should have been rejected at load)`);
+      }
+      if (!deps) {
+        throw new Error(`step "${step.id}": kind "oracle" requires rng (createPhaseInterpreter's deps argument)`);
+      }
+      const answered = ask(oracleSpec.question, oracleSpec.likelihood, deps.rng);
+      return resolved(requirePlainNext(step), [
+        { t, kind: "oracle.answered", actor, payload: { question: answered.question, likelihood: answered.likelihood, answer: answered.answer, texture: answered.texture } },
+      ]);
     }
     case "announce":
     case "vote":
