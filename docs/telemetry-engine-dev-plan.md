@@ -19,9 +19,9 @@ An implementer session that cannot complete its task within scope **stops and wr
 
 ## 2. REPOSITORY PROCESS BASICS
 
-- **Branching:** trunk-based. `main` is always green. One branch per task: `task/M0-03-phase-interpreter`. No long-lived branches.
+- **Branching:** trunk-based. `main` is always green. One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...) — not one branch per task. Each task still lands as its own red-then-green commit pair on the milestone branch; only the PR cadence changed (below), not how a task is built.
 - **Commits:** conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`). Every commit compiles and passes the unit suite. Test-first commits are explicitly ordered: the failing-test commit (`test: add failing INV-3 replay property`) precedes the implementation commit.
-- **PRs:** one task = one PR. The PR template (§6.1) is mandatory; CI rejects PRs whose description omits required sections.
+- **PRs:** one milestone = one PR (`milestone/M0 → main`), opened once every task in the milestone is done and its acceptance list (§21.3) is met — not one PR per task. Run the full local gate after every task's green commit regardless; CI also runs on every push to a `milestone/*` branch, so defects surface immediately rather than waiting for the milestone PR. The PR template (§6.1) is mandatory and now covers every task landed in the milestone; CI rejects PRs whose description omits required sections.
 - **CLAUDE.md at repo root** distills this Plan's session protocol, the Spec's Do-not list, and the command reference (§3) into the standing instructions every agent session loads. The Plan is the source; CLAUDE.md is the cache. When the Plan changes, updating CLAUDE.md is part of the same PR.
 
 ## 3. COMMAND REFERENCE (single source of truth for tooling)
@@ -50,10 +50,10 @@ Every task ships tests before implementation. The loop, mechanically:
 2. **Red.** Write the tests the task card names (§5 tables): property tests for its INVs, unit tests for its behaviors, a snapshot if it renders. Run `pnpm test`; confirm the new tests **fail for the intended reason** (a test failing due to a typo is not red). Commit: `test: ...`.
 3. **Green.** Implement the minimum that passes. No speculative generality. Run the full PR-gate suite locally. Commit: `feat: ...`.
 4. **Refactor.** Only with green tests, only within task scope. Commit separately.
-5. **Trace check.** If the task touches how The Skim flows through the system, update Spec Appendix A in the same PR (Spec §21.5.5).
-6. **Open PR** using the template. Fill every section honestly; "none" is an acceptable answer, silence is not.
+5. **Trace check.** If the task touches how The Skim flows through the system, update Spec Appendix A in the same commit (Spec §21.5.5).
+6. **Record, don't PR yet.** Write the task's extrapolations, do-not compliance, and INV coverage into the green commit's message — same content the old per-task PR description held. When the milestone's last task lands, **open one PR** (`milestone/M0 → main`) using the template, rolling up every task's commit-message notes into its sections. Fill every section honestly; "none" is an acceptable answer, silence is not.
 
-**Hard rules (restating Spec §21.5, because they gate merges):** tests are never deleted, skipped, or weakened except in a commit the owner approves whose message says so · no new `packages/engine` dependencies without owner sign-off · extrapolations beyond the Spec are recorded in the PR's *Extrapolations* section — an unrecorded correct guess is still a defect.
+**Hard rules (restating Spec §21.5, because they gate merges):** tests are never deleted, skipped, or weakened except in a commit the owner approves whose message says so · no new `packages/engine` dependencies without owner sign-off · extrapolations beyond the Spec are recorded in the task's commit message (and rolled up into the milestone PR's *Extrapolations* section) — an unrecorded correct guess is still a defect.
 
 ### 4.3 Session-start checklist (paste into every implementer session)
 1. Read CLAUDE.md.
@@ -118,29 +118,29 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 
 ## 6. REVIEW GATES
 
-### 6.1 PR gate (every merge to main)
-**Automated:** `pnpm test` · `pnpm lint` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review.
-**PR template (all sections required):**
+### 6.1 PR gate (one PR per milestone, `milestone/M<n> → main`)
+**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
+**PR template (all sections required; each section rolls up every task landed in the milestone — repeat the section's shape once per task, e.g. "M0-01: ...", "M0-02: ..."):**
 ```
 ## Task
-<id and one-line deliverable>
+<milestone id and the tasks it bundles, one line each>
 ## Spec sections implemented
 ## Invariants covered (tests listed)
 ## Tests-first evidence
-<hash of the red commit>
+<per task: hash of its red commit>
 ## Extrapolations beyond the Spec
 <each: the silence, the choice, the Why it extrapolates from — or "none">
 ## Do-not compliance
-<the task card's do_nots, each with "respected" or explanation>
+<each task's do_nots, each with "respected" or explanation>
 ## Appendix A impact
 <updated / not touched, and why>
 ```
 Each section leads with one plain-English sentence — what actually changed or what actually happens — before citing Spec sections or invariant codes; a citation is not an explanation. Gloss any invariant code in a few plain words on first use in the PR. Avoid unexplained jargon/shorthand; define it inline or say the plain thing instead. A PR description is written for a human inspecting the change, not just an implementer holding the Spec in their head.
 
-**Reviewer checklist:** red commit genuinely precedes green · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · PR description is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
+**Reviewer checklist:** every task's red commit genuinely precedes its green commit · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · PR description is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
 
 ### 6.2 Milestone gate (owner, manual)
-Runs the Spec §21.3 acceptance list for the milestone · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · one live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. **A milestone does not close until its retro (§8) is written.**
+Runs the Spec §21.3 acceptance list for the milestone · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · one live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. This gate and the §6.1 PR gate now happen together, since the milestone PR only opens once the milestone is done. **A milestone does not close until its retro (§8) is written.**
 
 ---
 

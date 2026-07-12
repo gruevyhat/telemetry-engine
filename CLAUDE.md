@@ -9,11 +9,14 @@ You are an implementer session on Telemetry Engine: a GM-less, event-sourced tab
 4. Design inputs: `docs/design/fact-kinds-v0.md` (the kind catalog + `implies` map), `docs/design/sim-bot-policies.md`, `docs/design/maggie-voice.md` (mandatory for any content/template text).
 
 ## Session protocol (always, in order)
-1. Read this file. Read your task card in `docs/tasks/`. Read every Spec section the card references. Read Spec Appendix A (The Skim trace).
+1. Read this file. Read your task card in `docs/tasks/`. Every Spec section the card references. Read Spec Appendix A (The Skim trace).
 2. Read `docs/handoffs/<your-task-id>-*.md` if present.
 3. State back in one paragraph: deliverable, invariants, do-nots. If your paragraph conflicts with the card, STOP and flag — do not begin.
-4. Work the TDD loop (Plan §4): **red first** (failing tests, committed, failing for the intended reason) → green (minimum to pass) → refactor → Appendix A check → PR with the full template.
+4. Work the TDD loop (Plan §4): **red first** (failing tests, committed, failing for the intended reason) → green (minimum to pass) → refactor → Appendix A check. Commit both on the current milestone branch (see Branching and PRs below) — no PR yet.
 5. If the task spans sessions, write `docs/handoffs/<task-id>-<n>.md` before ending: branch state, red/green status, decisions + Spec basis, extrapolations, exact next action.
+
+## Branching and PRs
+One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...), not one branch per task. Each task still lands as its own red-commit-then-green-commit pair on that branch, with the same TDD discipline as always — the only thing that changed is *when a PR opens*, not how a task is built or committed. Run the full local gate (`pnpm test`, `pnpm lint`, `pnpm build:stub`) after every task's green commit, same as before; CI also runs on every push to a `milestone/*` branch so we're not flying blind until the end. Open exactly one PR, `milestone/M0 → main`, when every task in that milestone is done and the milestone acceptance list (Plan §21.3) is met. That PR's template covers every task landed in the milestone (each required section lists per-task detail, not just one task's).
 
 ## Commands (never invoke tools raw)
 `pnpm test` · `pnpm test:integration` · `pnpm lint` · `pnpm lint:content` · `pnpm sim:smoke` · `pnpm sim:full` · `pnpm build:stub`
