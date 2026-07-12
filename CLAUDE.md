@@ -39,5 +39,13 @@ You are an implementer session on Telemetry Engine: a GM-less, event-sourced tab
 - Any player-visible text: follow `docs/design/maggie-voice.md`. TTS-safe: plain sentences, no markup, no exclamation points.
 - Conventional commits; the failing-test commit precedes the implementation commit.
 
+## PR and commit description style
+PR descriptions and commit messages are read by humans inspecting the change, not just by implementers who already hold the Spec in their head. Write for that reader:
+- Lead every section with one plain-English sentence: what actually changed, or what actually happens, *before* citing a Spec section or invariant code. A citation is not an explanation.
+- On first use in a PR, gloss any invariant code in a few plain words — `INV-2 (append-only: nothing mutates or deletes a fact once written)`, not a bare `INV-2`.
+- Avoid unexplained jargon and internal shorthand ("supersession", "closure", "the v0 catalog," rule names) — either define it inline on first use or just say the plain thing instead of the term.
+- Prefer a concrete example or before/after over an abstract description when one is available.
+- Extrapolation notes should read as a short, followable account — what was ambiguous, what you chose, why — not a compressed citation trail.
+
 ## Current milestone
 M0 — the spine. Take the lowest-numbered unclaimed card in `docs/tasks/M0-*.md`. M0-00 is an owner decision (licenses); skip it unless you are the owner.
