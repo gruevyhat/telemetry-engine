@@ -8,3 +8,4 @@ export * from "./rng/index.js";
 export * from "./persistence/index.js";
 export * from "./plugin-api/index.js";
 export * from "./render/index.js";
+export * from "./generate/index.js";
