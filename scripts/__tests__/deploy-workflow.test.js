@@ -38,6 +38,15 @@ describe("job tooling versions", () => {
   });
 });
 
+describe("typecheck gate", () => {
+  it("runs pnpm typecheck in the gate job so ui-shared/ui-phone type errors can't slip through esbuild", () => {
+    const gateStart = workflow.indexOf("\n  gate:");
+    expect(gateStart).toBeGreaterThan(0);
+    const gate = workflow.slice(gateStart, workflow.indexOf("\n  content-gate:"));
+    expect(gate).toContain("run: pnpm typecheck");
+  });
+});
+
 describe("content gate change detection", () => {
   it("gates pushes against the pre-push tip so content pushed straight to main is checked", () => {
     const contentGateStart = workflow.indexOf("\n  content-gate:");
