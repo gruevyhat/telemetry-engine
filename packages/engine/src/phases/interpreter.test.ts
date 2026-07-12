@@ -164,3 +164,33 @@ describe("phase interpreter integration [Spec §8.2, M1-05]: a generate step fir
     expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng.*deck|deck.*rng/i);
   });
 });
+
+const ORACLE_SCRIPT: PhaseScript = {
+  frame: "oracle-fixture",
+  start: "ask-step",
+  steps: [{ id: "ask-step", kind: "oracle", oracle: { question: "Is anyone watching the door?", likelihood: "even" }, next: "ask-step" }],
+};
+
+describe("phase interpreter integration [Spec §8.4, M1-06]: an oracle step commits oracle.answered", () => {
+  it("commits an oracle.answered fact table-scoped, matching the requested question/likelihood", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(ORACLE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    interpreter.advance(T(7), REFEREE);
+
+    const answered = ledger.all().find((f) => f.kind === "oracle.answered");
+    expect(answered).toBeDefined();
+    expect(answered!.visibility).toEqual({ level: "table" });
+    expect(answered!.payload.question).toBe("Is anyone watching the door?");
+    expect(answered!.payload.likelihood).toBe("even");
+    expect(["YES", "NO"]).toContain(answered!.payload.answer);
+  });
+
+  it("throws a clear error if an oracle step fires with no rng wired in", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(ORACLE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+    expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng/i);
+  });
+});

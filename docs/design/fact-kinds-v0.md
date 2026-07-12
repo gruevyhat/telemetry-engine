@@ -25,7 +25,7 @@ re-guessing. `?` marks an optional field.
 | `clock.tick` | {clockId: string, delta: number, cause?: string} | per clock def | — |
 | `check.reported` | {actor: string, skill: string, dm: number, total: number, difficulty: number, effect: number} | public | — |
 | `secretRoll.committed` | {hash: string} | public | — |
-| `oracle.answered` | {question: string, likelihood: number, answer: string, texture?: string} | table | — |
+| `oracle.answered` | {question: string, likelihood: string, answer: string, texture?: string} | table | — |
 | `correction` | {supersedes: FactID, note: string} | inherits target | — |
 | `reveal` | {targets: FactID[], fields: string[]} | public | — (reveals are meta; the checker evaluates their *targets*) |
 | `action.fizzled` | {attemptedActionId: string, reason: string} | referee | — |
@@ -91,6 +91,14 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 
 ## 4. Change control
 Adding a kind or an implies edge: PR to this file first, with (a) the Why, (b) the INV-10 impact note (does the edge narrow any existing deck's incidents?), (c) content-lint updated to recognize it. The sim smoke run on the PR is the regression net.
+
+**M1-06 catalog correction — `oracle.answered.likelihood` (2026-07-13).** *Why:* the M0 retro's
+type-formalization pass (2026-07-13, same day) inferred `likelihood: number` from the field name
+alone, flagging it as "an extrapolation to be corrected by a catalog PR if a future task needs
+otherwise." M1-06 (the oracle) is that task: Spec §8.4's ladder is five named rungs (certain,
+likely, even, unlikely, remote), not a raw number — `ask()`'s own `Likelihood` type is a string
+union. *INV-10 impact:* none — `oracle.answered` carries no `implies` edge. *Content-lint:* no
+update needed; no shipped content emits `oracle.answered` yet.
 
 **M1-01 catalog PR — `world.event` (2026-07-13).** *Why:* Spec §7.1's market-price formula has a
 `shock_t` term, "event-driven (war, glut, embargo) via world-event facts," but no fact kind for a
