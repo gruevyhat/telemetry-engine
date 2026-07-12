@@ -22,3 +22,16 @@ describe("M0-10 GitHub Pages deploy workflow", () => {
     );
   });
 });
+
+describe("content gate change detection", () => {
+  it("gates pushes against the pre-push tip so content pushed straight to main is checked", () => {
+    const contentGateStart = workflow.indexOf("\n  content-gate:");
+    expect(contentGateStart).toBeGreaterThan(0);
+    const contentGate = workflow.slice(contentGateStart, workflow.indexOf("\n  deploy:"));
+
+    // A push to main leaves origin/main pointing at the just-pushed HEAD, so diffing
+    // origin/main...HEAD is always empty there and the gate would silently skip on exactly
+    // the branch that deploys. Detection must use the push's pre-push tip for push events.
+    expect(contentGate).toContain("github.event.before");
+  });
+});
