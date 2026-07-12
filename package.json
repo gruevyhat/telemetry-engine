@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p packages/ui-shared/tsconfig.json && tsc --noEmit -p packages/ui-phone/tsconfig.json",
     "lint:content": "node packages/content-lint/bin/lint-content.mjs",
     "sim:smoke": "node packages/sim/bin/sim.mjs --campaigns 50",
     "sim:full": "node packages/sim/bin/sim.mjs --campaigns 1000",
