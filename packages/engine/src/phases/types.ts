@@ -46,7 +46,9 @@ export interface PhaseStep {
   id: StepRef;
   kind: PhaseStepKind;
   render?: string; // content template key; interpolation/rendering lands in M1-09
-  gen?: unknown; // GeneratorRef — undefined until M1-03
+  /** [M1-05] GeneratorRef: which incident frame a "generate" step fires, looked up by id from
+   * the deck passed to createPhaseInterpreter's deps. */
+  gen?: { frameId: string };
   check?: CheckSpec;
   tick?: TickSpec;
   timer?: number;

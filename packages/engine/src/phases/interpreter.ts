@@ -1,6 +1,8 @@
 import { derive, type Projection } from "../ledger/derive.js";
+import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
+import type { Rng } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { LoadedPhaseScript } from "./load.js";
 import type { PhaseStep, StepRef } from "./types.js";
@@ -14,6 +16,24 @@ export interface AdvanceResult {
   fromStep: StepRef;
   toStep: StepRef;
   committed: readonly Fact[];
+  /** [M1-05, INV-12] Present only when this step fired an incident frame: a stub rendering of
+   * its surface descriptor. Presentation only, never a fact — the real renderer is M1-09's. */
+  rendered?: string;
+}
+
+/** [M1-05] What a "generate" step needs that a phase script alone doesn't carry. Optional on
+ * createPhaseInterpreter so existing call sites (no generate steps) are unaffected. */
+export interface PhaseInterpreterDeps {
+  rng: Rng;
+  deck: readonly IncidentFrame[];
+}
+
+/** [INV-12] Stands in for M1-09's real MAGGIE-voice renderer: a plain key:value join of the
+ * surface descriptor's fields, never parsed back into facts. */
+function renderSurfaceStub(fields: Readonly<Record<string, string | number | boolean>>): string {
+  return Object.entries(fields)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
 }
 
 /** Where a script currently is: the toStep of its most recent phase.transition, else its start. */
@@ -36,6 +56,7 @@ export function currentStepOf(facts: readonly Fact[], script: LoadedPhaseScript)
 interface ResolvedStep {
   nextStepId: StepRef;
   proposals: AppendInput[];
+  rendered?: string;
 }
 
 function requirePlainNext(step: PhaseStep): StepRef {
@@ -45,12 +66,13 @@ function requirePlainNext(step: PhaseStep): StepRef {
   return step.next;
 }
 
-/** Per-kind resolution. generate/vote/confrontation UI+generation are out of scope (M1-03+/M0-07/M2) — steps just transition. */
-function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepInput | undefined): ResolvedStep {
+/** Per-kind resolution. vote/confrontation UI+generation are out of scope (M0-07/M2) — steps just transition. */
+function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepInput | undefined, deps: PhaseInterpreterDeps | undefined): ResolvedStep {
   const literalProposals: AppendInput[] = (step.facts ?? []).map((fact) => ({ t, ...fact }));
-  const resolved = (nextStepId: StepRef, proposals: AppendInput[] = []): ResolvedStep => ({
+  const resolved = (nextStepId: StepRef, proposals: AppendInput[] = [], rendered?: string): ResolvedStep => ({
     nextStepId,
     proposals: [...literalProposals, ...proposals],
+    ...(rendered !== undefined ? { rendered } : {}),
   });
 
   switch (step.kind) {
@@ -87,8 +109,22 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
     case "commsWindow":
       // batch-resolution stub — M2 fills it in (Spec §3.3's shuffled sequential resolution).
       return resolved(requirePlainNext(step));
+    case "generate": {
+      const gen = step.gen;
+      if (!gen) {
+        throw new Error(`step "${step.id}": missing gen (should have been rejected at load)`);
+      }
+      if (!deps) {
+        throw new Error(`step "${step.id}": kind "generate" requires rng+deck (createPhaseInterpreter's deps argument)`);
+      }
+      const frame = deps.deck.find((candidate) => candidate.id === gen.frameId);
+      if (!frame) {
+        throw new Error(`step "${step.id}": no frame "${gen.frameId}" in the supplied deck`);
+      }
+      const fired = fireFrame(frame, t, deps.rng);
+      return resolved(requirePlainNext(step), [...fired.causeProposals], renderSurfaceStub(fired.surface.fields));
+    }
     case "announce":
-    case "generate":
     case "vote":
       return resolved(requirePlainNext(step));
     case "confrontation":
@@ -109,7 +145,7 @@ export interface PhaseInterpreter {
  * interpreter mid-script and calling advance() again produces the same facts as an
  * uninterrupted run: nothing survives a restart except what's already committed.
  */
-export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript): PhaseInterpreter {
+export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript, deps?: PhaseInterpreterDeps): PhaseInterpreter {
   let commsQueue: Record<string, unknown>[] = [];
 
   function currentStep(): StepRef {
@@ -123,7 +159,7 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
       throw new Error(`phase script "${script.frame}": current step "${fromStep}" not found`);
     }
 
-    const { nextStepId, proposals } = resolveStep(step, t, actor, input);
+    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, deps);
 
     const committed: Fact[] = [];
     for (const proposal of proposals) {
@@ -142,7 +178,7 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
       commsQueue = [];
     }
 
-    return { fromStep, toStep: nextStepId, committed };
+    return { fromStep, toStep: nextStepId, committed, ...(rendered !== undefined ? { rendered } : {}) };
   }
 
   function queueCommsAction(action: Readonly<Record<string, unknown>>): void {

@@ -49,7 +49,8 @@
         "visibility": { "$ref": "#/$defs/visibility" },
         "next": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 }, "minProperties": 1 }] },
         "check": { "type": "object", "additionalProperties": false, "required": ["skillSlot", "difficulty", "onFail", "onSuccess"], "properties": { "skillSlot": { "type": "string" }, "difficulty": { "type": "number" }, "onFail": { "type": "string" }, "onSuccess": { "type": "string" } } },
-        "tick": { "type": "object", "additionalProperties": false, "required": ["clockId", "delta"], "properties": { "clockId": { "type": "string" }, "delta": { "type": "number" } } }
+        "tick": { "type": "object", "additionalProperties": false, "required": ["clockId", "delta"], "properties": { "clockId": { "type": "string" }, "delta": { "type": "number" } } },
+        "gen": { "type": "object", "additionalProperties": false, "required": ["frameId"], "properties": { "frameId": { "type": "string", "minLength": 1 } } }
       }
     }
   }

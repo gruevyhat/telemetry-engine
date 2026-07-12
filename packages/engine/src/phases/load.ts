@@ -39,6 +39,9 @@ export function loadPhaseScript(script: PhaseScript): LoadedPhaseScript {
     if (step.kind === "check" && !step.check) {
       throw new Error(`phase script "${script.frame}": check step "${step.id}" is missing check`);
     }
+    if (step.kind === "generate" && !step.gen) {
+      throw new Error(`phase script "${script.frame}": generate step "${step.id}" is missing gen`);
+    }
   }
 
   return { frame: script.frame, start: script.start, stepsById };
