@@ -52,4 +52,4 @@ PR descriptions and commit messages are read by humans inspecting the change, no
 - Extrapolation notes should read as a short, followable account — what was ambiguous, what you chose, why — not a compressed citation trail.
 
 ## Current milestone
-M0 — the spine. Take the lowest-numbered unclaimed card in `docs/tasks/M0-*.md`. M0-00 is an owner decision (licenses); skip it unless you are the owner.
+M1 — the solo trade game ("Quiet Ship"). Take the lowest-numbered unclaimed card in `docs/tasks/M1-*.md`. M0 shipped and merged to `main` on 2026-07-13 (PR #5).
