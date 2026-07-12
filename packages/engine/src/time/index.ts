@@ -21,10 +21,11 @@ export interface GameTime {
  * parallel lint rule here.
  */
 export function advanceToSlot(current: GameTime, targetSlot: BeatSlot): GameTime {
-  return { day: current.day, slot: targetSlot };
+  const leavingTransit = current.slot === "TRANSIT" && targetSlot !== "TRANSIT";
+  return { day: current.day + (leavingTransit ? 7 : 0), slot: targetSlot };
 }
 
 /** [Spec §3.1] "each evidence action advances day += 1." Slot is unaffected. */
 export function advanceEvidenceAction(current: GameTime): GameTime {
-  return { day: current.day, slot: current.slot };
+  return { day: current.day + 1, slot: current.slot };
 }
