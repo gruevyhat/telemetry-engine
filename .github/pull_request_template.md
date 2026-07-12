@@ -1,3 +1,6 @@
+## Summary
+<2-4 plain-language sentences: what this PR accomplishes and why it matters, written for a reader who doesn't hold the Spec in their head. No invariant codes, task IDs, or jargon here — that detail belongs in the sections below.>
+
 ## Task
 <id and one-line deliverable>
 
