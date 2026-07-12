@@ -23,6 +23,21 @@ describe("M0-10 GitHub Pages deploy workflow", () => {
   });
 });
 
+describe("job tooling versions", () => {
+  it("uses the same actions/checkout and Node version across gate, content-gate, and deploy", () => {
+    const jobNames = ["\n  gate:", "\n  content-gate:", "\n  deploy:"];
+    const boundaries = [...jobNames.map((name) => workflow.indexOf(name)), workflow.length];
+    jobNames.forEach((name, i) => expect(workflow.indexOf(name)).toBeGreaterThan(0));
+
+    const jobBodies = jobNames.map((_, i) => workflow.slice(boundaries[i], boundaries[i + 1]));
+    const checkoutVersions = jobBodies.map((body) => body.match(/uses: actions\/checkout@(\S+)/)?.[1]);
+    const nodeVersions = jobBodies.map((body) => body.match(/node-version: (\S+)/)?.[1]);
+
+    expect(new Set(checkoutVersions).size).toBe(1);
+    expect(new Set(nodeVersions).size).toBe(1);
+  });
+});
+
 describe("content gate change detection", () => {
   it("gates pushes against the pre-push tip so content pushed straight to main is checked", () => {
     const contentGateStart = workflow.indexOf("\n  content-gate:");
