@@ -20,8 +20,11 @@ export interface AdvanceResult {
 export function currentStepProjection(script: LoadedPhaseScript): Projection<StepRef> {
   return {
     initial: script.start,
-    apply(state, _fact) {
-      return state;
+    apply(state, fact) {
+      if (fact.kind !== "phase.transition" || fact.payload.frame !== script.frame) {
+        return state;
+      }
+      return typeof fact.payload.toStep === "string" ? fact.payload.toStep : state;
     },
   };
 }
