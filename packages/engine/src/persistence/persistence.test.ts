@@ -13,7 +13,7 @@ import {
 
 const projection = combineProjections({ funds: fundsProjection, clocks: clocksProjection });
 
-const factArbitrary: fc.Arbitrary<Fact> = fc
+const factArbitrary: fc.Arbitrary<Fact[]> = fc
   .array(
     fc.oneof(
       fc.record({

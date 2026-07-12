@@ -5,3 +5,4 @@ export * from "./economy/index.js";
 export * from "./position/index.js";
 export * from "./phases/index.js";
 export * from "./rng/index.js";
+export * from "./persistence/index.js";
