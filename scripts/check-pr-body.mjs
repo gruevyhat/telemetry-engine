@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 export const REQUIRED_SECTIONS = [
+  "## Summary",
   "## Task",
   "## Spec sections implemented",
   "## Invariants covered (tests listed)",

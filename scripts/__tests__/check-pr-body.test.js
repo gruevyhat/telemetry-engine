@@ -4,6 +4,10 @@ import { checkPrBody, REQUIRED_SECTIONS } from "../check-pr-body.mjs";
 const COMPLETE_BODY = REQUIRED_SECTIONS.map((section) => `${section}\ncontent\n`).join("\n");
 
 describe("checkPrBody", () => {
+  it("requires a lay-terms Summary section so PRs lead with plain language, not the technical sections first", () => {
+    expect(REQUIRED_SECTIONS[0]).toBe("## Summary");
+  });
+
   it("accepts a body containing every required section", () => {
     expect(checkPrBody(COMPLETE_BODY)).toEqual({ ok: true, missing: [] });
   });
