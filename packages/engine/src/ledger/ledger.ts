@@ -1,3 +1,4 @@
+import { monotonicFactory } from "ulid";
 import type { GameTime } from "../time/index.js";
 import type { KindRegistry } from "./registry.js";
 import type { ActorRef, Fact, FactID, Visibility } from "./types.js";
@@ -27,7 +28,7 @@ export interface Ledger {
 
 export function createLedger(registry: KindRegistry): Ledger {
   const facts: Fact[] = [];
-  const nextId = () => crypto.randomUUID();
+  const nextId = monotonicFactory();
 
   function append(input: AppendInput): Fact {
     const def = registry.get(input.kind);
@@ -59,7 +60,13 @@ export function createLedger(registry: KindRegistry): Ledger {
   }
 
   function activeFacts(): readonly Fact[] {
-    return facts.slice();
+    const superseded = new Set<FactID>();
+    for (const fact of facts) {
+      if (fact.kind === "correction" && typeof fact.payload.supersedes === "string") {
+        superseded.add(fact.payload.supersedes);
+      }
+    }
+    return facts.filter((fact) => !superseded.has(fact.id));
   }
 
   function visibleTo(viewer: Viewer): readonly Fact[] {

@@ -31,8 +31,12 @@ export function createKindRegistry(definitions: readonly KindDefinition[]): Kind
     get(kind) {
       return byKind.get(kind);
     },
-    validate(_kind, _payload) {
-      return { ok: true, errors: [] };
+    validate(kind, payload) {
+      const def = byKind.get(kind);
+      if (!def) {
+        return { ok: false, errors: [`unregistered kind "${kind}"`] };
+      }
+      return validatePayload(def.payload, payload);
     },
   };
 }

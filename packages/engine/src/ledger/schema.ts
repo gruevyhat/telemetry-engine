@@ -29,8 +29,29 @@ function matchesType(type: FieldType, value: unknown): boolean {
   }
 }
 
-export function validatePayload(_schema: PayloadSchema, _payload: Record<string, unknown>): ValidationResult {
-  return { ok: true, errors: [] };
+export function validatePayload(schema: PayloadSchema, payload: Record<string, unknown>): ValidationResult {
+  const errors: string[] = [];
+
+  for (const [field, fieldSchema] of Object.entries(schema)) {
+    const value = payload[field];
+    if (value === undefined) {
+      if (!fieldSchema.optional) {
+        errors.push(`missing required field "${field}"`);
+      }
+      continue;
+    }
+    if (!matchesType(fieldSchema.type, value)) {
+      errors.push(`field "${field}" expected ${fieldSchema.type}, got ${typeof value}`);
+    }
+  }
+
+  for (const field of Object.keys(payload)) {
+    if (!(field in schema)) {
+      errors.push(`unexpected field "${field}" (payloads are exact, Spec §2 fact-kinds-v0)`);
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
 }
 
 /**
@@ -38,6 +59,13 @@ export function validatePayload(_schema: PayloadSchema, _payload: Record<string,
  * carry its own visibility. FieldSchema's type has no visibility key, so this only fires when
  * a schema is constructed from untyped data (e.g. future content-loaded catalogs).
  */
-export function assertNoSplitVisibility(_schema: PayloadSchema): void {
-  // not yet implemented
+export function assertNoSplitVisibility(schema: PayloadSchema): void {
+  for (const [field, fieldSchema] of Object.entries(schema)) {
+    if ("visibility" in (fieldSchema as unknown as Record<string, unknown>)) {
+      throw new Error(
+        `payload field "${field}" declares its own visibility; split-visibility payloads are forbidden ` +
+          `(fact-kinds-v0.md §3) — emit two facts linked by causes instead.`,
+      );
+    }
+  }
 }
