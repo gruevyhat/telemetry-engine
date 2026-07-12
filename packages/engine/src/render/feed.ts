@@ -32,7 +32,7 @@ export function feedLine(input: FeedLineInput): string {
   if (distanceParsecs === "unknown") {
     return (
       `${good} at ${hex}: ${amount}, by the crew's count. Distance from here isn't in my charts. ` +
-      `I will check your arithmetic; I will not check your memory.`
+      `I verify arithmetic; I do not verify distance.`
     );
   }
   if (distanceParsecs === 0) {

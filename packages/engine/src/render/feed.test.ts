@@ -36,7 +36,7 @@ describe("feedLine [Spec §7.2, §14, M1-02]", () => {
 
   it("renders 'unknown' distance in trust-mode phrasing (Spec §15: no data loaded -> trust mode)", () => {
     const line = feedLine({ hex: "Far Reach", good: "ore", price: 175, distanceParsecs: "unknown" });
-    expect(line).toBe("ore at Far Reach: Cr175, by the crew's count. Distance from here isn't in my charts. I will check your arithmetic; I will not check your memory.");
+    expect(line).toBe("ore at Far Reach: Cr175, by the crew's count. Distance from here isn't in my charts. I verify arithmetic; I do not verify distance.");
   });
 });
 
