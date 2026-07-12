@@ -13,11 +13,12 @@ describe("M0-10 GitHub Pages deploy workflow", () => {
     expect(deploy).toContain("needs: [gate, content-gate]");
     expect(deploy).toContain("run: pnpm build:pages");
     expect(deploy).toContain("run: pnpm test:e2e");
-    expect(deploy).toContain("uses: actions/upload-pages-artifact@v3");
+    expect(deploy).toContain("uses: actions/configure-pages@v5");
+    expect(deploy).toContain("uses: actions/upload-pages-artifact@v4");
     expect(deploy).toContain("path: packages/ui-shared/dist");
     expect(deploy).toContain("uses: actions/deploy-pages@v4");
     expect(deploy.indexOf("run: pnpm test:e2e")).toBeLessThan(
-      deploy.indexOf("uses: actions/upload-pages-artifact@v3"),
+      deploy.indexOf("uses: actions/upload-pages-artifact@v4"),
     );
   });
 });

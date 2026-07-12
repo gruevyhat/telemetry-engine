@@ -30,11 +30,13 @@ An implementer session that cannot complete its task within scope **stops and wr
 pnpm i                  # install
 pnpm test               # unit + property + snapshot (PR gate)
 pnpm test:integration   # phase-script fixtures
+pnpm test:e2e           # Playwright smoke against the built Pages artifact
 pnpm lint               # eslint + the no-ledger-writes-outside-interpreter rule (INV-6)
 pnpm lint:content       # content-lint package (Spec §19)
 pnpm sim:smoke          # 50-campaign smoke (fast; PR gate when content changes)
 pnpm sim:full           # 1,000-campaign metrics (nightly / milestone gate)
 pnpm build:stub         # engine + stub plugin build (INV-1; PR gate)
+pnpm build:pages        # shared-screen production bundle for GitHub Pages
 pnpm dev:shared / dev:phone   # UI shells
 ```
 

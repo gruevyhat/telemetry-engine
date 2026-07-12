@@ -67,3 +67,36 @@ jobs:
         run: pnpm lint:content
       - if: steps.changes.outputs.content_changed == 'true'
         run: pnpm sim:smoke
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [gate, content-gate]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/configure-pages@v5
+      - run: pnpm build:pages
+      - run: pnpm test:e2e
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: packages/ui-shared/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

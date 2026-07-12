@@ -30,8 +30,12 @@ const preview = spawn(
   { stdio: "pipe" },
 );
 let previewOutput = "";
-preview.stdout.on("data", (chunk) => (previewOutput += chunk));
-preview.stderr.on("data", (chunk) => (previewOutput += chunk));
+preview.stdout.on("data", (chunk) => {
+  previewOutput += chunk;
+});
+preview.stderr.on("data", (chunk) => {
+  previewOutput += chunk;
+});
 
 async function waitForPreview() {
   for (let attempt = 0; attempt < 50; attempt += 1) {
