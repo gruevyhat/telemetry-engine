@@ -37,6 +37,7 @@ pnpm sim:smoke          # 50-campaign smoke (fast; PR gate when content changes)
 pnpm sim:full           # 1,000-campaign metrics (nightly / milestone gate)
 pnpm build:stub         # engine + stub plugin build (INV-1; PR gate)
 pnpm build:pages        # shared-screen production bundle for GitHub Pages
+pnpm demo:m0            # serve the built M0 demo locally at the Pages base path
 pnpm dev:shared / dev:phone   # UI shells
 ```
 
