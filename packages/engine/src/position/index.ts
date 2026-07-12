@@ -20,8 +20,19 @@ function declarationKey(actor: string, day: number, slot: string): string {
 
 export const presenceProjection: Projection<PresenceState> = {
   initial: { declarations: {} },
-  apply(state: PresenceState, _fact: Fact): PresenceState {
-    return state;
+  apply(state: PresenceState, fact: Fact): PresenceState {
+    if (fact.kind !== "presence.declared") {
+      return state;
+    }
+    const { actor, station, hex, day, slot } = fact.payload;
+    if (typeof actor !== "string" || typeof day !== "number" || typeof slot !== "string") {
+      return state;
+    }
+    const location: PresenceLocation =
+      typeof station === "string" ? { kind: "station", station } : typeof hex === "string" ? { kind: "hex", hex } : { kind: "berth" };
+    return {
+      declarations: { ...state.declarations, [declarationKey(actor, day, slot)]: location },
+    };
   },
 };
 

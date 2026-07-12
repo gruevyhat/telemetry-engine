@@ -10,7 +10,14 @@ export type ClockValues = Readonly<Record<string, number>>;
 
 export const clocksProjection: Projection<ClockValues> = {
   initial: {},
-  apply(state: ClockValues, _fact: Fact): ClockValues {
-    return state;
+  apply(state: ClockValues, fact: Fact): ClockValues {
+    if (fact.kind !== "clock.tick") {
+      return state;
+    }
+    const { clockId, delta } = fact.payload;
+    if (typeof clockId !== "string" || typeof delta !== "number") {
+      return state;
+    }
+    return { ...state, [clockId]: (state[clockId] ?? 0) + delta };
   },
 };

@@ -15,7 +15,7 @@ export interface Projection<S> {
  * yields byte-identical state" refers to.
  */
 export function derive<S>(facts: readonly Fact[], projection: Projection<S>): S {
-  return facts.reduce(projection.apply, projection.initial);
+  return activeFactsOf(facts).reduce(projection.apply, projection.initial);
 }
 
 export interface MemoizedProjection<S> {
@@ -41,8 +41,10 @@ export function createMemoizedProjection<S>(
   return {
     schemaVersion,
     derive(facts) {
-      cachedState = derive(facts, projection);
-      cachedLength = facts.length;
+      if (facts.length !== cachedLength) {
+        cachedState = derive(facts, projection);
+        cachedLength = facts.length;
+      }
       return cachedState;
     },
   };
