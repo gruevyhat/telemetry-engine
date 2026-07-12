@@ -31,7 +31,8 @@ export function StatusBar({ funds, obligationDays, hex, fuelTons, holdState }: S
         padding: "0.75rem 1rem",
       }}
     >
-      <span data-testid="status-funds">Cr{funds.toLocaleString()}</span>
+      {/* Pinned locale: funds must format identically on every machine (Spec §21.3). */}
+      <span data-testid="status-funds">Cr{funds.toLocaleString("en-US")}</span>
       <span data-testid="status-obligation">Obligation {obligationDays}d</span>
       <span data-testid="status-hex">{hex}</span>
       <span data-testid="status-fuel">{fuelTons}t fuel</span>

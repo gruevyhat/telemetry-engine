@@ -31,7 +31,10 @@ describe("StatusBar [rulebook section 3.1]", () => {
 
     render(<StatusBar funds={funds} obligationDays={obligationDays} hex="Vantage" fuelTons={12} holdState="18/20t" />);
 
-    expect(screen.getByTestId("status-funds").textContent).toContain("169,200");
+    // Exact, not toContain: funds formatting is pinned to en-US so it reads identically on
+    // every machine (Spec §21.3). Under a non-US default locale the old toLocaleString() with
+    // no argument rendered "Cr169.200" and failed this.
+    expect(screen.getByTestId("status-funds").textContent).toBe("Cr169,200");
     expect(screen.getByTestId("status-obligation").textContent).toContain("-7");
     expect(screen.getByTestId("status-hex").textContent).toBe("Vantage");
     expect(screen.getByTestId("status-fuel").textContent).toContain("12");
