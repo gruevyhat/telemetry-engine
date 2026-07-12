@@ -112,6 +112,7 @@ interface PhaseStep {
   render?: RenderRef;
   gen?: GeneratorRef;
   check?: { skillSlot: string; difficulty: DifficultyRef; onFail: StepRef; onSuccess: StepRef };
+  tick?: { clockId: string; delta: number };  // tickClock's config (M0-06; added at the M0 retro)
   timer?: number;                    // seconds; UI-enforced, host-authoritative
   visibility?: Visibility;
   next: StepRef | BranchTable;
@@ -425,6 +426,8 @@ M0–M1 remains the falsifiable bet: if the solo trade loop isn't fun with templ
 1. Position-fact granularity: per-beat station declarations (start here) vs. continuous presence — revisit if alibi play feels coarse in M2 sims.
 2. Content packaging: `content/` in-repo vs. `packages/content-core` — decide when a second author appears.
 3. Print pack pipeline: print-stylesheet HTML first (CI-testable); pdf-lib only if HTML print proves inadequate.
+4. `clock.tick`'s visibility is "per clock definition" (§5, `fact-kinds-v0.md`), but the v0 kind registry can only express one static default per kind and currently pins it to `referee` for every clock. M1-01 (economy) owns the real per-clock-def mechanism — resolve there. (Logged at the M0 retro.)
+5. `DifficultyRef` (§4's `PhaseStep.check.difficulty`) has no definition anywhere in the Spec; M0-06 implemented it as a plain `number`. Revisit once content wants anything richer than a bare number (difficulty bands, modifiers). (Logged at the M0 retro.)
 
 ---
 
