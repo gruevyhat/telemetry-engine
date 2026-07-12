@@ -7,13 +7,16 @@ import { derive } from "../ledger/derive.js";
 
 /**
  * [Spec §9] Passes 1-4, in order, fail-fast per proposal. Pass 5 (ambiguity) is out of scope —
- * M1-05 wires that in using the closure engine this task also builds (validate/closure.ts).
+ * M1-05 wires that in using the closure engine this task also builds (validate/closure.ts),
+ * as checkIncidentAmbiguity in generate/frame.ts -- kept separate from this pipeline because it
+ * needs the IMPLIES_V0 catalog and incident-firing context this module doesn't otherwise touch.
  */
 export type ValidationFailure =
   | { readonly pass: "schema"; readonly kind: string; readonly errors: readonly string[] }
   | { readonly pass: "referential"; readonly message: string }
   | { readonly pass: "reachability"; readonly message: string }
-  | { readonly pass: "timeline"; readonly message: string };
+  | { readonly pass: "timeline"; readonly message: string }
+  | { readonly pass: "ambiguity"; readonly message: string };
 
 export interface ValidateResult {
   readonly ok: boolean;
