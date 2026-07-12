@@ -2,8 +2,7 @@
 ### Core Rulebook · v2.0
 #### A GM-less engine of freight, frontiers, firefights, and insufficient trust — for 1–5 crew and one ship's computer
 
-> **[ART-01 — Cover, full page]**
-> *T2I prompt:* "1970s analog science-fiction paperback cover illustration, a battered wedge-shaped starship passing close over the terminator of an unlit planet, its running lights the only warm color, a thin lattice of telemetry lines and tracking brackets overlaid across the sky as if seen through an instrument, muted olive and rust palette with one red accent, grainy gouache texture, generous negative space at top for title, no text, no logos, aspect 2:3"
+![Telemetry Engine shipboard equipment placard](img/telemetry_engine_spec_plate.svg)
 
 > *"Telemetry: the science of taking measurements at a distance. You measure the ship. The ship measures you back."*
 > — MAGGIE, pre-departure orientation, cycle 1
@@ -47,8 +46,8 @@ One more thing before the rules: TELEMETRY ENGINE is a chassis. It ships with th
 
 **Everything is logged.** Deals, votes, positions, searches, silences. At campaign's end MAGGIE prints the **black box** — the full ground truth, on paper, read aloud. Every lie in this game has a maturity date.
 
-> **[ART-02 — MAGGIE, quarter page]**
-> *T2I prompt:* "retro-futuristic ship computer interface on a bulkhead-mounted CRT terminal, amber monochrome phosphor text and a wireframe schematic of a small freighter, physical toggle switches and a worn keyboard below, one line of cursor text mid-sentence, dust motes in a hard light beam, 1970s utilitarian aerospace design, photorealistic with film grain, aspect 4:3"
+![MAGGIE on a bulkhead-mounted amber CRT terminal](img/art-02-maggie.png)
+<!-- ART-02 source prompt: "retro-futuristic ship computer interface on a bulkhead-mounted CRT terminal, amber monochrome phosphor text and a wireframe schematic of a small freighter, physical toggle switches and a worn keyboard below, one line of cursor text mid-sentence, dust motes in a hard light beam, 1970s utilitarian aerospace design, photorealistic with film grain, aspect 4:3" -->
 
 ---
 
@@ -98,8 +97,8 @@ TELEMETRY ENGINE treats distance as a first-class cost. Time passes in weeks; di
 
 **The edge.** Hexes beyond the charted border are the exploration pillar's territory: no data, no staleness tags, no promises. See Section 9.
 
-> **[ART-03 — The map, half page]**
-> *T2I prompt:* "overhead shot of a paper star chart spread on a metal mess table, hexagonal grid with sparse handwritten annotations and two shipping routes drawn in grease pencil, a pair of dividers and two six-sided dice resting on the chart, one coffee ring stain, warm tungsten light from the left, photorealistic still life, shallow depth of field, aspect 16:9"
+![A paper star chart, dividers, and dice on a metal mess table](img/art-03-map.png)
+<!-- ART-03 source prompt: "overhead shot of a paper star chart spread on a metal mess table, hexagonal grid with sparse handwritten annotations and two shipping routes drawn in grease pencil, a pair of dividers and two six-sided dice resting on the chart, one coffee ring stain, warm tungsten light from the left, photorealistic still life, shallow depth of field, aspect 16:9" -->
 
 ---
 
@@ -117,8 +116,8 @@ TELEMETRY ENGINE treats distance as a first-class cost. Time passes in weeks; di
 
 **Step 6 — Departure.** The map goes on the table. The Obligation starts ticking. MAGGIE opens Turn 1.
 
-> **[ART-04 — The envelope deal, half page]**
-> *T2I prompt:* "overhead view of a worn metal mess table on a spaceship, five sealed manila envelopes fanned under a single hanging cone of light, two six-sided dice and a chipped enamel mug nearby, crew hands reaching in from the frame edges, tense chiaroscuro, muted industrial palette, cinematic 35mm with film grain, aspect 16:9"
+![Crew members reach for sealed envelopes on the mess table](img/art-04-envelopes.png)
+<!-- ART-04 source prompt: "overhead view of a worn metal mess table on a spaceship, five sealed manila envelopes fanned under a single hanging cone of light, two six-sided dice and a chipped enamel mug nearby, crew hands reaching in from the frame edges, tense chiaroscuro, muted industrial palette, cinematic 35mm with film grain, aspect 16:9" -->
 
 ---
 
@@ -199,8 +198,8 @@ Mercenary contracts: escort, seizure, security, retrieval. **Clock:** casualties
 ### 9.4 ESPIONAGE — *the secret*
 Courier runs, infiltrations, extractions, intel brokerage — the pillar where the cargo is knowledge and the customs check is a conversation. **Clock:** **heat** — attention from services that notice patterns. Heat rises with sloppiness and burns down slowly with distance and discipline. **Evidence:** covers, intercepts, dead drops, travel records. **Signature move — the legend:** for a job, MAGGIE issues cover identities — a small card of facts about who you claim to be. Contradict your legend in play and heat rises; hold it under pressure and doors open. NOTE: espionage frames publish the *highest* agenda odds in the game, and the legend system means even loyal crew are lying professionally. This pillar is not for new tables. It is for tables who thought they were good at the other three.
 
-> **[ART-05 — Espionage, half page]**
-> *T2I prompt:* "two figures exchanging an identical briefcase on a rain-slick starport concourse at night, seen from above through a security camera's slight fisheye with a timestamp corner burn-in, crowds blurred in motion around the two still figures, sodium orange and deep shadow, grainy surveillance aesthetic, 1970s espionage thriller mood, aspect 16:9"
+![Two figures meet with briefcases on a rain-slick starport concourse](img/art-05-espionage.png)
+<!-- ART-05 source prompt: "two figures exchanging an identical briefcase on a rain-slick starport concourse at night, seen from above through a security camera's slight fisheye with a timestamp corner burn-in, crowds blurred in motion around the two still figures, sodium orange and deep shadow, grainy surveillance aesthetic, 1970s espionage thriller mood, aspect 16:9" -->
 
 ---
 
@@ -302,5 +301,5 @@ Incidents arrive in families; knowing the families is fair, knowing the tells is
 
 *TELEMETRY ENGINE is a chassis; the stars are aftermarket. The Traveller game in all forms is owned by Mongoose Publishing. Copyright 1977–2026 Mongoose Publishing. This is a non-commercial fan work under the Traveller Fair Use Policy. All original engine design and text © the designer.*
 
-> **[ART-06 — Back cover, full page]**
-> *T2I prompt:* "small merchant starship seen from far behind, burning toward a vast ringed gas giant, ship tiny and slightly off-center, thin red engine trail, cold starfield crossed by faint hexagonal chart lines as if printed on glass between viewer and stars, 1970s airbrushed space art with subtle grain, melancholy and vast, large negative space for text, no text, aspect 2:3"
+![A small merchant starship approaches a vast ringed gas giant](img/art-06-back-cover.png)
+<!-- ART-06 source prompt: "small merchant starship seen from far behind, burning toward a vast ringed gas giant, ship tiny and slightly off-center, thin red engine trail, cold starfield crossed by faint hexagonal chart lines as if printed on glass between viewer and stars, 1970s airbrushed space art with subtle grain, melancholy and vast, large negative space for text, no text, aspect 2:3" -->

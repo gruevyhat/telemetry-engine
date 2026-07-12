@@ -53,10 +53,14 @@ telemetry-engine/
 pnpm install
 pnpm test              # unit + property + snapshot suite
 pnpm test:integration   # phase-script fixtures
+pnpm test:e2e           # Playwright smoke against a built Pages bundle
 pnpm lint               # eslint, including engine-specific invariant rules
+pnpm typecheck          # tsc --noEmit for ui-shared/ui-phone (esbuild strips types otherwise)
 pnpm lint:content       # lints content/ against the MAGGIE voice guide
 pnpm sim:smoke          # 50-campaign headless simulation
 pnpm build:stub         # builds engine + a stub plugin (INV-1 check)
+pnpm build:pages        # builds the shared-screen GitHub Pages artifact
+pnpm demo:m0            # serves that built artifact for the M0 walkthrough
 ```
 
 Requires Node >=20 and pnpm. See `docs/telemetry-engine-dev-plan.md` §3 for the full

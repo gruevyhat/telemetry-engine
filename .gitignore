@@ -1,4 +1,6 @@
 .obsidian/
+.claude/
+.codex/
 node_modules/
 dist/
 .DS_Store

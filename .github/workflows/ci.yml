@@ -32,6 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm lint
+      - run: pnpm typecheck
       - run: pnpm build:stub
 
   content-gate:
@@ -40,6 +41,60 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Detect content/ changes
+        id: changes
+        env:
+          # PR events diff against the PR's base branch. Pushes diff against the tip before
+          # the push (github.event.before): on a push to main, origin/main already points at
+          # HEAD, so origin/main...HEAD is empty and would skip the gate on the very branch
+          # that deploys. A missing/zero before-tip (new branch, force-push) runs the gate.
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            range="origin/$BASE_REF...HEAD"
+          elif git rev-parse --quiet --verify "$PUSH_BEFORE^{commit}" >/dev/null 2>&1; then
+            range="$PUSH_BEFORE...HEAD"
+          else
+            range=""
+          fi
+          if [ -z "$range" ] || git diff --name-only "$range" | grep -q '^content/'; then
+            echo "content_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changes.outputs.content_changed == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - if: steps.changes.outputs.content_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm lint:content
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm sim:smoke
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [gate, content-gate]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -47,21 +102,12 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-      - name: Detect content/ changes
-        id: changes
-        env:
-          # PR events diff against the PR's base branch; plain pushes (e.g. to a milestone
-          # branch, which has no PR base_ref) diff against main.
-          BASE_REF: ${{ github.base_ref || 'main' }}
-        run: |
-          if git diff --name-only "origin/$BASE_REF"...HEAD | grep -q '^content/'; then
-            echo "content_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "content_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.changes.outputs.content_changed == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.changes.outputs.content_changed == 'true'
-        run: pnpm lint:content
-      - if: steps.changes.outputs.content_changed == 'true'
-        run: pnpm sim:smoke
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/configure-pages@v5
+      - run: pnpm build:pages
+      - run: pnpm test:e2e
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: packages/ui-shared/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

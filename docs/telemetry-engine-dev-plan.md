@@ -30,11 +30,15 @@ An implementer session that cannot complete its task within scope **stops and wr
 pnpm i                  # install
 pnpm test               # unit + property + snapshot (PR gate)
 pnpm test:integration   # phase-script fixtures
+pnpm test:e2e           # Playwright smoke against the built Pages artifact
 pnpm lint               # eslint + the no-ledger-writes-outside-interpreter rule (INV-6)
+pnpm typecheck          # tsc --noEmit for ui-shared/ui-phone (PR gate; esbuild strips types otherwise)
 pnpm lint:content       # content-lint package (Spec §19)
 pnpm sim:smoke          # 50-campaign smoke (fast; PR gate when content changes)
 pnpm sim:full           # 1,000-campaign metrics (nightly / milestone gate)
 pnpm build:stub         # engine + stub plugin build (INV-1; PR gate)
+pnpm build:pages        # shared-screen production bundle for GitHub Pages
+pnpm demo:m0            # serve the built M0 demo locally at the Pages base path
 pnpm dev:shared / dev:phone   # UI shells
 ```
 
@@ -77,6 +81,10 @@ Write `docs/handoffs/<task-id>-<n>.md`: state of the branch · what's red/green 
 
 Tasks are sized for one focused session (≤ ~600 changed lines including tests). M0–M1 are broken down fully now; M2–M5 are epic-level and get task breakdown at milestone planning, informed by the prior retro (§8). Task cards live in `docs/tasks/` as files with this front-matter: `{id, title, spec_refs[], invariants[], tests_first[], done_when[], do_not[]}`.
 
+### Demo at every milestone
+
+Every milestone MUST end with a runnable demo of the capability that milestone adds. A local demo is the minimum acceptable form; a hosted build MAY supplement it but MUST NOT be required to prove the milestone. The demo must use shipped UI and content, exercise the milestone's defining path end to end, and be repeatable from a clean checkout with documented commands and a short walkthrough under `docs/demos/M<n>.md`. The owner runs that walkthrough before the milestone PR opens and records the outcome in the retro. Passing automated gates without a runnable demo does not close a milestone.
+
 ### M0 — the spine
 | ID | Task | Spec | INVs | Tests first |
 |---|---|---|---|---|
@@ -89,6 +97,9 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 | M0-07 | hotseat shell: shared screen skeleton + interstitial private view | §16 | 13 (hotseat form) | interstitial never renders another player's `private` slice (component test) |
 | M0-08 | save/load/export blob | §18 | 3 | load(export(x)) replays byte-identical |
 | M0-09 | demo turn content: one scripted DOCKSIDE→ARRIVAL with canned facts | §4, §19 | — | content-lint passes; integration fixture green |
+| M0-10 | deploy pipeline: GitHub Pages | §0, Plan §6.1 | — | main-only deploy contract; built Pages bundle boots in Playwright |
+
+**M0 exit demo:** launch the shared-screen build locally, pass the device through the hotseat interstitial, and advance the canned turn from DOCKSIDE through ARRIVAL while the fact ticker updates. The hosted Pages build is useful evidence, but the local walkthrough is the required floor.
 
 ### M1 — a playable solo game
 | ID | Task | Spec | INVs | Tests first |
@@ -106,7 +117,7 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 | M1-11 | trade frame content v1: decks, slots, generic family incidents | §19 | — | content-lint + `sim:smoke` |
 | M1-12 | sim harness v1: bot policies, metric collection | §21.4 | 5, 10 | brute-force-inference bot cannot uniquely attribute any incident |
 
-**M1 exit:** the owner plays a full 4-turn solo cycle by hand, start to Obligation payment, using only the shipped UI. Fun is assessed at the retro; mechanics are assessed by the gate.
+**M1 exit demo:** the owner plays a full 4-turn solo cycle by hand, start to Obligation payment, using only the locally launched shipped UI and content. Fun is assessed at the retro; mechanics are assessed by the gate.
 
 ### M2–M5 — epics (task breakdown at each milestone planning)
 - **M2 the social game:** agenda deal + commitment facts · comms-window queue/shuffle/fizzle (Spec §3.3) · confrontation sub-script · envelope/forfeit/deferred-reveal · WebRTC transport + QR pairing + timer pause · commit-reveal (INV-8) · referee-scope encryption at rest (§16) · sim bots gain accuse/vote policies; misattribution tuning begins.
@@ -114,12 +125,14 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 - **M4 exploration + props:** fog visibility on hexes · survey charters frame · print pack pipeline (HTML print stylesheet; manifest-with-embedded-skim first).
 - **M5 full pillar set:** engagement resolver (§13) · heat + legends with reverse validation (§11) · LLM renderer behind flag with entity guard; sim parity run (metrics identical LLM on/off).
 
+**Required exit demos:** M2 runs one local three-seat comms-to-accusation scene with paired phones · M3 imports a sample character and sector, then completes one locally rendered trade turn with historical remote pricing · M4 completes one survey-charter loop and produces its local print preview · M5 runs one local cross-pillar session that reaches trade, exploration, espionage, and engagement without leaving the shipped UI. Each walkthrough is narrowed and finalized during that milestone's task breakdown, but it may not be removed.
+
 ---
 
 ## 6. REVIEW GATES
 
 ### 6.1 PR gate (one PR per milestone, `milestone/M<n> → main`)
-**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
+**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
 **PR template (all sections required; each section rolls up every task landed in the milestone — repeat the section's shape once per task, e.g. "M0-01: ...", "M0-02: ..."):**
 ```
 ## Task
@@ -140,7 +153,8 @@ Each section leads with one plain-English sentence — what actually changed or 
 **Reviewer checklist:** every task's red commit genuinely precedes its green commit · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · PR description is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
 
 ### 6.2 Milestone gate (owner, manual)
-Runs the Spec §21.3 acceptance list for the milestone · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · one live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. This gate and the §6.1 PR gate now happen together, since the milestone PR only opens once the milestone is done. **A milestone does not close until its retro (§8) is written.**
+
+Runs the Spec §21.3 acceptance list for the milestone · runs the milestone's local demo from a clean checkout using `docs/demos/M<n>.md` and records pass/fail plus observations · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · any additional live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. A hosted demo may be added, but local launch and completion of the documented walkthrough are mandatory. This gate and the §6.1 PR gate now happen together, since the milestone PR only opens once the milestone is done. **A milestone does not close until its demo passes and its retro (§8) is written.**
 
 ---
 

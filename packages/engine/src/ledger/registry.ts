@@ -6,6 +6,8 @@ export interface KindDefinition {
   kind: string;
   defaultVisibility: DefaultVisibilityLevel;
   payload: PayloadSchema;
+  /** Each group: exactly one field in the group must be present (e.g. presence.declared's station|hex). */
+  exactlyOneOf?: readonly (readonly string[])[];
 }
 
 export interface KindRegistry {
@@ -36,7 +38,7 @@ export function createKindRegistry(definitions: readonly KindDefinition[]): Kind
       if (!def) {
         return { ok: false, errors: [`unregistered kind "${kind}"`] };
       }
-      return validatePayload(def.payload, payload);
+      return validatePayload(def.payload, payload, def.exactlyOneOf);
     },
   };
 }

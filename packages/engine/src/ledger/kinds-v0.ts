@@ -28,7 +28,12 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), tally: f("object"), captainBreak: f("boolean", true) } },
 
   // position / access
-  { kind: "presence.declared", defaultVisibility: "table", payload: { actor: f("string"), station: f("string", true), hex: f("string", true), day: f("number"), slot: f("string") } },
+  {
+    kind: "presence.declared",
+    defaultVisibility: "table",
+    payload: { actor: f("string"), station: f("string", true), hex: f("string", true), day: f("number"), slot: f("string") },
+    exactlyOneOf: [["station", "hex"]],
+  },
   { kind: "access.granted", defaultVisibility: "referee", payload: { actor: f("string"), codeClass: f("string"), grantor: f("string") } },
 
   // trade / economy
@@ -58,4 +63,10 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "confrontation.resolved", defaultVisibility: "public", payload: { outcome: f("string"), logNote: f("string") } },
   { kind: "npc.hired", defaultVisibility: "public", payload: { npcId: f("string"), role: f("string"), wage: f("number") } },
   { kind: "npc.statement", defaultVisibility: "table", payload: { npcId: f("string"), topic: f("string") } },
+  // Referee-scoped companion to npc.statement (fact-kinds-v0.md §2/§3): the ladder tier links to
+  // its statement via the fact-level `causes` field, not a payload field, per the split-visibility
+  // rule. Named at the M0 retro; not yet emitted by any shipped content. `tier` is intended to be
+  // one of evasion|partial|trueWithTell|true (Spec §12) but FieldSchema has no enum type yet, so
+  // any string currently validates.
+  { kind: "npc.truthTierAssigned", defaultVisibility: "referee", payload: { tier: f("string") } },
 ];
