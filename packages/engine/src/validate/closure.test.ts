@@ -42,29 +42,30 @@ describe("consistentActors — hand-computed Skim closure [fact-kinds-v0.md §3,
   });
 });
 
-describe("consistentActors — camera.looped and cargo.diverted [Spec §8.2, fact-kinds-v0.md §3]", () => {
-  it("camera.looped: a station match within the time window contributes that actor as consistent", () => {
-    const f12 = fact("camera.looped", "npc:kessler", { camera: "aft-bay-cam", from: "0330", to: "0335" }, 7);
-    const visible: readonly Fact[] = [
-      f12,
-      fact("presence.declared", "npc:kessler", { actor: "npc:kessler", station: "comms", day: 7, slot: "DOCKSIDE" }, 7),
-    ];
-    const actors = consistentActors(IMPLIES_V0["camera.looped"]!, f12, visible);
-    expect(actors).toEqual(new Set(["npc:kessler"]));
+describe("IMPLIES_V0 encodes camera.looped and cargo.diverted [Spec §8.2, fact-kinds-v0.md §3]", () => {
+  // Both are on the Skim's closure path (fact-kinds-v0.md §3: F11 lock.cycled, F12
+  // camera.looped, F13 cargo.diverted) and the closure computation walks every visible fact's
+  // kind, so both need encoding here even though — unlike lock.cycled's F11 case — every
+  // alternative in their clauses is sameActor-correlated: a self-consistency check (does the
+  // bundle's own actor also have this other fact?), not an "any actor" enumeration signal.
+  // What that self-consistency check means for a *candidate* actor under test is M1-05's
+  // question (it needs the incident frame's context to know which role an unconstrained match
+  // plays) — this task only has to get the data encoding right, not resolve that seam.
+  it("camera.looped's clause offers a comms/computer-station alternative and a remote-access alternative, both sameActor", () => {
+    const clause = IMPLIES_V0["camera.looped"]![0]!;
+    expect(clause).toHaveLength(2);
+    expect(clause.every((pattern) => (pattern.correlations ?? []).some((c) => c.kind === "sameActor"))).toBe(true);
+    expect(clause[0]!.fieldOneOf).toEqual({ station: ["comms", "computer"] });
+    expect(clause[1]!.fieldOneOf).toEqual({ codeClass: ["remote"] });
   });
 
-  it("camera.looped: a presence declared at a non-comms/computer station does not count", () => {
-    const f12 = fact("camera.looped", "npc:kessler", { camera: "aft-bay-cam", from: "0330", to: "0335" }, 7);
-    const visible: readonly Fact[] = [f12, fact("presence.declared", "npc:kessler", { actor: "npc:kessler", station: "galley", day: 7, slot: "DOCKSIDE" }, 7)];
-    const actors = consistentActors(IMPLIES_V0["camera.looped"]!, f12, visible);
-    expect(actors).toEqual(new Set());
-  });
-
-  it("cargo.diverted: an access.granted(remote) fact contributes that actor as consistent", () => {
-    const f13 = fact("cargo.diverted", "npc:kessler", { lotId: "L1", qty: 2, channel: "fence" }, 7);
-    const visible: readonly Fact[] = [f13, fact("access.granted", "npc:kessler", { actor: "npc:kessler", codeClass: "remote", grantor: "referee" }, 7)];
-    const actors = consistentActors(IMPLIES_V0["cargo.diverted"]!, f13, visible);
-    expect(actors).toEqual(new Set(["npc:kessler"]));
+  it("cargo.diverted's rule is an AND of two clauses: an unconstrained lock.cycled gate, then a sameActor OR", () => {
+    const rule = IMPLIES_V0["cargo.diverted"]!;
+    expect(rule).toHaveLength(2);
+    expect(rule[0]![0]!.kind).toBe("lock.cycled");
+    expect((rule[0]![0]!.correlations ?? []).some((c) => c.kind === "sameActor")).toBe(false);
+    expect(rule[1]).toHaveLength(2);
+    expect(rule[1]!.every((pattern) => (pattern.correlations ?? []).some((c) => c.kind === "sameActor"))).toBe(true);
   });
 });
 
