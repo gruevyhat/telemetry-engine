@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
-import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
+import { killGroup, spawnGroup } from "./lib/process-tree.mjs";
 
 const host = "127.0.0.1";
 const port = Number(process.env.PAGES_SMOKE_PORT ?? 4173);
@@ -24,7 +24,7 @@ if (!executablePath) {
   throw new Error("pages smoke could not find Chrome; set PLAYWRIGHT_CHROMIUM_PATH");
 }
 
-const preview = spawn(
+const preview = spawnGroup(
   "pnpm",
   ["--filter", "@telemetry/ui-shared", "exec", "vite", "preview", "--host", host, "--port", String(port), "--strictPort"],
   { stdio: "pipe" },
@@ -69,5 +69,5 @@ try {
   console.log("pages smoke: built shared-screen demo booted under /telemetry-engine/");
 } finally {
   await browser?.close();
-  preview.kill("SIGTERM");
+  await killGroup(preview);
 }
