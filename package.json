@@ -1,0 +1,26 @@
+{
+  "name": "telemetry-engine",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "lint": "eslint .",
+    "lint:content": "node packages/content-lint/bin/lint-content.mjs",
+    "sim:smoke": "node packages/sim/bin/sim.mjs --campaigns 50",
+    "sim:full": "node packages/sim/bin/sim.mjs --campaigns 1000",
+    "build:stub": "node scripts/build-stub.mjs",
+    "dev:shared": "pnpm --filter @telemetry/ui-shared dev",
+    "dev:phone": "pnpm --filter @telemetry/ui-phone dev"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint": "^9.17.0",
+    "fast-check": "^3.23.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

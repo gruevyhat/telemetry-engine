@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pr-template:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PR description has all required sections
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > /tmp/pr-body.md
+          node scripts/check-pr-body.mjs /tmp/pr-body.md
+
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm lint
+      - run: pnpm build:stub
+
+  content-gate:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Detect content/ changes
+        id: changes
+        run: |
+          if git diff --name-only "origin/${{ github.base_ref }}"...HEAD | grep -q '^content/'; then
+            echo "content_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm lint:content
+      - if: steps.changes.outputs.content_changed == 'true'
+        run: pnpm sim:smoke

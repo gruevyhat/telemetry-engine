@@ -1,0 +1,9 @@
+{
+  "name": "@telemetry/sim",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Headless simulation harness (Spec §21.4). Runs in CI as pnpm sim:smoke / pnpm sim:full."
+}
