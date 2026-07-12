@@ -44,6 +44,7 @@ function createDemoSession() {
 export function App() {
   const [session] = useState(createDemoSession);
   const [, renderRevision] = useState(0);
+  const [advanceCount, setAdvanceCount] = useState(0);
   const { ledger, script, interpreter } = session;
   const facts = ledger.all();
   const clocks = derive(facts, clocksProjection);
@@ -58,9 +59,16 @@ export function App() {
     holdState: "18/20t",
   };
 
+  // The demo script is a closed cycle (ARRIVAL -> DOCKSIDE), so nothing about the interpreter
+  // itself ever "finishes." The demo's walkthrough is exactly one lap through its non-automatic
+  // steps, so the button disables there rather than silently re-committing a second lap's facts.
+  const lapLength = [...script.stepsById.values()].filter((step) => !step.automatic).length;
+  const lapComplete = advanceCount >= lapLength;
+
   function advanceDemoTurn(): void {
-    if (!currentStep) return;
+    if (!currentStep || lapComplete) return;
     interpreter.advance(gameTimeFor(currentStep), REFEREE);
+    setAdvanceCount((count) => count + 1);
     renderRevision((revision) => revision + 1);
   }
 
@@ -69,7 +77,7 @@ export function App() {
       <SharedScreen status={status} currentSlot={currentSlot} facts={facts}>
         <p style={{ margin: 0 }}>{announcement}</p>
       </SharedScreen>
-      <button type="button" onClick={advanceDemoTurn}>
+      <button type="button" onClick={advanceDemoTurn} disabled={lapComplete}>
         Advance demo turn
       </button>
       <Interstitial
