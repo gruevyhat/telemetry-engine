@@ -10,3 +10,4 @@ export * from "./plugin-api/index.js";
 export * from "./render/index.js";
 export * from "./generate/index.js";
 export * from "./validate/index.js";
+export * from "./oracle/index.js";
