@@ -22,6 +22,14 @@ describe("no-ledger-writes-outside-interpreter", () => {
         code: "somethingElse.append(fact);",
         filename: "packages/engine/src/economy/market.ts",
       },
+      {
+        code: "ledger.append(fact);",
+        filename: "packages/engine/src/ledger/ledger.test.ts",
+      },
+      {
+        code: "ledger.append(fact);",
+        filename: "packages/engine/src/ledger/__tests__/ledger.test.ts",
+      },
     ],
     invalid: [
       {

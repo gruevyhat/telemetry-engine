@@ -5,5 +5,11 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "description": "Telemetry Engine core: the Fact Ledger and everything that reads, proposes, or scopes facts. Zero setting content, zero Traveller terms."
+  "description": "Telemetry Engine core: the Fact Ledger and everything that reads, proposes, or scopes facts. Zero setting content, zero Traveller terms.",
+  "dependencies": {
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.1"
+  }
 }

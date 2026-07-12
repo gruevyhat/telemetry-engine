@@ -2,7 +2,9 @@
  * [INV-6] Only the phase-engine interpreter (packages/engine/src/phases/) may write to the
  * ledger; everything else emits proposals. v0 static check: flag `<ident>.append(...)` calls
  * where the receiver identifier is named "ledger", outside files under a `phases/` directory.
- * This is a syntactic matcher, not a type-checked one — the real Ledger API lands in M0-02.
+ * This is a syntactic matcher, not a type-checked one. Test files are exempt: unit-testing the
+ * Ledger module means constructing one and calling .append() directly, which is not a
+ * production write path and isn't what INV-6 forbids.
  */
 const rule = {
   meta: {
@@ -18,7 +20,8 @@ const rule = {
   create(context) {
     const filename = context.filename ?? context.getFilename();
     const isInterpreter = /(^|[/\\])phases([/\\]|$)/.test(filename);
-    if (isInterpreter) {
+    const isTestFile = /\.(test|spec)\.[jt]sx?$/.test(filename) || /(^|[/\\])__tests__([/\\]|$)/.test(filename);
+    if (isInterpreter || isTestFile) {
       return {};
     }
     return {

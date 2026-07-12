@@ -26,7 +26,15 @@ importers:
 
   packages/content-lint: {}
 
-  packages/engine: {}
+  packages/engine:
+    dependencies:
+      ulid:
+        specifier: ^2.3.0
+        version: 2.4.0
+    devDependencies:
+      fast-check:
+        specifier: ^3.23.1
+        version: 3.23.2
 
   packages/plugin-stub: {}
 
@@ -1253,6 +1261,10 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  ulid@2.4.0:
+    resolution: {integrity: sha512-fIRiVTJNcSRmXKPZtGzFQv9WRrZ3M9eoptl/teFJvjOzmpU+/K/JH6HZ8deBfb5vMEpicJcLn7JmvdknlMq7Zg==}
+    hasBin: true
+
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
     hasBin: true
@@ -2434,6 +2446,8 @@ snapshots:
       prelude-ls: 1.2.1
 
   typescript@5.9.3: {}
+
+  ulid@2.4.0: {}
 
   update-browserslist-db@1.2.3(browserslist@4.28.6):
     dependencies:
