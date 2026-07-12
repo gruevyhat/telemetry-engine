@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { MarketFeed } from "./MarketFeed.js";
+
+afterEach(cleanup);
 
 describe("MarketFeed [Spec §7.2, §14, M1-02 — hooks the feed template family into M0-07's main panel]", () => {
   it("renders one line per feed line it's given, each carrying its staleness tag inline", () => {
