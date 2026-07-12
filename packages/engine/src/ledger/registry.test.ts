@@ -12,6 +12,17 @@ describe("kind registry", () => {
     expect(registry.has("npc.statement")).toBe(true);
   });
 
+  it("registers npc.truthTierAssigned as npc.statement's referee-scoped companion kind (fact-kinds-v0.md §2/§3)", () => {
+    expect(registry.has("npc.truthTierAssigned")).toBe(true);
+    expect(registry.get("npc.truthTierAssigned")?.defaultVisibility).toBe("referee");
+
+    const valid = registry.validate("npc.truthTierAssigned", { tier: "partial" });
+    expect(valid).toEqual({ ok: true, errors: [] });
+
+    const wrongField = registry.validate("npc.truthTierAssigned", { tier: "partial", npcId: "npc:1" });
+    expect(wrongField.ok).toBe(false);
+  });
+
   it("rejects an unregistered kind", () => {
     const result = registry.validate("made.up.kind", {});
     expect(result.ok).toBe(false);
