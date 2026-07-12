@@ -49,6 +49,42 @@ describe("kind registry", () => {
     expect(result).toEqual({ ok: true, errors: [] });
   });
 
+  it("rejects presence.declared with both station and hex set (exactly one of the two is allowed)", () => {
+    const result = registry.validate("presence.declared", {
+      actor: "pc:zhan",
+      station: "bridge",
+      hex: "Regina",
+      day: 7,
+      slot: "DOCKSIDE",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toMatch(/exactly one of "station", "hex"/);
+  });
+
+  it("rejects presence.declared with neither station nor hex set", () => {
+    const result = registry.validate("presence.declared", { actor: "pc:zhan", day: 7, slot: "DOCKSIDE" });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toMatch(/exactly one of "station", "hex"/);
+  });
+
+  it("accepts presence.declared with exactly one of station or hex", () => {
+    const stationOnly = registry.validate("presence.declared", {
+      actor: "pc:zhan",
+      station: "bridge",
+      day: 7,
+      slot: "DOCKSIDE",
+    });
+    expect(stationOnly).toEqual({ ok: true, errors: [] });
+
+    const hexOnly = registry.validate("presence.declared", {
+      actor: "pc:zhan",
+      hex: "Regina",
+      day: 7,
+      slot: "TRANSIT",
+    });
+    expect(hexOnly).toEqual({ ok: true, errors: [] });
+  });
+
   it("makes split-visibility payloads impossible by construction: registering a kind whose payload field smuggles in a visibility key throws", () => {
     // FieldSchema has no visibility key, so this can only be reached by data that bypasses
     // the type system (e.g. a future content-loaded, untyped catalog) — simulated here via cast.
