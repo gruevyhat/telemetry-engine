@@ -50,6 +50,7 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 | `purchase.settled` | {lotId: string, amount: number, seller: string} | public | — |
 | `market.tick` | {hex: string, good: string, price: number, week: number} | referee | — |
 | `market.trade` | {hex: string, good: string, qty: number, price: number, actor: string} | public | — |
+| `world.event` | {hex: string, good: string, magnitude: number, label: string, week: number} — `label` is intended to be one of `'war'\|'glut'\|'embargo'`, not yet enum-enforced (`FieldSchema` has no enum type, same gap as `npc.truthTierAssigned`'s `tier`) | public | — |
 
 ### ship operations
 | kind | payload | vis | implies |
@@ -90,6 +91,14 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 
 ## 4. Change control
 Adding a kind or an implies edge: PR to this file first, with (a) the Why, (b) the INV-10 impact note (does the edge narrow any existing deck's incidents?), (c) content-lint updated to recognize it. The sim smoke run on the PR is the regression net.
+
+**M1-01 catalog PR — `world.event` (2026-07-13).** *Why:* Spec §7.1's market-price formula has a
+`shock_t` term, "event-driven (war, glut, embargo) via world-event facts," but no fact kind for a
+world event existed — the market tick generator had nowhere to read a shock from. *INV-10 impact:*
+none — `world.event` carries no `implies` edge and isn't part of any incident frame's evidence
+trail; it only feeds the price formula. *Content-lint:* no update needed; no shipped content emits
+`world.event` yet (M1-01 only builds the reducer that *reads* one if present — generating them is a
+future generator/composer task, M1-03+).
 
 **M0 retro catalog PR — `npc.truthTierAssigned` (2026-07-13).** *Why:* `npc.statement` had a
 referee-scoped `truthTier` named in prose since M0-02 but no companion kind was ever defined, so

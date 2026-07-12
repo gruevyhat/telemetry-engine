@@ -44,6 +44,10 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "purchase.settled", defaultVisibility: "public", payload: { lotId: f("string"), amount: f("number"), seller: f("string") } },
   { kind: "market.tick", defaultVisibility: "referee", payload: { hex: f("string"), good: f("string"), price: f("number"), week: f("number") } },
   { kind: "market.trade", defaultVisibility: "public", payload: { hex: f("string"), good: f("string"), qty: f("number"), price: f("number"), actor: f("string") } },
+  // Shock input for market.tick's generator (Spec §7.1's shock_t): "event-driven (war, glut,
+  // embargo) via world-event facts." Rare, large, narrated -> public. `label` is intended to be
+  // one of war|glut|embargo (not yet enum-enforced, same gap as npc.truthTierAssigned's tier).
+  { kind: "world.event", defaultVisibility: "public", payload: { hex: f("string"), good: f("string"), magnitude: f("number"), label: f("string"), week: f("number") } },
 
   // ship operations
   { kind: "lock.cycled", defaultVisibility: "referee", payload: { door: f("string"), codeClass: f("string"), time: f("string") } },
