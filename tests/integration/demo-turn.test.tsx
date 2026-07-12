@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { App } from "../../packages/ui-shared/src/App.js";
@@ -15,14 +15,15 @@ describe("M0-09 demo turn integration", () => {
 
     expectActiveBeat("DOCKSIDE");
     expect(screen.getByTestId("main-panel").textContent).toBe(
-      "Twenty tons of machine parts are aboard. Manifest M1 is filed. The hold has accepted both statements.",
+      "Dockside systems are open. Twenty tons of machine parts are aboard. Manifest M1 is filed. The hold has accepted all three statements.",
     );
 
     const advance = screen.getByRole("button", { name: "Advance demo turn" });
+    const ticker = screen.getByRole("list", { name: "ship's log" });
     fireEvent.click(advance);
     expectActiveBeat("COMMS");
     expect(screen.getByTestId("main-panel").textContent).toContain("Comms window open");
-    expect(screen.getByText("cargo.loaded")).toBeTruthy();
+    expect(within(ticker).getByText("cargo.loaded")).toBeTruthy();
 
     fireEvent.click(advance);
     expectActiveBeat("TRANSIT");
@@ -31,10 +32,10 @@ describe("M0-09 demo turn integration", () => {
     fireEvent.click(advance);
     expectActiveBeat("ARRIVAL");
     expect(screen.getByTestId("main-panel").textContent).toContain("Reach Consolidated has paid for eighteen crates");
-    expect(screen.getByText("jump.plotted")).toBeTruthy();
+    expect(within(ticker).getByText("jump.plotted")).toBeTruthy();
 
     fireEvent.click(advance);
     expectActiveBeat("DOCKSIDE");
-    expect(screen.getByText("sale.settled")).toBeTruthy();
+    expect(within(ticker).getByText("sale.settled")).toBeTruthy();
   });
 });

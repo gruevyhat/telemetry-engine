@@ -1,0 +1,70 @@
+{
+  "frame": "demo-turn",
+  "start": "setup",
+  "steps": [
+    {
+      "id": "setup",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "automatic": true,
+      "facts": [
+        {
+          "kind": "agenda.actionTaken",
+          "actor": { "kind": "pc", "id": "pc:zhan" },
+          "payload": { "playerId": "pc:zhan", "actionId": "skim-crate" },
+          "visibility": { "level": "private", "playerIds": ["pc:zhan"] }
+        }
+      ],
+      "next": "dockside"
+    },
+    {
+      "id": "dockside",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "render": "demo.dockside",
+      "facts": [
+        {
+          "kind": "cargo.loaded",
+          "actor": { "kind": "pc", "id": "pc:zhan" },
+          "payload": { "lotId": "L1", "tons": 20, "manifestId": "M1", "bay": "aft" }
+        }
+      ],
+      "next": "comms"
+    },
+    {
+      "id": "comms",
+      "kind": "commsWindow",
+      "slot": "COMMS",
+      "render": "demo.comms",
+      "next": "transit"
+    },
+    {
+      "id": "transit",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "demo.transit",
+      "facts": [
+        {
+          "kind": "jump.plotted",
+          "actor": { "kind": "pc", "id": "pc:brennan" },
+          "payload": { "fromHex": "Regina", "toHex": "Vantage", "parsecs": 1, "checkRef": "demo-jump" }
+        }
+      ],
+      "next": "arrival"
+    },
+    {
+      "id": "arrival",
+      "kind": "announce",
+      "slot": "ARRIVAL",
+      "render": "demo.arrival",
+      "facts": [
+        {
+          "kind": "sale.settled",
+          "actor": { "kind": "world", "id": "reach-consolidated" },
+          "payload": { "lotId": "L1", "amount": 169200, "countDelivered": 18, "buyer": "Reach Consolidated" }
+        }
+      ],
+      "next": "dockside"
+    }
+  ]
+}

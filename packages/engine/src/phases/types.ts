@@ -1,4 +1,5 @@
-import type { Visibility } from "../ledger/types.js";
+import type { ActorRef, FactID, Visibility } from "../ledger/types.js";
+import type { BeatSlot } from "../time/index.js";
 
 export type StepRef = string;
 
@@ -31,15 +32,28 @@ export interface TickSpec {
   delta: number;
 }
 
+/** A literal content proposal. The interpreter supplies game time and remains the only writer. */
+export interface PhaseFactProposal {
+  kind: string;
+  actor: ActorRef;
+  payload: Record<string, unknown>;
+  visibility?: Visibility;
+  causes?: FactID[];
+  frame?: string;
+}
+
 export interface PhaseStep {
   id: StepRef;
   kind: PhaseStepKind;
-  render?: unknown; // RenderRef — undefined until M1-09
+  render?: string; // content template key; interpolation/rendering lands in M1-09
   gen?: unknown; // GeneratorRef — undefined until M1-03
   check?: CheckSpec;
   tick?: TickSpec;
   timer?: number;
   visibility?: Visibility;
+  slot?: BeatSlot;
+  automatic?: boolean;
+  facts?: readonly PhaseFactProposal[];
   next: StepRef | BranchTable;
 }
 

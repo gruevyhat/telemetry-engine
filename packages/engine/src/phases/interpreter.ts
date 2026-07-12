@@ -47,6 +47,12 @@ function requirePlainNext(step: PhaseStep): StepRef {
 
 /** Per-kind resolution. generate/vote/confrontation UI+generation are out of scope (M1-03+/M0-07/M2) — steps just transition. */
 function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepInput | undefined): ResolvedStep {
+  const literalProposals: AppendInput[] = (step.facts ?? []).map((fact) => ({ t, ...fact }));
+  const resolved = (nextStepId: StepRef, proposals: AppendInput[] = []): ResolvedStep => ({
+    nextStepId,
+    proposals: [...literalProposals, ...proposals],
+  });
+
   switch (step.kind) {
     case "check": {
       const checkSpec = step.check;
@@ -57,7 +63,7 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
         throw new Error(`step "${step.id}": check requires input.checkTotal (Spec §6: the engine never rolls for a PC)`);
       }
       const nextStepId = input.checkTotal >= checkSpec.difficulty ? checkSpec.onSuccess : checkSpec.onFail;
-      return { nextStepId, proposals: [] };
+      return resolved(nextStepId);
     }
     case "branch": {
       if (typeof step.next === "string") {
@@ -67,25 +73,24 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
       if (!branchKey || !(branchKey in step.next)) {
         throw new Error(`step "${step.id}": branch requires a valid input.branchKey`);
       }
-      return { nextStepId: step.next[branchKey]!, proposals: [] };
+      return resolved(step.next[branchKey]!);
     }
     case "tickClock": {
       const tick = step.tick;
       if (!tick) {
         throw new Error(`step "${step.id}": missing tick (should have been rejected at load)`);
       }
-      return {
-        nextStepId: requirePlainNext(step),
-        proposals: [{ t, kind: "clock.tick", actor, payload: { clockId: tick.clockId, delta: tick.delta } }],
-      };
+      return resolved(requirePlainNext(step), [
+        { t, kind: "clock.tick", actor, payload: { clockId: tick.clockId, delta: tick.delta } },
+      ]);
     }
     case "commsWindow":
       // batch-resolution stub — M2 fills it in (Spec §3.3's shuffled sequential resolution).
-      return { nextStepId: requirePlainNext(step), proposals: [] };
+      return resolved(requirePlainNext(step));
     case "announce":
     case "generate":
     case "vote":
-      return { nextStepId: requirePlainNext(step), proposals: [] };
+      return resolved(requirePlainNext(step));
     case "confrontation":
       throw new Error(`step "${step.id}": confrontation sub-script is not implemented until M2`);
   }
