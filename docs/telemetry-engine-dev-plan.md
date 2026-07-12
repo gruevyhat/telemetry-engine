@@ -32,6 +32,7 @@ pnpm test               # unit + property + snapshot (PR gate)
 pnpm test:integration   # phase-script fixtures
 pnpm test:e2e           # Playwright smoke against the built Pages artifact
 pnpm lint               # eslint + the no-ledger-writes-outside-interpreter rule (INV-6)
+pnpm typecheck          # tsc --noEmit for ui-shared/ui-phone (PR gate; esbuild strips types otherwise)
 pnpm lint:content       # content-lint package (Spec §19)
 pnpm sim:smoke          # 50-campaign smoke (fast; PR gate when content changes)
 pnpm sim:full           # 1,000-campaign metrics (nightly / milestone gate)
@@ -131,7 +132,7 @@ Every milestone MUST end with a runnable demo of the capability that milestone a
 ## 6. REVIEW GATES
 
 ### 6.1 PR gate (one PR per milestone, `milestone/M<n> → main`)
-**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
+**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
 **PR template (all sections required; each section rolls up every task landed in the milestone — repeat the section's shape once per task, e.g. "M0-01: ...", "M0-02: ..."):**
 ```
 ## Task
