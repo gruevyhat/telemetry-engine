@@ -10,8 +10,10 @@ export const REQUIRED_SECTIONS = [
   "## Appendix A impact",
 ];
 
-export function checkPrBody() {
-  return { ok: true, missing: [] };
+export function checkPrBody(body) {
+  const text = body ?? "";
+  const missing = REQUIRED_SECTIONS.filter((section) => !text.includes(section));
+  return { ok: missing.length === 0, missing };
 }
 
 function main() {

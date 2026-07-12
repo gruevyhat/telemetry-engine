@@ -1,0 +1,9 @@
+{
+  "name": "@telemetry/plugin-traveller",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Fair Use Policy plugin layer for the Traveller setting. See README for the Mongoose Fair Use status."
+}
