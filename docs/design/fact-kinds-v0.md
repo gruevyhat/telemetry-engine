@@ -73,7 +73,7 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 | `confrontation.resolved` | {outcome: string, logNote: string} | public | — |
 | `npc.hired` | {npcId: string, role: string, wage: number} | public | — |
 | `npc.statement` | {npcId: string, topic: string} | table | — (companion `npc.truthTierAssigned` fact carries the referee-scoped tier, see below and §3) |
-| `npc.truthTierAssigned` | {tier: 'evasion'\|'partial'\|'trueWithTell'\|'true'} | referee | — (linked to its `npc.statement` via the fact-level `causes` field, not a payload field — see §3; named at the M0 retro, closing the gap the original table left as prose-only) |
+| `npc.truthTierAssigned` | {tier: string — intended values `'evasion'\|'partial'\|'trueWithTell'\|'true'`, not yet enum-enforced by the registry (`FieldSchema` has no enum type as of M0)} | referee | — (linked to its `npc.statement` via the fact-level `causes` field, not a payload field — see §3; named at the M0 retro, closing the gap the original table left as prose-only) |
 
 ### reserved namespaces
 `survey.*` (M4) · `engage.*` (M5) · `legend.*`, `heat.*` (M5). Opening a namespace = catalog PR defining kinds + implies before any code.

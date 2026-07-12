@@ -65,6 +65,8 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "npc.statement", defaultVisibility: "table", payload: { npcId: f("string"), topic: f("string") } },
   // Referee-scoped companion to npc.statement (fact-kinds-v0.md §2/§3): the ladder tier links to
   // its statement via the fact-level `causes` field, not a payload field, per the split-visibility
-  // rule. Named at the M0 retro; not yet emitted by any shipped content.
+  // rule. Named at the M0 retro; not yet emitted by any shipped content. `tier` is intended to be
+  // one of evasion|partial|trueWithTell|true (Spec §12) but FieldSchema has no enum type yet, so
+  // any string currently validates.
   { kind: "npc.truthTierAssigned", defaultVisibility: "referee", payload: { tier: f("string") } },
 ];
