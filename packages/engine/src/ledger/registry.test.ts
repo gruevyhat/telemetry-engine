@@ -23,6 +23,17 @@ describe("kind registry", () => {
     expect(wrongField.ok).toBe(false);
   });
 
+  it("registers world.event as the public, narrated shock market.tick's generator reads (Spec §7.1, M1-01)", () => {
+    expect(registry.has("world.event")).toBe(true);
+    expect(registry.get("world.event")?.defaultVisibility).toBe("public");
+
+    const valid = registry.validate("world.event", { hex: "hexA", good: "ore", magnitude: 0.4, label: "war", week: 12 });
+    expect(valid).toEqual({ ok: true, errors: [] });
+
+    const missingField = registry.validate("world.event", { hex: "hexA", good: "ore", magnitude: 0.4, label: "war" });
+    expect(missingField.ok).toBe(false);
+  });
+
   it("rejects an unregistered kind", () => {
     const result = registry.validate("made.up.kind", {});
     expect(result.ok).toBe(false);
