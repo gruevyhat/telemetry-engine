@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
-import { createRng } from "../../engine/src/rng/index.js";
-import { checkIncidentAmbiguity, fireFrame, type IncidentFrame } from "../../engine/src/generate/frame.js";
-import { IMPLIES_V0 } from "../../engine/src/validate/closure.js";
-import type { Fact } from "../../engine/src/ledger/types.js";
+import type { IncidentFrame } from "../../engine/src/generate/frame.js";
 
 const frameSchemaUrl = new URL("../../engine/src/generate/incident-frame.schema.json", import.meta.url);
 const frameSchema = JSON.parse(readFileSync(frameSchemaUrl, "utf8"));
@@ -13,7 +10,6 @@ const validateFrame = ajv.compile(frameSchema);
 
 const deckUrl = new URL("../../../content/decks/generic/frames.json", import.meta.url);
 const frames: readonly IncidentFrame[] = JSON.parse(readFileSync(deckUrl, "utf8"));
-const T = { day: 14, slot: "DOCKSIDE" as const };
 
 const FAMILIES = ["shortfall", "substitution", "leak", "malfunction", "ghost"];
 
@@ -42,25 +38,6 @@ describe("content/decks/generic/frames.json -- generic-family safety-net frames 
     }
   });
 
-  it.each(frames.map((frame) => frame.id))(
-    "%s fires and independently satisfies INV-10 ambiguity against an adversarial ledger (only its own committed facts visible)",
-    (frameId) => {
-      const frame = frames.find((f) => f.id === frameId)!;
-      const fired = fireFrame(frame, T, createRng("adversarial-check"));
-      expect(fired.causeProposals.length).toBeGreaterThan(0);
-
-      const facts: Fact[] = fired.causeProposals.map((proposal, i) => ({
-        id: `${frameId}-${i}`,
-        wall: 0,
-        ...proposal,
-        visibility: { level: "referee" },
-      }));
-      const primaryCause = facts.find((f) => f.kind in IMPLIES_V0);
-      expect(primaryCause, `expected at least one committed cause fact whose kind has an IMPLIES_V0 entry (frame "${frameId}")`).toBeDefined();
-
-      const rule = IMPLIES_V0[primaryCause!.kind]!;
-      const result = checkIncidentAmbiguity(primaryCause!, rule, facts);
-      expect(result, `frame "${frameId}" should hold INV-10 ambiguity from only its own committed facts: ${JSON.stringify(result)}`).toBeUndefined();
-    },
-  );
+  // INV-10 zero-unique-attribution ambiguity is covered for every deck (this one and trade's)
+  // by inv10-property.test.ts's inference-bot property suite, not repeated here.
 });

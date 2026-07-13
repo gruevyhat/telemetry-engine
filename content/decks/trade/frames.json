@@ -19,6 +19,26 @@
           "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
           "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
         }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "kessler-grant", "factFields": { "actor": "npc:kessler", "codeClass": "CAPT-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "pc:brennan", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "captain-grant", "factFields": { "actor": "pc:brennan", "codeClass": "CAPT-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
       }
     ],
     "evidenceTrail": [{ "id": "camera-log", "description": "aft bay camera", "access": { "kind": "aboard" } }],
@@ -44,6 +64,26 @@
           "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
           "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
         }
+      },
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "reyes-cycle", "factFields": { "door": "cargo-hold-door", "codeClass": "SHORTFALL-OVR", "time": "0300" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "okonkwo-cycle", "factFields": { "door": "cargo-hold-door", "codeClass": "SHORTFALL-OVR", "time": "0305" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
       }
     ],
     "evidenceTrail": [{ "id": "manifest-copy", "description": "the filed manifest", "access": { "kind": "aboard" } }],
@@ -61,11 +101,31 @@
     },
     "innocentTwin": [
       {
-        "kind": "camera.looped",
+        "kind": "lock.cycled",
         "tables": {
           "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
           "motive": [{ "id": "maintenance-cal", "factFields": {}, "surfaceFields": {} }],
-          "method": [{ "id": "calibration-loop", "factFields": { "camera": "aft-bay-cam", "from": "0330", "to": "0335" }, "surfaceFields": {} }],
+          "method": [{ "id": "ghost-override", "factFields": { "door": "aft-bay-door", "codeClass": "GHOST-OVR", "time": "0330" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "okonkwo-grant", "factFields": { "actor": "npc:okonkwo", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "kessler-grant", "factFields": { "actor": "npc:kessler", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
           "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
           "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
         }
