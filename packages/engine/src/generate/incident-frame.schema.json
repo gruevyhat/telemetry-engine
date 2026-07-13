@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "incident-frame.schema.json",
+  "definitions": {
+    "slotField": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "object", "additionalProperties": false, "required": ["ref"], "properties": { "ref": { "enum": ["actor", "motive", "method", "location", "trace"] } } }
+      ]
+    },
+    "slotEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "factFields", "surfaceFields"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "factFields": { "type": "object", "additionalProperties": { "$ref": "#/definitions/slotField" } },
+        "surfaceFields": { "type": "object", "additionalProperties": { "$ref": "#/definitions/slotField" } }
+      }
+    },
+    "slotTables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "motive", "method", "location", "trace"],
+      "properties": {
+        "actor": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+        "motive": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+        "method": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+        "location": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+        "trace": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } }
+      }
+    },
+    "accessPrecondition": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["aboard", "holdsGear", "hasCodes", "holdsPrisoner"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["kind", "hex"], "properties": { "kind": { "const": "atLocation" }, "hex": { "type": "string", "minLength": 1 } } }
+      ]
+    },
+    "causeFactSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tables"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "tables": { "$ref": "#/definitions/slotTables" }
+      }
+    },
+    "evidenceTrailEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "access"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "access": { "$ref": "#/definitions/accessPrecondition" }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "pillar", "surfaceTables", "innocentTwin", "evidenceTrail", "cooldownWeeks"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "pillar": { "enum": ["trade", "exploration", "espionage", "warfare"] },
+    "surfaceTables": { "$ref": "#/definitions/slotTables" },
+    "claimant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agendaActionId"],
+      "properties": { "agendaActionId": { "type": "string", "minLength": 1 } }
+    },
+    "innocentTwin": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/causeFactSpec" } },
+    "evidenceTrail": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/evidenceTrailEntry" } },
+    "confrontationScene": { "type": "string", "minLength": 1 },
+    "clockEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clockId", "delta"],
+      "properties": { "clockId": { "type": "string", "minLength": 1 }, "delta": { "type": "number" } }
+    },
+    "cooldownWeeks": { "type": "number", "exclusiveMinimum": 0 }
+  }
+}
