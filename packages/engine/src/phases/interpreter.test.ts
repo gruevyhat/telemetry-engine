@@ -132,7 +132,7 @@ const GENERATE_FIXTURE_FRAME: IncidentFrame = {
       },
     },
   ],
-  evidenceTrail: [{ id: "camera-log", description: "aft bay camera" }],
+  evidenceTrail: [{ id: "camera-log", description: "aft bay camera", access: { kind: "aboard" } }],
   cooldownWeeks: 2,
 };
 

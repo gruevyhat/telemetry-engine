@@ -1,3 +1,4 @@
+import type { AccessPrecondition } from "../evidence/evidence.js";
 import type { AppendInput } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import type { Rng } from "../rng/index.js";
@@ -8,15 +9,16 @@ import type { ValidationFailure } from "../validate/validate.js";
 import { compose, type SlotTables, type SurfaceDescriptor } from "./compose.js";
 
 /**
- * [Spec §8.2] "Per incident-cards-spec: {pillar, trigger, surface_event, innocent_twin,
- * traitor_action, evidence_trail[], confrontation_scene, clock_effect}." This is a code-owned
- * test fixture shape, not the real incident-content format -- M1-11a defines
- * "incident-content format v1" as actual content files. Kept deliberately minimal; expect
- * M1-11a's format to supersede these types, not extend them.
+ * [Spec §8.2, §19 balance lint: "every evidence trail entry has an access precondition"; M1-11a]
+ * `access` reuses evidence.ts's own AccessPrecondition rather than a separate frame-content type,
+ * since it's the exact same "can this actor even look" gate §10.1's evidence queries already
+ * evaluate -- an evidence trail entry that skipped it would describe evidence a scene could
+ * surface with no access check at all, which is the thing §10.1 exists to prevent.
  */
 export interface EvidenceTrailEntry {
   readonly id: string;
   readonly description: string;
+  readonly access: AccessPrecondition;
 }
 
 /** One referee-scoped cause fact the innocent twin produces. `tables` must include an "actor"
@@ -30,8 +32,13 @@ export interface IncidentFrame {
   readonly id: string;
   readonly pillar: string;
   readonly surfaceTables: SlotTables;
-  /** Claimant hook (agenda actions claiming a frame, §10.2) is stubbed -- twin path only, per
-   * this task's Do-not. There is deliberately no traitorAction field yet. */
+  /** [M1-11a, Spec §10.2] Forward-looking: which agenda action, if any, would claim this frame
+   * instead of the innocent twin instantiating. No Agenda/AgendaAction type exists yet (§10.2's
+   * machinery is M2) and nothing reads this field today -- it exists so content authored now
+   * doesn't need reshaping once claiming lands, per this task's own "claimant field" Done-when.
+   * There is still deliberately no traitorAction field: unlike claimant (a reference content can
+   * carry inertly), a real traitor-action *effect* needs the M2 machinery to mean anything. */
+  readonly claimant?: { readonly agendaActionId: string };
   readonly innocentTwin: readonly CauseFactSpec[];
   readonly evidenceTrail: readonly EvidenceTrailEntry[];
   readonly confrontationScene?: string;
