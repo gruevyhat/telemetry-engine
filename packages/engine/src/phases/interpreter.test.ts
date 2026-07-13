@@ -194,6 +194,47 @@ describe("phase interpreter integration [Spec §8.2, M1-05]: a generate step fir
   });
 });
 
+describe("phase interpreter integration [Spec §17, INV-14]: a generate step whose named frame is unavailable degrades instead of throwing", () => {
+  it("a chaos deck (missing frame) never throws -- advance() escalates through the degradation ladder to a playable step", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    // Deliberately-broken deck: it does not contain GENERATE_SCRIPT's named frame at all. No
+    // generic-family frames exist yet (M1-11b), so rung 1 also fails; this lands at rung 2 (the
+    // oracle, which is real today) as the actual playable step -- not a thrown error.
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    expect(() => interpreter.advance(T(7), REFEREE)).not.toThrow();
+  });
+
+  it("logs degrade.reported at rung 2 and commits the oracle's own oracle.answered fact", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const degraded = ledger.all().find((f) => f.kind === "degrade.reported");
+    expect(degraded).toBeDefined();
+    expect(degraded!.visibility).toEqual({ level: "referee" });
+    expect(degraded!.payload.rung).toBe("2");
+
+    const answered = ledger.all().find((f) => f.kind === "oracle.answered");
+    expect(answered).toBeDefined();
+    expect(["YES", "NO"]).toContain(answered!.payload.answer);
+    expect(result.rendered).toBeDefined();
+  });
+
+  it("a healthy deck (frame present) never touches the degradation ladder", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERATE_FIXTURE_FRAME] });
+
+    interpreter.advance(T(7), REFEREE);
+
+    expect(ledger.all().some((f) => f.kind === "degrade.reported")).toBe(false);
+  });
+});
+
 const ORACLE_SCRIPT: PhaseScript = {
   frame: "oracle-fixture",
   start: "ask-step",
