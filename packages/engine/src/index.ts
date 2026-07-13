@@ -12,3 +12,4 @@ export * from "./generate/index.js";
 export * from "./validate/index.js";
 export * from "./oracle/index.js";
 export * from "./evidence/index.js";
+export * from "./npc/index.js";
