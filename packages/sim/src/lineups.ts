@@ -16,9 +16,23 @@ export type LineupName = "L1" | "L2" | "L4";
  * defined here. L2's "selfish@odds" member is seated as plain `selfish`; the "@odds" qualifier is
  * an M2 agenda-odds parameter with nothing in M1 for it to modify yet.
  */
-/** [M1-12, red] Not yet populated. */
 export const LINEUPS: Readonly<Record<LineupName, readonly LineupMember[]>> = {
-  L1: [],
-  L2: [],
-  L4: [],
+  L1: [
+    { actorId: "pc:crew-a", disposition: "naive", isPC: true },
+    { actorId: "pc:crew-b", disposition: "naive", isPC: true },
+    { actorId: "pc:crew-c", disposition: "naive", isPC: true },
+    { actorId: "pc:crew-d", disposition: "naive", isPC: true },
+  ],
+  L2: [
+    { actorId: "pc:captain", disposition: "loyalist", isPC: true },
+    { actorId: "pc:diligent-crew", disposition: "diligent", isPC: true },
+    { actorId: "pc:naive-crew", disposition: "naive", isPC: true },
+    { actorId: "pc:selfish-crew", disposition: "selfish", isPC: true },
+  ],
+  L4: [
+    { actorId: "pc:solo", disposition: "diligent", isPC: true },
+    { actorId: "npc:crew-a", disposition: "naive", isPC: false },
+    { actorId: "npc:crew-b", disposition: "naive", isPC: false },
+    { actorId: "npc:crew-c", disposition: "naive", isPC: false },
+  ],
 };
