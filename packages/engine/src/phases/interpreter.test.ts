@@ -163,6 +163,35 @@ describe("phase interpreter integration [Spec §8.2, M1-05]: a generate step fir
     const interpreter = createPhaseInterpreter(ledger, script);
     expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng.*deck|deck.*rng/i);
   });
+
+  it("kill-and-resume mid-script produces the same cause facts as an uninterrupted run, even across repeated same-day fires", () => {
+    const uninterrupted = freshLedger();
+    const uninterruptedInterpreter = createPhaseInterpreter(uninterrupted, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+
+    const resumed = freshLedger();
+    let interpreter = createPhaseInterpreter(resumed, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    interpreter.advance(T(7), REFEREE);
+    interpreter.advance(T(7), REFEREE);
+    interpreter = undefined as unknown as ReturnType<typeof createPhaseInterpreter>;
+    const resumedInterpreter = createPhaseInterpreter(resumed, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    resumedInterpreter.advance(T(7), REFEREE);
+
+    expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
+      uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
+    );
+  });
 });
 
 const ORACLE_SCRIPT: PhaseScript = {
@@ -192,5 +221,25 @@ describe("phase interpreter integration [Spec §8.4, M1-06]: an oracle step comm
     const script = loadPhaseScript(ORACLE_SCRIPT);
     const interpreter = createPhaseInterpreter(ledger, script);
     expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng/i);
+  });
+
+  it("kill-and-resume mid-script produces the same oracle.answered facts as an uninterrupted run, even across repeated same-day asks", () => {
+    const uninterrupted = freshLedger();
+    const uninterruptedInterpreter = createPhaseInterpreter(uninterrupted, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+
+    const resumed = freshLedger();
+    let interpreter = createPhaseInterpreter(resumed, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    interpreter.advance(T(7), REFEREE);
+    interpreter.advance(T(7), REFEREE);
+    interpreter = undefined as unknown as ReturnType<typeof createPhaseInterpreter>;
+    const resumedInterpreter = createPhaseInterpreter(resumed, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    resumedInterpreter.advance(T(7), REFEREE);
+
+    expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
+      uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
+    );
   });
 });
