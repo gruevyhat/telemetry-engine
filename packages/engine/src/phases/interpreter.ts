@@ -187,7 +187,14 @@ function resolveStep(
         const ladderRng = scopedRng(deps.rng, visitSalt);
         const outcome = runDegradeLadder({
           attemptGeneric: () => {
-            throw new Error(`no generic-family frame available yet (M1-11b) to substitute for missing frame "${gen.frameId}"`);
+            // [M1-11b] Generic-family safety-net frames are content, distinguished by id
+            // convention ("generic:") rather than a dedicated IncidentFrame field -- the same
+            // deck a script's curated frames live in can carry them too.
+            const generic = deps.deck.find((candidate) => candidate.id.startsWith("generic:"));
+            if (!generic) {
+              throw new Error(`no generic-family frame in the supplied deck to substitute for missing frame "${gen.frameId}"`);
+            }
+            return fireFrame(generic, t, scopedRng(deps.rng, `${visitSalt}:generic`));
           },
           attemptOracle: () => ask(`What happens instead of "${gen.frameId}"?`, "even", ladderRng),
         });
