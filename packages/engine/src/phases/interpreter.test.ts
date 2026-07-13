@@ -136,6 +136,59 @@ const GENERATE_FIXTURE_FRAME: IncidentFrame = {
   cooldownWeeks: 2,
 };
 
+/**
+ * [M1-11b, INV-10] A generic-family safety-net frame commits its own ambiguity rather than
+ * depending on campaign-seeded roster facts: the primary lock.cycled cause fact, plus two
+ * access.granted facts for two different, fixed actors sharing its codeClass -- self-sufficient
+ * against an adversarial ledger containing nothing but this frame's own committed facts (see
+ * docs/tasks/BL-05.md for why relying on the ledger already having a roster isn't safe).
+ */
+const GENERIC_FIXTURE_FRAME: IncidentFrame = {
+  id: "generic:fixture-shortfall",
+  pillar: "trade",
+  surfaceTables: {
+    actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+    motive: [{ id: "unexplained", factFields: {}, surfaceFields: {} }],
+    method: [{ id: "count-off", factFields: {}, surfaceFields: { detail: "count-off" } }],
+    location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+    trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+  },
+  innocentTwin: [
+    {
+      kind: "lock.cycled",
+      tables: {
+        actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "routine", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "generic-override", factFields: { door: "cargo-hold-door", codeClass: "GENERIC-OVR", time: "0300" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+    {
+      kind: "access.granted",
+      tables: {
+        actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "standing-grant", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "duty-grant", factFields: { actor: "npc:duty-officer", codeClass: "GENERIC-OVR", grantor: "referee" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+    {
+      kind: "access.granted",
+      tables: {
+        actor: [{ id: "npc:backup-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "standing-grant", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "backup-grant", factFields: { actor: "npc:backup-officer", codeClass: "GENERIC-OVR", grantor: "referee" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+  ],
+  evidenceTrail: [{ id: "log", description: "the cargo hold log", access: { kind: "aboard" } }],
+  cooldownWeeks: 1,
+};
+
 const GENERATE_SCRIPT: PhaseScript = {
   frame: "generate-fixture",
   start: "incident",
@@ -232,6 +285,23 @@ describe("phase interpreter integration [Spec §17, INV-14]: a generate step who
     interpreter.advance(T(7), REFEREE);
 
     expect(ledger.all().some((f) => f.kind === "degrade.reported")).toBe(false);
+  });
+
+  it("a deck containing a generic-family frame (id prefixed \"generic:\") resolves rung 1, not rung 2 [M1-11b]", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    // GENERATE_SCRIPT's named frame ("fixture:bay-lock-cycle") is still absent -- but this deck
+    // isn't empty like the rung-2 tests above; it carries a generic-family safety-net frame,
+    // which attemptGeneric should find and fire instead of falling through to the oracle.
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERIC_FIXTURE_FRAME] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const degraded = ledger.all().find((f) => f.kind === "degrade.reported");
+    expect(degraded).toBeDefined();
+    expect(degraded!.payload.rung).toBe("1");
+    expect(ledger.all().some((f) => f.kind === "oracle.answered")).toBe(false);
+    expect(result.rendered).toBeDefined();
   });
 });
 
