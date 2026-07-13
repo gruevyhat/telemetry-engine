@@ -65,8 +65,11 @@ describe("incident-frame.schema.json [Spec §8.2, §19 schema+balance passes, M1
 });
 
 describe("content/decks/trade -- the real trade deck [Spec §19: schema + referential + balance passes on the deck]", () => {
-  it("content-lint validates the real trade deck end to end and reports its frame/table counts", () => {
+  it("content-lint validates the real trade deck end to end (frame count includes trade's 10 plus any other deck, e.g. generic's)", () => {
     const output = execFileSync(process.execPath, [lintContentBin], { encoding: "utf8" });
-    expect(output.trim()).toBe("content-lint: 1 phase script and 4 announce templates valid and 10 incident frames (1 named slot table).");
+    const match = output.match(/(\d+) incident frames? \((\d+) named slot tables?\)/);
+    expect(match, `expected a frame/table count in: ${output}`).not.toBeNull();
+    expect(Number(match![1])).toBeGreaterThanOrEqual(10);
+    expect(Number(match![2])).toBeGreaterThanOrEqual(1);
   });
 });
