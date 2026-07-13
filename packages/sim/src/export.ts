@@ -21,7 +21,16 @@ export interface LineupMetricsExport {
   readonly obligationFailureCurve: null;
 }
 
-/** [M1-12, red] Not yet implemented. */
-export function exportLineupMetrics(_lineup: LineupName, _turnsPerCampaign: number, _campaignResults: readonly CampaignResult[]): LineupMetricsExport {
-  throw new Error("not yet implemented");
+export function exportLineupMetrics(lineup: LineupName, turnsPerCampaign: number, campaignResults: readonly CampaignResult[]): LineupMetricsExport {
+  const allEvents = campaignResults.flatMap((result) => result.events);
+  return {
+    lineup,
+    campaigns: campaignResults.length,
+    turnsPerCampaign,
+    recurrenceRate: recurrenceRate(allEvents),
+    degradationRate: degradationRate(allEvents),
+    misattributionRate: null,
+    evidenceInformativeness: null,
+    obligationFailureCurve: null,
+  };
 }
