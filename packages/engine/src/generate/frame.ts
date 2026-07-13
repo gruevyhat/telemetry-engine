@@ -1,7 +1,7 @@
 import type { AccessPrecondition } from "../evidence/evidence.js";
 import type { AppendInput } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
-import type { Rng } from "../rng/index.js";
+import type { Rng, RngStream } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { ImpliesRule } from "../validate/closure.js";
 import { consistentActors } from "../validate/closure.js";
@@ -134,4 +134,25 @@ export function eligibleFrames(frames: readonly IncidentFrame[], state: Cooldown
   }
   const cooling = frames.filter((f) => isOnCooldown(state, f.id, currentWeek)).map((f) => ({ frame: f, weight: 0.25 }));
   return [...ready, ...cooling];
+}
+
+/**
+ * [Spec §8.3, M1-12] Selects one frame from an already-filtered eligible pool, weighted per
+ * `eligibleFrames`'s own weights. Deliberately deferred until now: a frame-by-id "generate" step
+ * (M1-05/M1-11a) never needed a draw at all; the headless sim harness is the first real caller
+ * that draws one incident per turn from a whole deck.
+ */
+export function drawFrame(pool: readonly WeightedFrame[], rng: RngStream): IncidentFrame | undefined {
+  if (pool.length === 0) {
+    return undefined;
+  }
+  const totalWeight = pool.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = rng.next() * totalWeight;
+  for (const entry of pool) {
+    roll -= entry.weight;
+    if (roll <= 0) {
+      return entry.frame;
+    }
+  }
+  return pool[pool.length - 1]!.frame;
 }
