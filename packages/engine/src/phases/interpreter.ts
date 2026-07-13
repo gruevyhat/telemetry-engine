@@ -37,6 +37,22 @@ function renderSurfaceStub(fields: Readonly<Record<string, string | number | boo
     .join(", ");
 }
 
+/**
+ * [Spec §6, INV-2/3] Wraps an Rng so every stream name it produces is salted with committed
+ * context (step id + how many times the ledger already shows this step being left), never with
+ * anything tracked only in interpreter-lifetime memory. Without this, a bare stream name (e.g.
+ * the oracle's fixed "oracle" stream) would resume at position 0 after a kill/recreate even
+ * though the ledger already reflects N prior draws from it — diverging from an uninterrupted
+ * run on the very next draw.
+ */
+function scopedRng(rng: Rng, salt: string): Rng {
+  return { derive: (name: string) => rng.derive(`${salt}:${name}`) };
+}
+
+function priorVisitCount(ledger: Ledger, script: LoadedPhaseScript, stepId: StepRef): number {
+  return ledger.all().filter((fact) => fact.kind === "phase.transition" && fact.payload.frame === script.frame && fact.payload.fromStep === stepId).length;
+}
+
 /** Where a script currently is: the toStep of its most recent phase.transition, else its start. */
 export function currentStepProjection(script: LoadedPhaseScript): Projection<StepRef> {
   return {
@@ -68,7 +84,14 @@ function requirePlainNext(step: PhaseStep): StepRef {
 }
 
 /** Per-kind resolution. vote/confrontation UI+generation are out of scope (M0-07/M2) — steps just transition. */
-function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepInput | undefined, deps: PhaseInterpreterDeps | undefined): ResolvedStep {
+function resolveStep(
+  step: PhaseStep,
+  t: GameTime,
+  actor: ActorRef,
+  input: StepInput | undefined,
+  deps: PhaseInterpreterDeps | undefined,
+  visitSalt: string,
+): ResolvedStep {
   const literalProposals: AppendInput[] = (step.facts ?? []).map((fact) => ({ t, ...fact }));
   const resolved = (nextStepId: StepRef, proposals: AppendInput[] = [], rendered?: string): ResolvedStep => ({
     nextStepId,
@@ -122,7 +145,7 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
       if (!frame) {
         throw new Error(`step "${step.id}": no frame "${gen.frameId}" in the supplied deck`);
       }
-      const fired = fireFrame(frame, t, deps.rng);
+      const fired = fireFrame(frame, t, scopedRng(deps.rng, visitSalt));
       return resolved(requirePlainNext(step), [...fired.causeProposals], renderSurfaceStub(fired.surface.fields));
     }
     case "oracle": {
@@ -133,7 +156,7 @@ function resolveStep(step: PhaseStep, t: GameTime, actor: ActorRef, input: StepI
       if (!deps) {
         throw new Error(`step "${step.id}": kind "oracle" requires rng (createPhaseInterpreter's deps argument)`);
       }
-      const answered = ask(oracleSpec.question, oracleSpec.likelihood, deps.rng);
+      const answered = ask(oracleSpec.question, oracleSpec.likelihood, scopedRng(deps.rng, visitSalt));
       return resolved(requirePlainNext(step), [
         { t, kind: "oracle.answered", actor, payload: { question: answered.question, likelihood: answered.likelihood, answer: answered.answer, texture: answered.texture } },
       ]);
@@ -173,7 +196,8 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
       throw new Error(`phase script "${script.frame}": current step "${fromStep}" not found`);
     }
 
-    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, deps);
+    const visitSalt = `step:${fromStep}:${priorVisitCount(ledger, script, fromStep)}`;
+    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, deps, visitSalt);
 
     const committed: Fact[] = [];
     for (const proposal of proposals) {
