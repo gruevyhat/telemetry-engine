@@ -1,4 +1,4 @@
-import type { AppendInput, Ledger } from "../ledger/ledger.js";
+import type { AppendInput } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import { presenceOf, type PresenceState } from "../position/index.js";
 import type { GameTime } from "../time/index.js";
@@ -178,16 +178,4 @@ export function rankAndPlanReveal(
 
   revealProposals.push({ t, kind: "clock.tick", actor: REFEREE, payload: costTick });
   return { ok: true, revealProposals };
-}
-
-/**
- * [INV-11] Commits a plan's proposals atomically via M1-07 part 1/3's ledger.appendAll. Every
- * proposal rankAndPlanReveal builds is valid-by-construction (reveal's targets/fields are
- * always arrays; costTick's clockId/delta are always well-typed), so there is no reachable input
- * here that makes appendAll itself reject a real plan -- appendAll's own atomicity is already
- * covered directly (ledger.test.ts) against a genuinely invalid batch. A test asserting this
- * function is atomic would have nothing to make it fail.
- */
-export function commitEvidenceReveal(ledger: Ledger, plan: Extract<EvidencePlan, { ok: true }>): Fact[] {
-  return ledger.appendAll(plan.revealProposals);
 }

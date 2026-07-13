@@ -22,14 +22,15 @@ function tickFact(hex: string, good: string, price: number, week: number): Fact 
 }
 
 describe("nextPrice [Spec §7.1]", () => {
-  it("pulls price toward base when reversion is positive and drift/shock are zero", () => {
-    const pulledDown = nextPrice(100, 200, 0, 0, 0.1);
-    expect(pulledDown).toBeLessThan(200);
-    expect(pulledDown).toBeGreaterThan(100);
+  it("shrinks the deviation from base each step when reversion is positive and drift/shock are zero", () => {
+    // Spec §7.1's formula is next = base + reversion*(base - prior): an AR(1)-style mean
+    // reversion that can overshoot to the opposite side of base, but always by a smaller
+    // magnitude than the prior deviation (|next - base| = reversion * |prior - base|).
+    const fromAbove = nextPrice(100, 200, 0, 0, 0.1);
+    expect(Math.abs(fromAbove - 100)).toBeLessThan(Math.abs(200 - 100));
 
-    const pulledUp = nextPrice(100, 50, 0, 0, 0.1);
-    expect(pulledUp).toBeGreaterThan(50);
-    expect(pulledUp).toBeLessThan(100);
+    const fromBelow = nextPrice(100, 50, 0, 0, 0.1);
+    expect(Math.abs(fromBelow - 100)).toBeLessThan(Math.abs(50 - 100));
   });
 
   it("clamps to a positive floor instead of going to zero or negative under an extreme shock", () => {

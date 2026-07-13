@@ -6,7 +6,8 @@ import type { Fact } from "../ledger/types.js";
 import { presenceProjection } from "../position/index.js";
 import { derive } from "../ledger/derive.js";
 import type { GameTime } from "../time/index.js";
-import { commitEvidenceReveal, evaluateAccess, matchesSelector, rankAndPlanReveal, type EvidenceQuery } from "./evidence.js";
+import { evaluateAccess, matchesSelector, rankAndPlanReveal, type EvidenceQuery } from "./evidence.js";
+import { commitEvidenceReveal } from "../phases/commits.js";
 
 const T: GameTime = { day: 14, slot: "DOCKSIDE" };
 const REFEREE = { kind: "referee", id: "referee" } as const;

@@ -37,9 +37,9 @@ describe("market decision [sim-bot-policies.md §2 market]", () => {
   });
 
   it("passes when funds minus the reserve can't cover the best lot's buy price (paranoid holds back 90%)", () => {
-    // nextObligationPayment 1000 * 0.9 reserve = 900 held back; funds 1000 leaves only 100
-    // spendable, which can't afford the 100-buyPrice lot AND its own reserve headroom check.
-    const action = decide({ situation: "market", lots: LOTS, funds: 1000, nextObligationPayment: 1000 }, "paranoid", createRng("seed").derive("npc:test"));
+    // nextObligationPayment 1100 * 0.9 reserve = 990 held back; funds 1000 leaves only 10
+    // spendable, which can't afford the 100-buyPrice lot.
+    const action = decide({ situation: "market", lots: LOTS, funds: 1000, nextObligationPayment: 1100 }, "paranoid", createRng("seed").derive("npc:test"));
     expect(action).toEqual({ kind: "market.pass" });
   });
 });

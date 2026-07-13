@@ -4,7 +4,8 @@ import { KINDS_V0 } from "../ledger/kinds-v0.js";
 import { createLedger } from "../ledger/ledger.js";
 import type { Fact } from "../ledger/types.js";
 import type { GameTime } from "../time/index.js";
-import { assembleInterrogationAnswer, commitInterrogationAnswer, factsOwnedBy, loadNpcDef, truthTierFor } from "./interrogation.js";
+import { assembleInterrogationAnswer, factsOwnedBy, loadNpcDef, truthTierFor } from "./interrogation.js";
+import { commitInterrogationAnswer } from "../phases/commits.js";
 
 const T: GameTime = { day: 14, slot: "DOCKSIDE" };
 const KESSLER = { kind: "npc", id: "npc:kessler" } as const;
