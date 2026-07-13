@@ -21,6 +21,13 @@ export type Viewer =
 
 export interface Ledger {
   append(input: AppendInput): Fact;
+  /**
+   * [INV-11] Validates every input in the batch against the registry before appending any of
+   * them, so a batch with one invalid input commits nothing — append()'s only failure modes
+   * (unregistered kind, invalid payload) are both pre-checkable, so this needs no rollback to be
+   * genuinely atomic.
+   */
+  appendAll(inputs: readonly AppendInput[]): Fact[];
   all(): readonly Fact[];
   activeFacts(): readonly Fact[];
   visibleTo(viewer: Viewer): readonly Fact[];
@@ -55,6 +62,20 @@ export function createLedger(registry: KindRegistry): Ledger {
     return fact;
   }
 
+  function appendAll(inputs: readonly AppendInput[]): Fact[] {
+    for (const input of inputs) {
+      const def = registry.get(input.kind);
+      if (!def) {
+        throw new Error(`appendAll: cannot append unregistered kind "${input.kind}" (batch rejected, nothing committed)`);
+      }
+      const validation = registry.validate(input.kind, input.payload);
+      if (!validation.ok) {
+        throw new Error(`appendAll: invalid payload for kind "${input.kind}": ${validation.errors.join("; ")} (batch rejected, nothing committed)`);
+      }
+    }
+    return inputs.map(append);
+  }
+
   function all(): readonly Fact[] {
     return facts.slice();
   }
@@ -63,7 +84,7 @@ export function createLedger(registry: KindRegistry): Ledger {
     return facts.filter((fact) => isVisibleTo(fact.visibility, viewer));
   }
 
-  return { append, all, activeFacts: () => activeFactsOf(facts), visibleTo };
+  return { append, appendAll, all, activeFacts: () => activeFactsOf(facts), visibleTo };
 }
 
 /**
