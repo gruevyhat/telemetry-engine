@@ -3,6 +3,7 @@ import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import { ask } from "../oracle/oracle.js";
+import { degradeReportedProposal, runDegradeLadder, type DegradeOutcome } from "../degrade/index.js";
 import type { Rng } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { LoadedPhaseScript } from "./load.js";
@@ -35,6 +36,41 @@ function renderSurfaceStub(fields: Readonly<Record<string, string | number | boo
   return Object.entries(fields)
     .map(([key, value]) => `${key}: ${value}`)
     .join(", ");
+}
+
+/** [Spec §17] Every degradation logs `degrade.reported`; rung 1/2 also carry the actual content
+ * that fired (the twin's cause facts, or the oracle's own answer) so the ledger reflects what
+ * really happened, not just that a degradation occurred. */
+function degradeOutcomeProposals(t: GameTime, actor: ActorRef, outcome: DegradeOutcome): AppendInput[] {
+  const proposals: AppendInput[] = [degradeReportedProposal(t, actor, outcome)];
+  if (outcome.rung === "1") {
+    proposals.push(...outcome.incident.causeProposals);
+  }
+  if (outcome.rung === "2") {
+    proposals.push({
+      t,
+      kind: "oracle.answered",
+      actor,
+      payload: { question: outcome.oracle.question, likelihood: outcome.oracle.likelihood, answer: outcome.oracle.answer, texture: outcome.oracle.texture },
+    });
+  }
+  return proposals;
+}
+
+/** Rung 4 has no line to speak (Spec §17: "pause, autosave, surface a recover/export screen" --
+ * a UI concern, not voice) so it deliberately leaves AdvanceResult.rendered unset rather than
+ * fabricating one. */
+function degradeOutcomeRendered(outcome: DegradeOutcome): string | undefined {
+  switch (outcome.rung) {
+    case "1":
+      return renderSurfaceStub(outcome.incident.surface.fields);
+    case "2":
+      return `${outcome.oracle.answer} (${outcome.oracle.texture})`;
+    case "3":
+      return outcome.line;
+    case "4":
+      return undefined;
+  }
 }
 
 /**
@@ -143,7 +179,19 @@ function resolveStep(
       }
       const frame = deps.deck.find((candidate) => candidate.id === gen.frameId);
       if (!frame) {
-        throw new Error(`step "${step.id}": no frame "${gen.frameId}" in the supplied deck`);
+        // [Spec §17, INV-14] "Composer exhaustion" for a frame-by-id generate step: the named
+        // frame isn't available. Hand off to the degradation ladder instead of throwing --
+        // there is no generic-family frame deck yet (M1-11b), so rung 1 always fails today too,
+        // which is expected: the ladder still lands on rung 2 (the oracle, which is real) as an
+        // actual playable step, rather than crashing the turn.
+        const ladderRng = scopedRng(deps.rng, visitSalt);
+        const outcome = runDegradeLadder({
+          attemptGeneric: () => {
+            throw new Error(`no generic-family frame available yet (M1-11b) to substitute for missing frame "${gen.frameId}"`);
+          },
+          attemptOracle: () => ask(`What happens instead of "${gen.frameId}"?`, "even", ladderRng),
+        });
+        return resolved(requirePlainNext(step), degradeOutcomeProposals(t, actor, outcome), degradeOutcomeRendered(outcome));
       }
       const fired = fireFrame(frame, t, scopedRng(deps.rng, visitSalt));
       return resolved(requirePlainNext(step), [...fired.causeProposals], renderSurfaceStub(fired.surface.fields));
