@@ -6,6 +6,7 @@ import type { Fact } from "../ledger/types.js";
 import type { GameTime } from "../time/index.js";
 import {
   checkIncidentAmbiguity,
+  drawFrame,
   eligibleFrames,
   fireFrame,
   initialCooldownState,
@@ -157,5 +158,34 @@ describe("cooldowns and recurrence [Spec §8.3]", () => {
     const pool = eligibleFrames([FIXTURE_FRAME], afterFirstFire, 2, /* minPoolSize */ 1);
     expect(pool).toHaveLength(1);
     expect(pool[0]!.weight).toBeLessThan(1);
+  });
+});
+
+const OTHER_FRAME: IncidentFrame = { ...FIXTURE_FRAME, id: "fixture:other" };
+
+describe("drawFrame — a weighted pick from an eligible pool [Spec §8.3, M1-12]", () => {
+  it("returns undefined for an empty pool rather than throwing", () => {
+    expect(drawFrame([], createRng("seed").derive("draw"))).toBeUndefined();
+  });
+
+  it("returns the only frame in a single-entry pool", () => {
+    const pool = eligibleFrames([FIXTURE_FRAME], initialCooldownState, 1);
+    expect(drawFrame(pool, createRng("seed").derive("draw"))?.id).toBe(FIXTURE_FRAME.id);
+  });
+
+  it("draws both frames across many seeds when weights are equal (never collapses to one)", () => {
+    const pool = eligibleFrames([FIXTURE_FRAME, OTHER_FRAME], initialCooldownState, 1);
+    const drawn = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      drawn.add(drawFrame(pool, createRng(`seed-${i}`).derive("draw"))!.id);
+    }
+    expect(drawn.size).toBe(2);
+  });
+
+  it("is deterministic for a given seed", () => {
+    const pool = eligibleFrames([FIXTURE_FRAME, OTHER_FRAME], initialCooldownState, 1);
+    const first = drawFrame(pool, createRng("replay").derive("draw"))?.id;
+    const second = drawFrame(pool, createRng("replay").derive("draw"))?.id;
+    expect(second).toBe(first);
   });
 });
