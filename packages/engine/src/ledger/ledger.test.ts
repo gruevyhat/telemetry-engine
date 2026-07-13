@@ -57,6 +57,28 @@ describe("ledger append-only [INV-2]", () => {
   });
 });
 
+describe("ledger.appendAll [INV-11: evidence cost and result are atomic]", () => {
+  it("appends every input in order when all are valid", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+    const facts = ledger.appendAll([
+      loadedInput({ lotId: "L1" }),
+      { t: T, kind: "clock.tick", actor: REFEREE, payload: { clockId: "obligation", delta: -1 } },
+    ]);
+    expect(facts.map((f) => f.kind)).toEqual(["cargo.loaded", "clock.tick"]);
+    expect(ledger.all()).toHaveLength(2);
+  });
+
+  it("throws before appending anything if any input in the batch is invalid (real ledger, no mock)", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+    const validReveal = { t: T, kind: "reveal", actor: REFEREE, payload: { targets: ["f1"], fields: ["door"] } };
+    const invalidTick = { t: T, kind: "clock.tick", actor: REFEREE, payload: { clockId: "obligation" /* missing delta */ } };
+
+    expect(() => ledger.appendAll([validReveal, invalidTick])).toThrow();
+    // The whole batch is rejected -- the valid reveal fact must not have landed either.
+    expect(ledger.all()).toHaveLength(0);
+  });
+});
+
 describe("ledger visibility-filtered views", () => {
   it("filters facts by viewer scope", () => {
     const ledger = createLedger(createKindRegistry(KINDS_V0));
