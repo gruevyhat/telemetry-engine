@@ -1,7 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import { describe, expect, it } from "vitest";
 
+const lintContentBin = fileURLToPath(new URL("../bin/lint-content.mjs", import.meta.url));
 const frameSchemaUrl = new URL("../../engine/src/generate/incident-frame.schema.json", import.meta.url);
 const frameSchema = JSON.parse(readFileSync(frameSchemaUrl, "utf8"));
 const ajv = new Ajv({ allErrors: true });
@@ -58,5 +61,12 @@ describe("incident-frame.schema.json [Spec §8.2, §19 schema+balance passes, M1
 
   it("accepts the forward-looking claimant field (M2 agenda claiming, not read by any code yet)", () => {
     expect(validateFrame({ ...VALID_FRAME, claimant: { agendaActionId: "agenda:some-action" } })).toBe(true);
+  });
+});
+
+describe("content/decks/trade -- the real trade deck [Spec §19: schema + referential + balance passes on the deck]", () => {
+  it("content-lint validates the real trade deck end to end and reports its frame/table counts", () => {
+    const output = execFileSync(process.execPath, [lintContentBin], { encoding: "utf8" });
+    expect(output.trim()).toBe("content-lint: 1 phase script and 4 announce templates valid and 10 incident frames (1 named slot table).");
   });
 });

@@ -3,8 +3,11 @@ import Ajv from "ajv";
 
 const contentDir = new URL("../../../content/", import.meta.url);
 const framesDir = new URL("frames/", contentDir);
+const decksDir = new URL("decks/", contentDir);
 const phaseSchemaUrl = new URL("../../engine/src/phases/phase-script.schema.json", import.meta.url);
 const templatesSchemaUrl = new URL("../../engine/src/phases/announce-templates.schema.json", import.meta.url);
+const incidentFrameSchemaUrl = new URL("../../engine/src/generate/incident-frame.schema.json", import.meta.url);
+const slotTablesSchemaUrl = new URL("../../engine/src/generate/slot-tables.schema.json", import.meta.url);
 
 function readJson(url) {
   return JSON.parse(readFileSync(url, "utf8"));
@@ -42,6 +45,23 @@ function semanticErrors(script, templates, label) {
   return errors;
 }
 
+/**
+ * [Spec §19 referential pass: "every slot/frame/... reference exists"] The one cross-frame check
+ * schema validation alone can't do: two frames sharing an id would silently collide in
+ * generate/frame.ts's cooldown state (keyed by id) and in a future composer's pool lookup.
+ */
+function deckReferentialErrors(frames, label) {
+  const errors = [];
+  const seenIds = new Set();
+  for (const frame of frames) {
+    if (seenIds.has(frame.id)) {
+      errors.push(`${label}: duplicate frame id "${frame.id}"`);
+    }
+    seenIds.add(frame.id);
+  }
+  return errors;
+}
+
 if (!existsSync(framesDir)) {
   console.error("content-lint: content/frames is missing.");
   process.exit(1);
@@ -50,9 +70,13 @@ if (!existsSync(framesDir)) {
 const ajv = new Ajv({ allErrors: true });
 const validateScript = ajv.compile(readJson(phaseSchemaUrl));
 const validateTemplates = ajv.compile(readJson(templatesSchemaUrl));
+const validateFrame = ajv.compile(readJson(incidentFrameSchemaUrl));
+const validateSlotTables = ajv.compile(readJson(slotTablesSchemaUrl));
 const failures = [];
 let scriptCount = 0;
 let templateCount = 0;
+let frameCount = 0;
+let slotTableCount = 0;
 
 for (const entry of readdirSync(framesDir, { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
@@ -88,11 +112,63 @@ for (const entry of readdirSync(framesDir, { withFileTypes: true })) {
   }
 }
 
+if (existsSync(decksDir)) {
+  for (const entry of readdirSync(decksDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const deckDir = new URL(`${entry.name}/`, decksDir);
+    const framesUrl = new URL("frames.json", deckDir);
+    if (!existsSync(framesUrl)) continue;
+
+    const label = `content/decks/${entry.name}`;
+    try {
+      const frames = readJson(framesUrl);
+      if (!Array.isArray(frames)) {
+        failures.push(`${label}/frames.json: expected an array of incident frames`);
+        continue;
+      }
+      let deckValid = true;
+      for (const frame of frames) {
+        if (!validateFrame(frame)) {
+          deckValid = false;
+          failures.push(`${label}/frames.json (frame "${frame && frame.id}"): ${ajv.errorsText(validateFrame.errors)}`);
+        }
+      }
+      if (deckValid) {
+        const referentialErrors = deckReferentialErrors(frames, `${label}/frames.json`);
+        if (referentialErrors.length > 0) {
+          deckValid = false;
+          failures.push(...referentialErrors);
+        }
+      }
+
+      const slotTablesUrl = new URL("slot-tables.json", deckDir);
+      let slotTablesValid = true;
+      if (existsSync(slotTablesUrl)) {
+        const slotTables = readJson(slotTablesUrl);
+        slotTablesValid = validateSlotTables(slotTables);
+        if (!slotTablesValid) {
+          failures.push(`${label}/slot-tables.json: ${ajv.errorsText(validateSlotTables.errors)}`);
+        }
+      }
+
+      if (deckValid && slotTablesValid) {
+        frameCount += frames.length;
+        if (existsSync(slotTablesUrl)) {
+          slotTableCount += Object.keys(readJson(slotTablesUrl)).length;
+        }
+      }
+    } catch (error) {
+      failures.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}
+
 if (failures.length > 0) {
   for (const failure of failures) console.error(failure);
   process.exit(1);
 }
 
+const deckSummary = frameCount > 0 ? ` and ${frameCount} incident frame${frameCount === 1 ? "" : "s"} (${slotTableCount} named slot table${slotTableCount === 1 ? "" : "s"})` : "";
 console.log(
-  `content-lint: ${scriptCount} phase script${scriptCount === 1 ? "" : "s"} and ${templateCount} announce templates valid.`,
+  `content-lint: ${scriptCount} phase script${scriptCount === 1 ? "" : "s"} and ${templateCount} announce templates valid${deckSummary}.`,
 );
