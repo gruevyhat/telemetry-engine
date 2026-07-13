@@ -140,6 +140,9 @@ export function rankAndPlanReveal(
   effect: number,
   t: GameTime,
   context: AccessContext = DEFAULT_ACCESS_CONTEXT,
+  /** [extrapolation] Which clock an evidence action costs, and by how much, is a content/
+   * balance decision, not an engine constant -- this default (obligation, -1 day) only matches
+   * Appendix A's F19 as a reasonable placeholder for callers that don't supply their own. */
   costTick: { clockId: string; delta: number } = { clockId: "obligation", delta: -1 },
 ): EvidencePlan {
   const access = evaluateAccess(query.access, context);
@@ -149,7 +152,6 @@ export function rankAndPlanReveal(
 
   const ranked = candidateFacts
     .filter((fact) => matchesSelector(query.target, fact))
-    .slice()
     .sort((a, b) => (query.probativeWeights[b.kind] ?? 0) - (query.probativeWeights[a.kind] ?? 0));
 
   let budget = effect;
@@ -178,7 +180,14 @@ export function rankAndPlanReveal(
   return { ok: true, revealProposals };
 }
 
-/** [INV-11] Commits a plan's proposals atomically via M1-07 part 1/3's ledger.appendAll. */
+/**
+ * [INV-11] Commits a plan's proposals atomically via M1-07 part 1/3's ledger.appendAll. Every
+ * proposal rankAndPlanReveal builds is valid-by-construction (reveal's targets/fields are
+ * always arrays; costTick's clockId/delta are always well-typed), so there is no reachable input
+ * here that makes appendAll itself reject a real plan -- appendAll's own atomicity is already
+ * covered directly (ledger.test.ts) against a genuinely invalid batch. A test asserting this
+ * function is atomic would have nothing to make it fail.
+ */
 export function commitEvidenceReveal(ledger: Ledger, plan: Extract<EvidencePlan, { ok: true }>): Fact[] {
   return ledger.appendAll(plan.revealProposals);
 }
