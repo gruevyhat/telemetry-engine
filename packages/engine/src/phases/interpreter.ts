@@ -224,10 +224,24 @@ function resolveStep(
   }
 }
 
+/** [Spec §12, M1-15] What a mid-beat check report (e.g. an interrogation's Persuade/Intimidate
+ * roll) needs — the player supplies `total` (Spec §6: the engine never rolls for a PC); `effect`
+ * is computed here rather than by the caller so every `check.reported` fact is consistent. */
+export interface CheckReportInput {
+  skill: string;
+  dm: number;
+  total: number;
+  difficulty: number;
+}
+
 export interface PhaseInterpreter {
   currentStep(): StepRef;
   advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult;
   queueCommsAction(action: Readonly<Record<string, unknown>>): void;
+  /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
+   * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
+   * `check.reported` fact and does not move `currentStep()`. */
+  reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
 }
 
 /**
@@ -278,5 +292,15 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     commsQueue.push(action);
   }
 
-  return { currentStep, advance, queueCommsAction };
+  function reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact {
+    const effect = input.total - input.difficulty;
+    return ledger.append({
+      t,
+      kind: "check.reported",
+      actor,
+      payload: { actor: actor.id, skill: input.skill, dm: input.dm, total: input.total, difficulty: input.difficulty, effect },
+    });
+  }
+
+  return { currentStep, advance, queueCommsAction, reportCheck };
 }
