@@ -119,8 +119,30 @@ Every milestone MUST end with a runnable demo of the capability that milestone a
 
 **M1 exit demo:** the owner plays a full 4-turn solo cycle by hand, start to Obligation payment, using only the locally launched shipped UI and content. Fun is assessed at the retro; mechanics are assessed by the gate.
 
-### M2–M5 — epics (task breakdown at each milestone planning)
-- **M2 the social game:** agenda deal + commitment facts · comms-window queue/shuffle/fizzle (Spec §3.3) · confrontation sub-script · envelope/forfeit/deferred-reveal · WebRTC transport + QR pairing + timer pause · commit-reveal (INV-8) · referee-scope encryption at rest (§16) · sim bots gain accuse/vote policies; misattribution tuning begins.
+### M2 — the social game
+| ID | Task | Spec | INVs | Tests first |
+|---|---|---|---|---|
+| M2-00 | social-game screen, transport, and decision map | §3.3, §10.2, §16 | — | design review; no code |
+| M2-01 | secret-draw commit/reveal primitive | §6 | 3, 8 | hash/preimage property; tamper rejection |
+| M2-02 | retrofit existing referee draws to public commitments | §6, §8 | 3, 6, 8 | every referee draw has one verifying companion |
+| M2-03 | agenda content format + independent setup deal | §10.2, §19 | 6, 8 | odds endpoints; negatives committed; schema corpus |
+| M2-04 | agenda actions + incident claimant seam | §9, §10.2 | 5, 6, 10 | claimed and twin paths have identical surfaces |
+| M2-05 | comms queue, seeded close-order, and fizzles | §3.3 | 3, 5, 6 | permutation/replay properties; conflicting later action fizzles |
+| M2-06 | social sim policies, lineups, and metrics | §21.4, bot policies | 5, 10, 13 | L3/L5 complete; no policy sees hidden facts |
+| M2-07 | confrontation vote/envelope sub-script | §4, §10.2, rulebook §8.2 | 2, 4, 6 | carried vote forces atomic burn; failed vote never opens |
+| M2-07b | confrontation search, let-lie, and governance branches | §4, §10.1, rulebook §8.2 | 6, 11 | each branch commits its real consequence; timer fallback deterministic |
+| M2-08 | confrontation shared-screen UI | §14, §16, screens v2 | 6, 12, 13 | timer/vote playthrough; private contents never pre-render |
+| M2-09 | transport contracts + scoped encrypted envelopes | §16 | 13 | transport fuzz cannot leak referee/foreign-private facts |
+| M2-10 | referee-payload encryption at rest | §16, §18 | 3, 13 | stored blob lacks plaintext; replay and wrong-key failure |
+| M2-11 | WebRTC + QR phone pairing | §16 | 13 | two-client pairing and misroute ciphertext test |
+| M2-12 | comms phone UI + host timer | §3.3, §16 | 13 | identical shell; private menu isolation; early ack ignored |
+| M2-13 | disconnect pause, resume, and hotseat fallback | §16, §17 | 13, 14 | forced disconnect mid-window pauses and resumes identically |
+| M2-14 | black-box preimage reveal and verification | §6, §16 | 3, 8, 13 | end-to-end verify; tampered draw fails |
+| M2-15 | integrated social campaign + milestone demo | §21.3 | 5, 8, 10, 11, 13, 14 | headless + browser comms-to-accusation playthrough |
+
+**M2 exit demo:** pair at least two phones to the local shared-screen host, deal independent agendas at published odds, complete a timed comms window with two colliding actions, force a disconnect and resume or fall back to hotseat, surface an incident, carry or fail an accusation vote, and finish by verifying the black-box preimages. The shared display must never reveal who received an agenda or what any phone menu contains. The forced-envelope rule recorded by the owner on 2026-07-18 must land before M2-07: an envelope opens only when a majority confrontation vote carries, never voluntarily.
+
+### M3–M5 — epics (task breakdown at each milestone planning)
 - **M3 Traveller plugin:** character import (travtools JSON round-trip) · SEC sector import + TravelModel · trust mode · career edges · INV-9 over real sector data.
 - **M4 exploration + props:** fog visibility on hexes · survey charters frame · print pack pipeline (HTML print stylesheet; manifest-with-embedded-skim first).
 - **M5 full pillar set:** engagement resolver (§13) · heat + legends with reverse validation (§11) · LLM renderer behind flag with entity guard; sim parity run (metrics identical LLM on/off).
