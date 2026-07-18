@@ -2,19 +2,26 @@ import { useState } from "react";
 import {
   assembleInterrogationAnswer,
   clocksProjection,
+  commitEvidenceReveal,
   commitInterrogationAnswer,
   createKindRegistry,
   createLedger,
   createPhaseInterpreter,
   createRng,
   derive,
+  evaluateAccess,
   factsOwnedBy,
   fundsProjection,
+  rankAndPlanReveal,
   renderFeed,
   KINDS_V0,
   loadPhaseScript,
+  type AccessContext,
+  type AccessResult,
   type ActorRef,
   type BeatSlot,
+  type EvidencePlan,
+  type EvidenceQuery,
   type Fact,
   type GameTime,
   type GoodDef,
@@ -107,6 +114,58 @@ export function runInterrogation(
   return answer;
 }
 
+/** [M1-16, Spec §10.1] One query for M1: the aft-bay lock-cycle log (the same lock.cycled cause
+ * fact turn 1's incident commits). EVIDENCE_DIFFICULTY (6) is this card's own extrapolation, same
+ * status as M1-14's/M1-15's difficulty numbers -- the Spec gives none. "actor" is the fact-kinds
+ * catalog's synthetic identity field name (fact-kinds-v0.md §3), not a real payload key. */
+const EVIDENCE_DIFFICULTY = 6;
+export const EVIDENCE_QUERY: EvidenceQuery = {
+  target: { kinds: ["lock.cycled"] },
+  access: { kind: "aboard" },
+  probativeWeights: { "lock.cycled": 2 },
+  identityFields: new Set(["actor"]),
+};
+const DEFAULT_ACCESS_CONTEXT: AccessContext = {
+  presence: { declarations: {} },
+  actorId: "pc:zhan",
+  day: 0,
+  slot: "DOCKSIDE",
+  heldGear: new Set(),
+  codeHolders: new Set(),
+  holdsPrisoner: false,
+};
+
+/** [M1-16, Spec §10.1, INV-6, INV-11] evaluateAccess -> rankAndPlanReveal -> commitEvidenceReveal,
+ * all three pre-existing and untested by this card -- only wired together here. Access failure
+ * costs nothing (rankAndPlanReveal returns before spending the day); commitEvidenceReveal's own
+ * ledger.appendAll call is what keeps the reveal fact(s) and the day-cost clock.tick atomic.
+ * Exported standalone, like runInterrogation, so it's testable against a real ledger. */
+export function runEvidenceInvestigation(
+  ledger: Ledger,
+  query: EvidenceQuery,
+  candidateFacts: readonly Fact[],
+  checkTotal: number,
+  difficulty: number,
+  t: GameTime,
+  context: AccessContext = DEFAULT_ACCESS_CONTEXT,
+): EvidencePlan {
+  const effect = checkTotal - difficulty;
+  const plan = rankAndPlanReveal(query, candidateFacts, effect, t, context);
+  if (plan.ok) {
+    commitEvidenceReveal(ledger, plan);
+  }
+  return plan;
+}
+
+/** maggie-voice-linter note: the joined field list is raw payload key names (e.g. "codeClass"),
+ * not display copy -- a real renderer would map each field to a spoken phrase. Same class of
+ * simplification as NPC_DEFS' raw "npc:kessler" ids in answerText(); flagged, not fixed, to avoid
+ * scope-creeping this card into building a field-name-to-phrase table. */
+function revealText(plan: Extract<EvidencePlan, { ok: true }>): string {
+  const fields = plan.revealProposals.filter((p) => p.kind === "reveal").flatMap((p) => p.payload.fields as string[]);
+  return fields.length > 0 ? `Revealed: ${fields.join(", ")}.` : "Nothing matched. The day is still spent.";
+}
+
 function answerText(npcId: string, answer: InterrogationAnswer): string {
   switch (answer.tier) {
     case "evasion":
@@ -144,8 +203,11 @@ export function App() {
   const [advanceCount, setAdvanceCount] = useState(0);
   const [lastRendered, setLastRendered] = useState<string | undefined>(undefined);
   const [lastIncidentNpcId, setLastIncidentNpcId] = useState<string | undefined>(undefined);
+  const [lastIncidentFacts, setLastIncidentFacts] = useState<readonly Fact[]>([]);
   const [interrogationApproach, setInterrogationApproach] = useState<"persuade" | "intimidate" | undefined>(undefined);
   const [interrogationAnswer, setInterrogationAnswer] = useState<string | undefined>(undefined);
+  const [evidenceStarted, setEvidenceStarted] = useState(false);
+  const [evidenceResult, setEvidenceResult] = useState<string | undefined>(undefined);
   const { ledger, script, interpreter } = session;
   const facts = ledger.all();
   const clocks = derive(facts, clocksProjection);
@@ -184,8 +246,11 @@ export function App() {
     if (npcId) {
       setLastIncidentNpcId(npcId);
     }
+    setLastIncidentFacts(result.committed.filter((fact) => fact.kind !== "phase.transition"));
     setInterrogationApproach(undefined);
     setInterrogationAnswer(undefined);
+    setEvidenceStarted(false);
+    setEvidenceResult(undefined);
     setLastRendered(result.rendered);
     setAdvanceCount(newCount);
     renderRevision((revision) => revision + 1);
@@ -200,7 +265,15 @@ export function App() {
     renderRevision((revision) => revision + 1);
   }
 
+  function submitEvidence(checkTotal: number): void {
+    const plan = runEvidenceInvestigation(ledger, EVIDENCE_QUERY, lastIncidentFacts, checkTotal, EVIDENCE_DIFFICULTY, currentTime);
+    setEvidenceResult(plan.ok ? revealText(plan) : plan.message);
+    renderRevision((revision) => revision + 1);
+  }
+
   const interrogatableNpc = currentSlot === "COMMS" && lastIncidentNpcId ? NPC_DEFS[lastIncidentNpcId] : undefined;
+  const evidenceAvailable = currentSlot === "COMMS" && lastIncidentFacts.length > 0;
+  const evidenceAccess = evidenceAvailable ? evaluateAccess(EVIDENCE_QUERY.access, DEFAULT_ACCESS_CONTEXT) : undefined;
 
   return (
     <>
@@ -217,6 +290,15 @@ export function App() {
             answer={interrogationAnswer}
             onChooseApproach={setInterrogationApproach}
             onSubmit={submitInterrogation}
+          />
+        )}
+        {evidenceAvailable && evidenceAccess && (
+          <EvidenceControl
+            access={evidenceAccess}
+            started={evidenceStarted}
+            result={evidenceResult}
+            onStart={() => setEvidenceStarted(true)}
+            onSubmit={submitEvidence}
           />
         )}
       </SharedScreen>
@@ -306,6 +388,67 @@ function InterrogationControl({
       </label>
       <button type="button" onClick={() => onSubmit(Number(value))} disabled={value === ""}>
         Submit interrogation roll
+      </button>
+    </div>
+  );
+}
+
+/** [M1-16, Spec §10.1] "Access failure narrates and stops -- no roll, no day cost." Access is
+ * evaluated (evaluateAccess, pure/read-only) before this ever offers a roll control, and a denied
+ * access never shows one at all -- there is no path from a failed access check to a submitted
+ * roll in this component. */
+function EvidenceControl({
+  access,
+  started,
+  result,
+  onStart,
+  onSubmit,
+}: {
+  access: AccessResult;
+  started: boolean;
+  result: string | undefined;
+  onStart: () => void;
+  onSubmit: (checkTotal: number) => void;
+}) {
+  const [value, setValue] = useState("");
+
+  if (result) {
+    return <p data-testid="evidence-reveal">{result}</p>;
+  }
+
+  if (!access.ok) {
+    // access.reason is an engine-internal diagnostic string (evaluateAccess's own wording, e.g.
+    // `actor "pc:zhan" is declared off-ship at "Vantage"`), not authored player-voice copy -- a
+    // real renderer would translate it. Prefixed rather than sentence-joined so it reads as a
+    // system note, not a MAGGIE sentence with a raw internal string spliced into it.
+    return (
+      <p data-testid="evidence-access-denied">
+        Access denied. Reason on file: {access.reason}
+      </p>
+    );
+  }
+
+  if (!started) {
+    return (
+      <button type="button" onClick={onStart}>
+        Investigate
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <label>
+        Evidence roll total
+        <input
+          type="number"
+          aria-label="evidence roll total"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      </label>
+      <button type="button" onClick={() => onSubmit(Number(value))} disabled={value === ""}>
+        Submit evidence roll
       </button>
     </div>
   );

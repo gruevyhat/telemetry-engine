@@ -209,7 +209,7 @@ describe("App [M1-13 real trade campaign]", () => {
 
     // "reveal" is a public fact (kinds-v0.ts); it belongs in the public ship's log once committed.
     const ticker = screen.getByRole("list", { name: "ship's log" });
-    expect(within(ticker).getByText("reveal")).toBeTruthy();
+    expect(within(ticker).getAllByText("reveal").length).toBeGreaterThan(0);
     expect(screen.getByTestId("evidence-reveal").textContent).toMatch(/door|codeClass|time|actor/);
   });
 });
