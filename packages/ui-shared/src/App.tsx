@@ -1,19 +1,25 @@
 import { useState } from "react";
 import {
+  assembleInterrogationAnswer,
   clocksProjection,
   createKindRegistry,
   createLedger,
   createPhaseInterpreter,
   createRng,
   derive,
+  factsOwnedBy,
   fundsProjection,
   renderFeed,
   KINDS_V0,
   loadPhaseScript,
+  type ActorRef,
   type BeatSlot,
+  type Fact,
   type GameTime,
   type GoodDef,
   type IncidentFrame,
+  type InterrogationAnswer,
+  type NpcDef,
   type PhaseScript,
   type PhaseStep,
 } from "@telemetry/engine";
@@ -59,6 +65,36 @@ function skipAutomaticSteps(
   }
 }
 
+/** [M1-15] The trade-campaign's four generate steps each name a real trade-deck NPC as the
+ * incident's actor (per content/decks/trade/frames.json's surfaceTables); these are the only
+ * three this session's script can ever fire, so a static def per known id is enough for M1 --
+ * a full NPC content pipeline is out of scope here. INTERROGATION_DIFFICULTY (6) is this card's
+ * own extrapolation, same status as the TRANSIT check's difficulty (M1-14): the Spec gives no
+ * number for either. */
+const INTERROGATION_DIFFICULTY = 6;
+const NPC_DEFS: Readonly<Record<string, NpcDef>> = {
+  "npc:kessler": { id: "npc:kessler", disposition: "naive", tells: ["Kessler brought up the log entry before you asked about it."] },
+  "npc:reyes": { id: "npc:reyes", disposition: "diligent", tells: ["Reyes recounted the count twice, unprompted, the same way both times."] },
+  "npc:okonkwo": { id: "npc:okonkwo", disposition: "selfish", tells: ["Okonkwo used the word approved. Nobody had used that word yet."] },
+};
+
+function firstNpcActor(committed: readonly Fact[]): string | undefined {
+  return committed.find((fact) => fact.actor.kind === "npc")?.actor.id;
+}
+
+function answerText(npcId: string, answer: InterrogationAnswer): string {
+  switch (answer.tier) {
+    case "evasion":
+      return `${npcId} offers you nothing.`;
+    case "partial":
+      return `${npcId} answers incompletely. Logged.`;
+    case "trueWithTell":
+      return `${npcId} answers straight. ${answer.tell}`;
+    case "true":
+      return `${npcId} answers straight. Nothing held back, no tell.`;
+  }
+}
+
 /** [M1-14] One playthrough of trade-campaign/turn.json advances 5 steps per turn (DOCKSIDE
  * generate, COMMS stub, the TRANSIT check, whichever of its two branches fires, ARRIVAL) x 4
  * turns -- counted directly rather than derived from `script.stepsById.size`, since that would
@@ -82,6 +118,9 @@ export function App() {
   const [, renderRevision] = useState(0);
   const [advanceCount, setAdvanceCount] = useState(0);
   const [lastRendered, setLastRendered] = useState<string | undefined>(undefined);
+  const [lastIncidentNpcId, setLastIncidentNpcId] = useState<string | undefined>(undefined);
+  const [interrogationApproach, setInterrogationApproach] = useState<"persuade" | "intimidate" | undefined>(undefined);
+  const [interrogationAnswer, setInterrogationAnswer] = useState<string | undefined>(undefined);
   const { ledger, script, interpreter } = session;
   const facts = ledger.all();
   const clocks = derive(facts, clocksProjection);
@@ -116,10 +155,34 @@ export function App() {
     if (newCount < campaignLength) {
       skipAutomaticSteps(script, interpreter);
     }
+    const npcId = firstNpcActor(result.committed);
+    if (npcId) {
+      setLastIncidentNpcId(npcId);
+    }
+    setInterrogationApproach(undefined);
+    setInterrogationAnswer(undefined);
     setLastRendered(result.rendered);
     setAdvanceCount(newCount);
     renderRevision((revision) => revision + 1);
   }
+
+  function submitInterrogation(checkTotal: number): void {
+    if (!interrogationApproach || !lastIncidentNpcId) return;
+    const npc = NPC_DEFS[lastIncidentNpcId];
+    if (!npc) return;
+    interpreter.reportCheck(currentTime, { kind: "pc", id: "pc:zhan" }, {
+      skill: interrogationApproach,
+      dm: 0,
+      total: checkTotal,
+      difficulty: INTERROGATION_DIFFICULTY,
+    });
+    const effect = checkTotal - INTERROGATION_DIFFICULTY;
+    const answer = assembleInterrogationAnswer(npc, "the incident", factsOwnedBy(ledger.all(), npc.id), effect);
+    setInterrogationAnswer(answerText(npc.id, answer));
+    renderRevision((revision) => revision + 1);
+  }
+
+  const interrogatableNpc = currentSlot === "COMMS" && lastIncidentNpcId ? NPC_DEFS[lastIncidentNpcId] : undefined;
 
   return (
     <>
@@ -128,6 +191,15 @@ export function App() {
           <MarketFeed lines={marketLines} />
         ) : (
           <p style={{ margin: 0 }}>{announcement}</p>
+        )}
+        {interrogatableNpc && (
+          <InterrogationControl
+            npc={interrogatableNpc}
+            approach={interrogationApproach}
+            answer={interrogationAnswer}
+            onChooseApproach={setInterrogationApproach}
+            onSubmit={submitInterrogation}
+          />
         )}
       </SharedScreen>
       {isCheckStep ? (
@@ -163,6 +235,59 @@ function CheckControl({ onSubmit }: { onSubmit: (checkTotal: number) => void }) 
       </label>
       <button type="button" onClick={() => onSubmit(Number(value))} disabled={value === ""}>
         Submit roll
+      </button>
+    </div>
+  );
+}
+
+/** [M1-15, Spec §12] Persuade/Intimidate only -- no free-text question entry. The exchange itself
+ * (this component's rendered text) is presentation only (INV-12): submitting posts one
+ * check.reported fact via reportCheck; the answer text is never written back as a fact. */
+function InterrogationControl({
+  npc,
+  approach,
+  answer,
+  onChooseApproach,
+  onSubmit,
+}: {
+  npc: NpcDef;
+  approach: "persuade" | "intimidate" | undefined;
+  answer: string | undefined;
+  onChooseApproach: (approach: "persuade" | "intimidate") => void;
+  onSubmit: (checkTotal: number) => void;
+}) {
+  const [value, setValue] = useState("");
+
+  if (answer) {
+    return <p data-testid="interrogation-answer">{answer}</p>;
+  }
+
+  if (!approach) {
+    return (
+      <div>
+        <button type="button" onClick={() => onChooseApproach("persuade")}>
+          Persuade {npc.id}
+        </button>
+        <button type="button" onClick={() => onChooseApproach("intimidate")}>
+          Intimidate {npc.id}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <label>
+        Interrogation roll total
+        <input
+          type="number"
+          aria-label="interrogation roll total"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      </label>
+      <button type="button" onClick={() => onSubmit(Number(value))} disabled={value === ""}>
+        Submit interrogation roll
       </button>
     </div>
   );

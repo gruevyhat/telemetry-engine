@@ -80,4 +80,36 @@ describe("App [M1-13 real trade campaign]", () => {
 
     expect(screen.getByTestId("main-panel").textContent).toContain("flown rough");
   });
+
+  it("offers an interrogation control at COMMS for the NPC named in that turn's incident", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside (fires trade:bay-lock-cycle, npc:kessler) -> t1-comms
+
+    expect(screen.getByRole("button", { name: /Persuade npc:kessler/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Intimidate npc:kessler/i })).toBeTruthy();
+  });
+
+  it("a high-effect interrogation roll renders a straight answer with a tell, and commits only check.reported", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
+
+    fireEvent.click(screen.getByRole("button", { name: /Persuade npc:kessler/i }));
+    const rollInput = screen.getByRole("spinbutton", { name: "interrogation roll total" });
+    fireEvent.change(rollInput, { target: { value: "9" } }); // interrogation difficulty is 6 -> effect 3 -> trueWithTell
+    fireEvent.click(screen.getByRole("button", { name: "Submit interrogation roll" }));
+
+    expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/log entry/i);
+  });
+
+  it("a low-effect interrogation roll renders an evasive answer", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
+
+    fireEvent.click(screen.getByRole("button", { name: /Intimidate npc:kessler/i }));
+    const rollInput = screen.getByRole("spinbutton", { name: "interrogation roll total" });
+    fireEvent.change(rollInput, { target: { value: "2" } }); // effect -4 -> evasion
+    fireEvent.click(screen.getByRole("button", { name: "Submit interrogation roll" }));
+
+    expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/nothing/i);
+  });
 });
