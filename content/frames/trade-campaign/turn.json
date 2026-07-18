@@ -1,17 +1,61 @@
 {
   "frame": "trade-campaign",
-  "start": "t1-dockside",
+  "start": "t1-seed",
   "steps": [
+    {
+      "id": "t1-seed",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "automatic": true,
+      "facts": [
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "machine-parts",
+            "price": 410,
+            "week": 1
+          }
+        },
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "refined-ore",
+            "price": 188,
+            "week": 1
+          }
+        },
+        {
+          "kind": "purchase.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L1",
+            "amount": 940,
+            "seller": "Regina Exchange"
+          }
+        }
+      ],
+      "next": "t1-dockside"
+    },
     {
       "id": "t1-dockside",
       "kind": "generate",
       "slot": "DOCKSIDE",
-      "gen": { "frameId": "trade:bay-lock-cycle" },
-      "facts": [
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 410, "week": 1 } },
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 188, "week": 1 } },
-        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 940 } }
-      ],
+      "gen": {
+        "frameId": "trade:bay-lock-cycle"
+      },
       "next": "t1-comms"
     },
     {
@@ -26,7 +70,19 @@
       "slot": "TRANSIT",
       "render": "trade.transit.1",
       "facts": [
-        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-1-jump" } }
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-1-jump"
+          }
+        }
       ],
       "next": "t1-arrival"
     },
@@ -36,7 +92,66 @@
       "slot": "ARRIVAL",
       "render": "trade.arrival.1",
       "facts": [
-        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2050 } }
+        {
+          "kind": "sale.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L1",
+            "amount": 2050,
+            "countDelivered": 5,
+            "buyer": "Reach Consolidated"
+          }
+        }
+      ],
+      "next": "t2-seed"
+    },
+    {
+      "id": "t2-seed",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "automatic": true,
+      "facts": [
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "machine-parts",
+            "price": 418,
+            "week": 2
+          }
+        },
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "refined-ore",
+            "price": 181,
+            "week": 2
+          }
+        },
+        {
+          "kind": "purchase.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L2",
+            "amount": 905,
+            "seller": "Regina Exchange"
+          }
+        }
       ],
       "next": "t2-dockside"
     },
@@ -44,12 +159,9 @@
       "id": "t2-dockside",
       "kind": "generate",
       "slot": "DOCKSIDE",
-      "gen": { "frameId": "trade:manifest-shortfall" },
-      "facts": [
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 418, "week": 2 } },
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 181, "week": 2 } },
-        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 905 } }
-      ],
+      "gen": {
+        "frameId": "trade:manifest-shortfall"
+      },
       "next": "t2-comms"
     },
     {
@@ -64,7 +176,19 @@
       "slot": "TRANSIT",
       "render": "trade.transit.2",
       "facts": [
-        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-2-jump" } }
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-2-jump"
+          }
+        }
       ],
       "next": "t2-arrival"
     },
@@ -74,7 +198,66 @@
       "slot": "ARRIVAL",
       "render": "trade.arrival.2",
       "facts": [
-        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2090 } }
+        {
+          "kind": "sale.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L2",
+            "amount": 2090,
+            "countDelivered": 5,
+            "buyer": "Reach Consolidated"
+          }
+        }
+      ],
+      "next": "t3-seed"
+    },
+    {
+      "id": "t3-seed",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "automatic": true,
+      "facts": [
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "machine-parts",
+            "price": 402,
+            "week": 3
+          }
+        },
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "refined-ore",
+            "price": 195,
+            "week": 3
+          }
+        },
+        {
+          "kind": "purchase.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L3",
+            "amount": 975,
+            "seller": "Regina Exchange"
+          }
+        }
       ],
       "next": "t3-dockside"
     },
@@ -82,12 +265,9 @@
       "id": "t3-dockside",
       "kind": "generate",
       "slot": "DOCKSIDE",
-      "gen": { "frameId": "trade:price-substitution" },
-      "facts": [
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 402, "week": 3 } },
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 195, "week": 3 } },
-        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 975 } }
-      ],
+      "gen": {
+        "frameId": "trade:price-substitution"
+      },
       "next": "t3-comms"
     },
     {
@@ -102,7 +282,19 @@
       "slot": "TRANSIT",
       "render": "trade.transit.3",
       "facts": [
-        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-3-jump" } }
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-3-jump"
+          }
+        }
       ],
       "next": "t3-arrival"
     },
@@ -112,7 +304,66 @@
       "slot": "ARRIVAL",
       "render": "trade.arrival.3",
       "facts": [
-        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2010 } }
+        {
+          "kind": "sale.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L3",
+            "amount": 2010,
+            "countDelivered": 5,
+            "buyer": "Reach Consolidated"
+          }
+        }
+      ],
+      "next": "t4-seed"
+    },
+    {
+      "id": "t4-seed",
+      "kind": "announce",
+      "slot": "DOCKSIDE",
+      "automatic": true,
+      "facts": [
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "machine-parts",
+            "price": 425,
+            "week": 4
+          }
+        },
+        {
+          "kind": "market.tick",
+          "actor": {
+            "kind": "world",
+            "id": "market"
+          },
+          "payload": {
+            "hex": "Regina",
+            "good": "refined-ore",
+            "price": 179,
+            "week": 4
+          }
+        },
+        {
+          "kind": "purchase.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L4",
+            "amount": 895,
+            "seller": "Regina Exchange"
+          }
+        }
       ],
       "next": "t4-dockside"
     },
@@ -120,12 +371,9 @@
       "id": "t4-dockside",
       "kind": "generate",
       "slot": "DOCKSIDE",
-      "gen": { "frameId": "trade:comms-leak" },
-      "facts": [
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 425, "week": 4 } },
-        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 179, "week": 4 } },
-        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 895 } }
-      ],
+      "gen": {
+        "frameId": "trade:comms-leak"
+      },
       "next": "t4-comms"
     },
     {
@@ -140,7 +388,19 @@
       "slot": "TRANSIT",
       "render": "trade.transit.4",
       "facts": [
-        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-4-jump" } }
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-4-jump"
+          }
+        }
       ],
       "next": "t4-arrival"
     },
@@ -150,9 +410,21 @@
       "slot": "ARRIVAL",
       "render": "trade.arrival.4",
       "facts": [
-        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2125 } }
+        {
+          "kind": "sale.settled",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:zhan"
+          },
+          "payload": {
+            "lotId": "L4",
+            "amount": 2125,
+            "countDelivered": 5,
+            "buyer": "Reach Consolidated"
+          }
+        }
       ],
-      "next": "t1-dockside"
+      "next": "t1-seed"
     }
   ]
 }
