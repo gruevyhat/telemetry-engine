@@ -1,0 +1,29 @@
+{
+  "trade-common": {
+    "actor": [
+      { "id": "npc:kessler", "factFields": {}, "surfaceFields": {} },
+      { "id": "npc:reyes", "factFields": {}, "surfaceFields": {} },
+      { "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }
+    ],
+    "motive": [
+      { "id": "unexplained", "factFields": {}, "surfaceFields": {} },
+      { "id": "routine", "factFields": {}, "surfaceFields": {} }
+    ],
+    "method": [
+      { "id": "off-schedule-cycle", "factFields": {}, "surfaceFields": { "detail": "off-schedule" } }
+    ],
+    "location": [
+      { "id": "aft-bay", "factFields": {}, "surfaceFields": {} },
+      { "id": "cargo-hold", "factFields": {}, "surfaceFields": {} },
+      { "id": "comms-bay", "factFields": {}, "surfaceFields": {} },
+      { "id": "engineering", "factFields": {}, "surfaceFields": {} },
+      { "id": "dockside", "factFields": {}, "surfaceFields": {} }
+    ],
+    "trace": [
+      { "id": "log-entry", "factFields": {}, "surfaceFields": {} },
+      { "id": "camera-feed", "factFields": {}, "surfaceFields": {} },
+      { "id": "manifest-entry", "factFields": {}, "surfaceFields": {} },
+      { "id": "comms-log", "factFields": {}, "surfaceFields": {} }
+    ]
+  }
+}

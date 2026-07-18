@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createKindRegistry } from "../ledger/registry.js";
 import { KINDS_V0 } from "../ledger/kinds-v0.js";
 import { createLedger, type Ledger } from "../ledger/ledger.js";
+import type { IncidentFrame } from "../generate/frame.js";
+import { createRng } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import { loadPhaseScript } from "./load.js";
 import { createPhaseInterpreter, currentStepOf } from "./interpreter.js";
@@ -105,5 +107,277 @@ describe("phase interpreter integration [Spec §4]: scripted fixture turn DOCKSI
     expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
       uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
     );
+  });
+});
+
+const GENERATE_FIXTURE_FRAME: IncidentFrame = {
+  id: "fixture:bay-lock-cycle",
+  pillar: "trade",
+  surfaceTables: {
+    actor: [{ id: "npc:kessler", factFields: {}, surfaceFields: {} }],
+    motive: [{ id: "unexplained", factFields: {}, surfaceFields: {} }],
+    method: [{ id: "off-schedule-cycle", factFields: {}, surfaceFields: { detail: "off-schedule" } }],
+    location: [{ id: "aft-bay", factFields: {}, surfaceFields: {} }],
+    trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+  },
+  innocentTwin: [
+    {
+      kind: "lock.cycled",
+      tables: {
+        actor: [{ id: "npc:kessler", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "routine", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "captain-override", factFields: { door: "aft-bay-door", codeClass: "CAPT-OVR", time: "0340" }, surfaceFields: {} }],
+        location: [{ id: "aft-bay", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+  ],
+  evidenceTrail: [{ id: "camera-log", description: "aft bay camera", access: { kind: "aboard" } }],
+  cooldownWeeks: 2,
+};
+
+/**
+ * [M1-11b, INV-10] A generic-family safety-net frame commits its own ambiguity rather than
+ * depending on campaign-seeded roster facts: the primary lock.cycled cause fact, plus two
+ * access.granted facts for two different, fixed actors sharing its codeClass -- self-sufficient
+ * against an adversarial ledger containing nothing but this frame's own committed facts (see
+ * docs/tasks/BL-05.md for why relying on the ledger already having a roster isn't safe).
+ */
+const GENERIC_FIXTURE_FRAME: IncidentFrame = {
+  id: "generic:fixture-shortfall",
+  pillar: "trade",
+  surfaceTables: {
+    actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+    motive: [{ id: "unexplained", factFields: {}, surfaceFields: {} }],
+    method: [{ id: "count-off", factFields: {}, surfaceFields: { detail: "count-off" } }],
+    location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+    trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+  },
+  innocentTwin: [
+    {
+      kind: "lock.cycled",
+      tables: {
+        actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "routine", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "generic-override", factFields: { door: "cargo-hold-door", codeClass: "GENERIC-OVR", time: "0300" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+    {
+      kind: "access.granted",
+      tables: {
+        actor: [{ id: "npc:duty-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "standing-grant", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "duty-grant", factFields: { actor: "npc:duty-officer", codeClass: "GENERIC-OVR", grantor: "referee" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+    {
+      kind: "access.granted",
+      tables: {
+        actor: [{ id: "npc:backup-officer", factFields: {}, surfaceFields: {} }],
+        motive: [{ id: "standing-grant", factFields: {}, surfaceFields: {} }],
+        method: [{ id: "backup-grant", factFields: { actor: "npc:backup-officer", codeClass: "GENERIC-OVR", grantor: "referee" }, surfaceFields: {} }],
+        location: [{ id: "cargo-hold", factFields: {}, surfaceFields: {} }],
+        trace: [{ id: "log-entry", factFields: {}, surfaceFields: {} }],
+      },
+    },
+  ],
+  evidenceTrail: [{ id: "log", description: "the cargo hold log", access: { kind: "aboard" } }],
+  cooldownWeeks: 1,
+};
+
+const GENERATE_SCRIPT: PhaseScript = {
+  frame: "generate-fixture",
+  start: "incident",
+  steps: [{ id: "incident", kind: "generate", gen: { frameId: GENERATE_FIXTURE_FRAME.id }, next: "incident" }],
+};
+
+describe("phase interpreter integration [Spec §8.2, M1-05]: a generate step fires an incident frame", () => {
+  it("commits the twin's cause facts referee-scoped and surfaces a stub-rendered line", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERATE_FIXTURE_FRAME] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const causeFact = ledger.all().find((f) => f.kind === "lock.cycled");
+    expect(causeFact).toBeDefined();
+    expect(causeFact!.visibility).toEqual({ level: "referee" });
+    expect(causeFact!.payload.codeClass).toBe("CAPT-OVR");
+    expect(result.rendered).toContain("off-schedule");
+  });
+
+  it("throws a clear error if a generate step fires with no rng/deck wired in", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+    expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng.*deck|deck.*rng/i);
+  });
+
+  it("kill-and-resume mid-script produces the same cause facts as an uninterrupted run, even across repeated same-day fires", () => {
+    const uninterrupted = freshLedger();
+    const uninterruptedInterpreter = createPhaseInterpreter(uninterrupted, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+
+    const resumed = freshLedger();
+    let interpreter = createPhaseInterpreter(resumed, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    interpreter.advance(T(7), REFEREE);
+    interpreter.advance(T(7), REFEREE);
+    interpreter = undefined as unknown as ReturnType<typeof createPhaseInterpreter>;
+    const resumedInterpreter = createPhaseInterpreter(resumed, loadPhaseScript(GENERATE_SCRIPT), {
+      rng: createRng("seed"),
+      deck: [GENERATE_FIXTURE_FRAME],
+    });
+    resumedInterpreter.advance(T(7), REFEREE);
+
+    expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
+      uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
+    );
+  });
+});
+
+describe("phase interpreter integration [Spec §17, INV-14]: a generate step whose named frame is unavailable degrades instead of throwing", () => {
+  it("a chaos deck (missing frame) never throws -- advance() escalates through the degradation ladder to a playable step", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    // Deliberately-broken deck: it does not contain GENERATE_SCRIPT's named frame at all. No
+    // generic-family frames exist yet (M1-11b), so rung 1 also fails; this lands at rung 2 (the
+    // oracle, which is real today) as the actual playable step -- not a thrown error.
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    expect(() => interpreter.advance(T(7), REFEREE)).not.toThrow();
+  });
+
+  it("logs degrade.reported at rung 2 and commits the oracle's own oracle.answered fact", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const degraded = ledger.all().find((f) => f.kind === "degrade.reported");
+    expect(degraded).toBeDefined();
+    expect(degraded!.visibility).toEqual({ level: "referee" });
+    expect(degraded!.payload.rung).toBe("2");
+
+    const answered = ledger.all().find((f) => f.kind === "oracle.answered");
+    expect(answered).toBeDefined();
+    expect(["YES", "NO"]).toContain(answered!.payload.answer);
+    expect(result.rendered).toBeDefined();
+  });
+
+  it("a healthy deck (frame present) never touches the degradation ladder", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERATE_FIXTURE_FRAME] });
+
+    interpreter.advance(T(7), REFEREE);
+
+    expect(ledger.all().some((f) => f.kind === "degrade.reported")).toBe(false);
+  });
+
+  it("a deck containing a generic-family frame (id prefixed \"generic:\") resolves rung 1, not rung 2 [M1-11b]", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(GENERATE_SCRIPT);
+    // GENERATE_SCRIPT's named frame ("fixture:bay-lock-cycle") is still absent -- but this deck
+    // isn't empty like the rung-2 tests above; it carries a generic-family safety-net frame,
+    // which attemptGeneric should find and fire instead of falling through to the oracle.
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [GENERIC_FIXTURE_FRAME] });
+
+    const result = interpreter.advance(T(7), REFEREE);
+
+    const degraded = ledger.all().find((f) => f.kind === "degrade.reported");
+    expect(degraded).toBeDefined();
+    expect(degraded!.payload.rung).toBe("1");
+    expect(ledger.all().some((f) => f.kind === "oracle.answered")).toBe(false);
+    expect(result.rendered).toBeDefined();
+  });
+});
+
+const ORACLE_SCRIPT: PhaseScript = {
+  frame: "oracle-fixture",
+  start: "ask-step",
+  steps: [{ id: "ask-step", kind: "oracle", oracle: { question: "Is anyone watching the door?", likelihood: "even" }, next: "ask-step" }],
+};
+
+describe("phase interpreter integration [Spec §8.4, M1-06]: an oracle step commits oracle.answered", () => {
+  it("commits an oracle.answered fact table-scoped, matching the requested question/likelihood", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(ORACLE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script, { rng: createRng("seed"), deck: [] });
+
+    interpreter.advance(T(7), REFEREE);
+
+    const answered = ledger.all().find((f) => f.kind === "oracle.answered");
+    expect(answered).toBeDefined();
+    expect(answered!.visibility).toEqual({ level: "table" });
+    expect(answered!.payload.question).toBe("Is anyone watching the door?");
+    expect(answered!.payload.likelihood).toBe("even");
+    expect(["YES", "NO"]).toContain(answered!.payload.answer);
+  });
+
+  it("throws a clear error if an oracle step fires with no rng wired in", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(ORACLE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+    expect(() => interpreter.advance(T(7), REFEREE)).toThrow(/rng/i);
+  });
+
+  it("kill-and-resume mid-script produces the same oracle.answered facts as an uninterrupted run, even across repeated same-day asks", () => {
+    const uninterrupted = freshLedger();
+    const uninterruptedInterpreter = createPhaseInterpreter(uninterrupted, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+    uninterruptedInterpreter.advance(T(7), REFEREE);
+
+    const resumed = freshLedger();
+    let interpreter = createPhaseInterpreter(resumed, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    interpreter.advance(T(7), REFEREE);
+    interpreter.advance(T(7), REFEREE);
+    interpreter = undefined as unknown as ReturnType<typeof createPhaseInterpreter>;
+    const resumedInterpreter = createPhaseInterpreter(resumed, loadPhaseScript(ORACLE_SCRIPT), { rng: createRng("seed"), deck: [] });
+    resumedInterpreter.advance(T(7), REFEREE);
+
+    expect(resumed.all().map((f) => ({ kind: f.kind, payload: f.payload }))).toEqual(
+      uninterrupted.all().map((f) => ({ kind: f.kind, payload: f.payload })),
+    );
+  });
+});
+
+describe("phase interpreter [Spec §12, M1-15]: reportCheck commits a mid-beat check.reported fact", () => {
+  it("commits check.reported with the computed effect, independent of the current script step", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(FIXTURE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+
+    const fact = interpreter.reportCheck(T(7), REFEREE, { skill: "persuade", dm: 1, total: 9, difficulty: 7 });
+
+    expect(fact.kind).toBe("check.reported");
+    expect(fact.payload).toEqual({ actor: "referee", skill: "persuade", dm: 1, total: 9, difficulty: 7, effect: 2 });
+    expect(fact.visibility).toEqual({ level: "public" });
+    // Does not advance the script's current step -- this is a side action, not a beat transition.
+    expect(interpreter.currentStep()).toBe(script.start);
+  });
+
+  it("does not append anything else -- exactly one fact per call", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(FIXTURE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+
+    interpreter.reportCheck(T(7), REFEREE, { skill: "intimidate", dm: 0, total: 3, difficulty: 7 });
+
+    expect(ledger.all()).toHaveLength(1);
+    expect(ledger.all()[0]!.kind).toBe("check.reported");
   });
 });

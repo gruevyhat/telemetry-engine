@@ -1,4 +1,5 @@
 import type { ActorRef, FactID, Visibility } from "../ledger/types.js";
+import type { Likelihood } from "../oracle/oracle.js";
 import type { BeatSlot } from "../time/index.js";
 
 export type StepRef = string;
@@ -6,7 +7,7 @@ export type StepRef = string;
 /** A branch step's next-step lookup, keyed by whatever branch key the step resolves to. */
 export type BranchTable = Readonly<Record<string, StepRef>>;
 
-export type PhaseStepKind = "announce" | "generate" | "check" | "vote" | "commsWindow" | "confrontation" | "branch" | "tickClock";
+export type PhaseStepKind = "announce" | "generate" | "check" | "vote" | "commsWindow" | "confrontation" | "branch" | "tickClock" | "oracle";
 
 export interface CheckSpec {
   skillSlot: string;
@@ -46,7 +47,11 @@ export interface PhaseStep {
   id: StepRef;
   kind: PhaseStepKind;
   render?: string; // content template key; interpolation/rendering lands in M1-09
-  gen?: unknown; // GeneratorRef — undefined until M1-03
+  /** [M1-05] GeneratorRef: which incident frame a "generate" step fires, looked up by id from
+   * the deck passed to createPhaseInterpreter's deps. */
+  gen?: { frameId: string };
+  /** [M1-06] An "oracle" step's ask() parameters. */
+  oracle?: { question: string; likelihood: Likelihood };
   check?: CheckSpec;
   tick?: TickSpec;
   timer?: number;

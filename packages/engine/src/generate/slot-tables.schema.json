@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "slot-tables.schema.json",
+  "$comment": "[Spec §8.1, M1-11a 'slot tables for trade'] A named library of reusable SlotTables, one entry per named group a content author wants to draw on when writing new frames. The engine does not resolve these by reference today -- a frame still inlines its own complete surfaceTables/innocentTwin[].tables (incident-frame.schema.json) -- this file is an authoring convenience and a reviewable single place to see a pillar's table vocabulary, not a runtime input.",
+  "definitions": {
+    "slotField": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "object", "additionalProperties": false, "required": ["ref"], "properties": { "ref": { "enum": ["actor", "motive", "method", "location", "trace"] } } }
+      ]
+    },
+    "slotEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "factFields", "surfaceFields"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "factFields": { "type": "object", "additionalProperties": { "$ref": "#/definitions/slotField" } },
+        "surfaceFields": { "type": "object", "additionalProperties": { "$ref": "#/definitions/slotField" } }
+      }
+    }
+  },
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["actor", "motive", "method", "location", "trace"],
+    "properties": {
+      "actor": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+      "motive": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+      "method": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+      "location": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } },
+      "trace": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/slotEntry" } }
+    }
+  }
+}

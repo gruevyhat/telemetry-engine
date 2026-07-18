@@ -1,0 +1,312 @@
+[
+  {
+    "id": "trade:bay-lock-cycle",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "off-schedule-cycle", "factFields": {}, "surfaceFields": { "detail": "off-schedule" } }],
+      "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "captain-override", "factFields": { "door": "aft-bay-door", "codeClass": "CAPT-OVR", "time": "0340" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "kessler-grant", "factFields": { "actor": "npc:kessler", "codeClass": "CAPT-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "pc:brennan", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "captain-grant", "factFields": { "actor": "pc:brennan", "codeClass": "CAPT-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "camera-log", "description": "aft bay camera", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 2
+  },
+  {
+    "id": "trade:manifest-shortfall",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "buyer-dispute", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "count-mismatch", "factFields": {}, "surfaceFields": { "detail": "count-mismatch" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "cargo.diverted",
+        "tables": {
+          "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "clerical-error", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "miscounted-lot", "factFields": { "lotId": "L1", "qty": 2, "channel": "clerical-error" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "reyes-cycle", "factFields": { "door": "cargo-hold-door", "codeClass": "SHORTFALL-OVR", "time": "0300" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "okonkwo-cycle", "factFields": { "door": "cargo-hold-door", "codeClass": "SHORTFALL-OVR", "time": "0305" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "manifest-copy", "description": "the filed manifest", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 3
+  },
+  {
+    "id": "trade:camera-loop-ghost",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "sensor-ghost", "factFields": {}, "surfaceFields": { "detail": "sensor-ghost" } }],
+      "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "maintenance-cal", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "ghost-override", "factFields": { "door": "aft-bay-door", "codeClass": "GHOST-OVR", "time": "0330" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "okonkwo-grant", "factFields": { "actor": "npc:okonkwo", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "kessler-grant", "factFields": { "actor": "npc:kessler", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "camera-log", "description": "aft bay camera log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 2
+  },
+  {
+    "id": "trade:price-substitution",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "margin-pressure", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "grade-swap", "factFields": {}, "surfaceFields": { "detail": "grade-swap" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "purchase.settled",
+        "tables": {
+          "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "supplier-shortage", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "substitute-grade", "factFields": { "lotId": "L2", "amount": 4200, "seller": "npc:reyes" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "purchase-record", "description": "the purchase settlement record", "access": { "kind": "hasCodes" } }],
+    "cooldownWeeks": 3
+  },
+  {
+    "id": "trade:comms-leak",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "early-knowledge", "factFields": {}, "surfaceFields": { "detail": "early-knowledge" } }],
+      "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "comms-log", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "system.tampered",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "diagnostic-routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "relay-diagnostic", "factFields": { "system": "comms-relay", "method": "diagnostic-broadcast" }, "surfaceFields": {} }],
+          "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "comms-log", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "comms-log-entry", "description": "the comms relay log", "access": { "kind": "hasCodes" } }],
+    "cooldownWeeks": 4
+  },
+  {
+    "id": "trade:reactor-malfunction-mask",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "power-flicker", "factFields": {}, "surfaceFields": { "detail": "power-flicker" } }],
+      "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "system.failed",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "load-spike", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "breaker-trip", "factFields": { "system": "hold-power-bus", "mode": "breaker-trip" }, "surfaceFields": {} }],
+          "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "power-log", "description": "the power bus log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 3
+  },
+  {
+    "id": "trade:deferred-maintenance-cover",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "overdue-repair", "factFields": {}, "surfaceFields": { "detail": "overdue-repair" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "maintenance.deferred",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "parts-backlog", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backlog-ticket", "factFields": { "system": "hold-door-seal", "weeksOverdue": 3 }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "maintenance-ticket", "description": "the maintenance ticket queue", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 4
+  },
+  {
+    "id": "trade:fence-sale",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "quiet-buyer", "factFields": {}, "surfaceFields": { "detail": "unlisted-buyer" } }],
+      "location": [{ "id": "dockside", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "sale.settled",
+        "tables": {
+          "actor": [{ "id": "npc:reyes", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "broker-referral", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "referred-buyer", "factFields": { "lotId": "L3", "amount": 3100, "countDelivered": 6, "buyer": "npc:unlisted-broker" }, "surfaceFields": {} }],
+          "location": [{ "id": "dockside", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "manifest-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "sale-record", "description": "the sale settlement record", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 3
+  },
+  {
+    "id": "trade:forged-access",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "unlogged-entry", "factFields": {}, "surfaceFields": { "detail": "unlogged-entry" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:kessler", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "cover-shift", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "temporary-grant", "factFields": { "actor": "npc:kessler", "codeClass": "SR-CREW-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "access-log", "description": "the access grant log", "access": { "kind": "hasCodes" } }],
+    "cooldownWeeks": 2
+  },
+  {
+    "id": "trade:fuel-skim",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "consumption-mismatch", "factFields": {}, "surfaceFields": { "detail": "consumption-mismatch" } }],
+      "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "fuel.consumed",
+        "tables": {
+          "actor": [{ "id": "npc:okonkwo", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "unrefined-topoff", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "topoff-margin", "factFields": { "tons": 3, "refined": false }, "surfaceFields": {} }],
+          "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "fuel-log", "description": "the fuel consumption log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 3
+  }
+]

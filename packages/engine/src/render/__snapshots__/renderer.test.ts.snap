@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders announceDockside from the demo fixture (snapshot) 1`] = `"Dockside at Vantage, day 14. Comms and the market feed are both live."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders announceDockside from the trade fixture (snapshot) 1`] = `"Dockside at Regina, day 21. Comms and the market feed are both live."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders blackBoxPreamble from the demo fixture (snapshot) 1`] = `"This is the record. It is complete, timestamped, and done being patient."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders blackBoxPreamble from the trade fixture (snapshot) 1`] = `"This is the record. It is complete, timestamped, and done being patient."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders checkRequest from the demo fixture (snapshot) 1`] = `"That is an Admin check, difficulty 8. Roll when ready. I will do the regretting."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders checkRequest from the trade fixture (snapshot) 1`] = `"That is a Broker check, difficulty 8. Roll when ready. I will do the regretting."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders confrontationOpen from the demo fixture (snapshot) 1`] = `"Confrontation opened by Zhan: accusation targeting Kessler. Five minutes on the clock. Everything said next is logged."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders confrontationOpen from the trade fixture (snapshot) 1`] = `"Confrontation opened by Deuce: dispute. Five minutes on the clock. Everything said next is logged."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders degradeLine from the demo fixture (snapshot) 1`] = `"Degradation at rung 1: Comms window ran long."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders degradeLine from the trade fixture (snapshot) 1`] = `"Degradation at rung 2: The oracle answered without texture."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders evidenceResult from the demo fixture (snapshot) 1`] = `"Confirmed: door, code class, and time. I record. I do not interpret."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders evidenceResult from the trade fixture (snapshot) 1`] = `"Confirmed: lot id and channel. I record. I do not interpret."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders incidentSurface from the demo fixture (snapshot) 1`] = `"New complication: Kessler, motive revenge, and method cargo diversion."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders incidentSurface from the trade fixture (snapshot) 1`] = `"New complication: Kessler, motive revenge, and method cargo diversion."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders obligationQuip from the demo fixture (snapshot) 1`] = `"Payment comes due on schedule. The bank sends its regards. It always does; it is automated."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders obligationQuip from the trade fixture (snapshot) 1`] = `"Payment comes due on schedule. The bank sends its regards. It always does; it is automated."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders transitEvent from the demo fixture (snapshot) 1`] = `"A sensor ghost aft of the drive bay. Logged at Vantage, week 4."`;
+
+exports[`createTemplateRenderer — the template backend [Spec §14] > renders transitEvent from the trade fixture (snapshot) 1`] = `"Reach Consolidated disputes the manifest count. Logged at Regina, week 3."`;

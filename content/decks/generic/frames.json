@@ -1,0 +1,227 @@
+[
+  {
+    "id": "generic:shortfall",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "count-off", "factFields": {}, "surfaceFields": { "detail": "count-off" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "shortfall-override", "factFields": { "door": "cargo-hold-door", "codeClass": "SHORTFALL-OVR", "time": "0300" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "duty-grant", "factFields": { "actor": "npc:duty-officer", "codeClass": "SHORTFALL-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:backup-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backup-grant", "factFields": { "actor": "npc:backup-officer", "codeClass": "SHORTFALL-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "log", "description": "the cargo hold log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 1
+  },
+  {
+    "id": "generic:substitution",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "swap-tag", "factFields": {}, "surfaceFields": { "detail": "swap-tag" } }],
+      "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "substitution-override", "factFields": { "door": "cargo-hold-door", "codeClass": "SUBSTITUTION-OVR", "time": "0310" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "duty-grant", "factFields": { "actor": "npc:duty-officer", "codeClass": "SUBSTITUTION-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:backup-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backup-grant", "factFields": { "actor": "npc:backup-officer", "codeClass": "SUBSTITUTION-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "cargo-hold", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "log", "description": "the cargo hold log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 1
+  },
+  {
+    "id": "generic:leak",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "early-knowledge", "factFields": {}, "surfaceFields": { "detail": "early-knowledge" } }],
+      "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "leak-override", "factFields": { "door": "comms-bay-door", "codeClass": "LEAK-OVR", "time": "0320" }, "surfaceFields": {} }],
+          "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "duty-grant", "factFields": { "actor": "npc:duty-officer", "codeClass": "LEAK-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:backup-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backup-grant", "factFields": { "actor": "npc:backup-officer", "codeClass": "LEAK-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "comms-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "log", "description": "the comms bay log", "access": { "kind": "hasCodes" } }],
+    "cooldownWeeks": 1
+  },
+  {
+    "id": "generic:malfunction",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "power-flicker", "factFields": {}, "surfaceFields": { "detail": "power-flicker" } }],
+      "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "malfunction-override", "factFields": { "door": "engineering-door", "codeClass": "MALFUNCTION-OVR", "time": "0330" }, "surfaceFields": {} }],
+          "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "duty-grant", "factFields": { "actor": "npc:duty-officer", "codeClass": "MALFUNCTION-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:backup-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backup-grant", "factFields": { "actor": "npc:backup-officer", "codeClass": "MALFUNCTION-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "engineering", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "log-entry", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "log", "description": "the power bus log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 1
+  },
+  {
+    "id": "generic:ghost",
+    "pillar": "trade",
+    "surfaceTables": {
+      "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+      "motive": [{ "id": "unexplained", "factFields": {}, "surfaceFields": {} }],
+      "method": [{ "id": "sensor-ghost", "factFields": {}, "surfaceFields": { "detail": "sensor-ghost" } }],
+      "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+      "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+    },
+    "innocentTwin": [
+      {
+        "kind": "lock.cycled",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "routine", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "ghost-override", "factFields": { "door": "aft-bay-door", "codeClass": "GHOST-OVR", "time": "0340" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:duty-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "duty-grant", "factFields": { "actor": "npc:duty-officer", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      },
+      {
+        "kind": "access.granted",
+        "tables": {
+          "actor": [{ "id": "npc:backup-officer", "factFields": {}, "surfaceFields": {} }],
+          "motive": [{ "id": "standing-grant", "factFields": {}, "surfaceFields": {} }],
+          "method": [{ "id": "backup-grant", "factFields": { "actor": "npc:backup-officer", "codeClass": "GHOST-OVR", "grantor": "referee" }, "surfaceFields": {} }],
+          "location": [{ "id": "aft-bay", "factFields": {}, "surfaceFields": {} }],
+          "trace": [{ "id": "camera-feed", "factFields": {}, "surfaceFields": {} }]
+        }
+      }
+    ],
+    "evidenceTrail": [{ "id": "camera-log", "description": "aft bay camera log", "access": { "kind": "aboard" } }],
+    "cooldownWeeks": 1
+  }
+]

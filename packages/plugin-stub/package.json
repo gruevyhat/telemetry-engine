@@ -5,5 +5,8 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "description": "Minimal plugin used only by build:stub (INV-1) to prove packages/engine compiles against the plugin API without depending on plugin-traveller."
+  "description": "Minimal plugin used only by build:stub (INV-1) to prove packages/engine compiles against the plugin API without depending on plugin-traveller.",
+  "dependencies": {
+    "@telemetry/engine": "workspace:*"
+  }
 }
