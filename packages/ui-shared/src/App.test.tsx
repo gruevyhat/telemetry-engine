@@ -29,15 +29,21 @@ describe("App [M1-13 real trade campaign]", () => {
 
   it("plays a full 4-turn campaign by hand: funds change and a real trade-deck incident fires", () => {
     render(<App />);
-    const advance = screen.getByRole("button", { name: "Advance turn" });
 
-    // 4 turns x 4 beats (DOCKSIDE -> COMMS -> TRANSIT -> ARRIVAL) = 16 advances.
-    for (let i = 0; i < 16; i++) {
+    // 4 turns x 5 beats (DOCKSIDE -> COMMS -> check -> TRANSIT branch -> ARRIVAL) = 20 advances.
+    for (let i = 0; i < 20; i++) {
+      const rollInput = screen.queryByRole("spinbutton", { name: "roll total" });
+      if (rollInput) {
+        fireEvent.change(rollInput, { target: { value: "8" } });
+        fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+        continue;
+      }
+      const advance = screen.getByRole("button", { name: "Advance turn" });
       expect((advance as HTMLButtonElement).disabled).toBe(false);
       fireEvent.click(advance);
     }
 
-    expect((advance as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Advance turn" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId("status-funds").textContent).not.toBe("Cr0");
   });
 
@@ -49,5 +55,29 @@ describe("App [M1-13 real trade campaign]", () => {
     fireEvent.click(advance);
 
     expect(screen.getByTestId("main-panel").textContent).not.toBe("");
+  });
+
+  it("takes the check step's onSuccess branch when the entered roll meets the difficulty", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
+
+    const rollInput = screen.getByRole("spinbutton", { name: "roll total" });
+    fireEvent.change(rollInput, { target: { value: "9" } }); // difficulty is 7
+    fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+
+    expect(screen.getByTestId("main-panel").textContent).toContain("flown clean");
+  });
+
+  it("takes the check step's onFail branch when the entered roll misses the difficulty", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
+
+    const rollInput = screen.getByRole("spinbutton", { name: "roll total" });
+    fireEvent.change(rollInput, { target: { value: "2" } }); // difficulty is 7
+    fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+
+    expect(screen.getByTestId("main-panel").textContent).toContain("flown rough");
   });
 });

@@ -62,13 +62,47 @@
       "id": "t1-comms",
       "kind": "commsWindow",
       "slot": "COMMS",
-      "next": "t1-transit"
+      "next": "t1-check"
     },
     {
-      "id": "t1-transit",
+      "id": "t1-check",
+      "kind": "check",
+      "slot": "TRANSIT",
+      "check": {
+        "skillSlot": "pilot",
+        "difficulty": 7,
+        "onSuccess": "t1-transit-success",
+        "onFail": "t1-transit-fail"
+      },
+      "next": "t1-transit-success"
+    },
+    {
+      "id": "t1-transit-success",
       "kind": "announce",
       "slot": "TRANSIT",
-      "render": "trade.transit.1",
+      "render": "trade.transit.success",
+      "facts": [
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-1-jump"
+          }
+        }
+      ],
+      "next": "t1-arrival"
+    },
+    {
+      "id": "t1-transit-fail",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.fail",
       "facts": [
         {
           "kind": "jump.plotted",
@@ -168,13 +202,47 @@
       "id": "t2-comms",
       "kind": "commsWindow",
       "slot": "COMMS",
-      "next": "t2-transit"
+      "next": "t2-check"
     },
     {
-      "id": "t2-transit",
+      "id": "t2-check",
+      "kind": "check",
+      "slot": "TRANSIT",
+      "check": {
+        "skillSlot": "pilot",
+        "difficulty": 7,
+        "onSuccess": "t2-transit-success",
+        "onFail": "t2-transit-fail"
+      },
+      "next": "t2-transit-success"
+    },
+    {
+      "id": "t2-transit-success",
       "kind": "announce",
       "slot": "TRANSIT",
-      "render": "trade.transit.2",
+      "render": "trade.transit.success",
+      "facts": [
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-2-jump"
+          }
+        }
+      ],
+      "next": "t2-arrival"
+    },
+    {
+      "id": "t2-transit-fail",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.fail",
       "facts": [
         {
           "kind": "jump.plotted",
@@ -274,13 +342,47 @@
       "id": "t3-comms",
       "kind": "commsWindow",
       "slot": "COMMS",
-      "next": "t3-transit"
+      "next": "t3-check"
     },
     {
-      "id": "t3-transit",
+      "id": "t3-check",
+      "kind": "check",
+      "slot": "TRANSIT",
+      "check": {
+        "skillSlot": "pilot",
+        "difficulty": 7,
+        "onSuccess": "t3-transit-success",
+        "onFail": "t3-transit-fail"
+      },
+      "next": "t3-transit-success"
+    },
+    {
+      "id": "t3-transit-success",
       "kind": "announce",
       "slot": "TRANSIT",
-      "render": "trade.transit.3",
+      "render": "trade.transit.success",
+      "facts": [
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-3-jump"
+          }
+        }
+      ],
+      "next": "t3-arrival"
+    },
+    {
+      "id": "t3-transit-fail",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.fail",
       "facts": [
         {
           "kind": "jump.plotted",
@@ -380,13 +482,47 @@
       "id": "t4-comms",
       "kind": "commsWindow",
       "slot": "COMMS",
-      "next": "t4-transit"
+      "next": "t4-check"
     },
     {
-      "id": "t4-transit",
+      "id": "t4-check",
+      "kind": "check",
+      "slot": "TRANSIT",
+      "check": {
+        "skillSlot": "pilot",
+        "difficulty": 7,
+        "onSuccess": "t4-transit-success",
+        "onFail": "t4-transit-fail"
+      },
+      "next": "t4-transit-success"
+    },
+    {
+      "id": "t4-transit-success",
       "kind": "announce",
       "slot": "TRANSIT",
-      "render": "trade.transit.4",
+      "render": "trade.transit.success",
+      "facts": [
+        {
+          "kind": "jump.plotted",
+          "actor": {
+            "kind": "pc",
+            "id": "pc:brennan"
+          },
+          "payload": {
+            "fromHex": "Regina",
+            "toHex": "Regina",
+            "parsecs": 0,
+            "checkRef": "trade-4-jump"
+          }
+        }
+      ],
+      "next": "t4-arrival"
+    },
+    {
+      "id": "t4-transit-fail",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.fail",
       "facts": [
         {
           "kind": "jump.plotted",

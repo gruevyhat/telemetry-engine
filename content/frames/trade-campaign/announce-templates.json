@@ -1,10 +1,8 @@
 {
-  "trade.transit.1": "Jump plotted, staying inside the Regina system this run. The margin is thin. I have flagged it once. I will not flag it again this leg.",
+  "trade.transit.success": "Jump plotted and flown clean. The pilot's line held inside tolerance. I logged it that way.",
+  "trade.transit.fail": "Jump plotted, flown rough. The pilot's line drifted outside tolerance. We arrived anyway, later than planned.",
   "trade.arrival.1": "Five tons of machine parts sold at Regina. The ledger shows the credit. Ask if you want the line item.",
-  "trade.transit.2": "Second leg, same system, same math. Fuel reserve is holding at the number I gave you this morning.",
   "trade.arrival.2": "Five tons of machine parts sold again. The price moved since last week. I priced it as of today, not last week.",
-  "trade.transit.3": "Third leg plotted. Nothing new in the charts since yesterday. I checked twice, at your request.",
   "trade.arrival.3": "Machine parts sold a third time. Refined ore is still in the hold from this morning's buy.",
-  "trade.transit.4": "Fourth leg plotted. This closes the run I was asked to track.",
   "trade.arrival.4": "Final sale of the run is posted. Funds are current as of this line. I will keep counting after you close the screen."
 }
