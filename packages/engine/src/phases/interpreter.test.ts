@@ -354,3 +354,30 @@ describe("phase interpreter integration [Spec §8.4, M1-06]: an oracle step comm
     );
   });
 });
+
+describe("phase interpreter [Spec §12, M1-15]: reportCheck commits a mid-beat check.reported fact", () => {
+  it("commits check.reported with the computed effect, independent of the current script step", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(FIXTURE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+
+    const fact = interpreter.reportCheck(T(7), REFEREE, { skill: "persuade", dm: 1, total: 9, difficulty: 7 });
+
+    expect(fact.kind).toBe("check.reported");
+    expect(fact.payload).toEqual({ actor: "referee", skill: "persuade", dm: 1, total: 9, difficulty: 7, effect: 2 });
+    expect(fact.visibility).toEqual({ level: "public" });
+    // Does not advance the script's current step -- this is a side action, not a beat transition.
+    expect(interpreter.currentStep()).toBe(script.start);
+  });
+
+  it("does not append anything else -- exactly one fact per call", () => {
+    const ledger = freshLedger();
+    const script = loadPhaseScript(FIXTURE_SCRIPT);
+    const interpreter = createPhaseInterpreter(ledger, script);
+
+    interpreter.reportCheck(T(7), REFEREE, { skill: "intimidate", dm: 0, total: 3, difficulty: 7 });
+
+    expect(ledger.all()).toHaveLength(1);
+    expect(ledger.all()[0]!.kind).toBe("check.reported");
+  });
+});
