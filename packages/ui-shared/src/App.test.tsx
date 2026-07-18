@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createKindRegistry,
@@ -9,7 +9,7 @@ import {
   KINDS_V0,
   type PhaseScript,
 } from "@telemetry/engine";
-import { App, runInterrogation } from "./App.js";
+import { App, EVIDENCE_QUERY, runEvidenceInvestigation, runInterrogation } from "./App.js";
 
 afterEach(cleanup);
 
@@ -30,6 +30,58 @@ describe("runInterrogation [M1-15, fact-kinds-v0.md §3]", () => {
     expect(tierAssignment?.visibility).toEqual({ level: "referee" });
     expect(tierAssignment?.causes).toEqual([statement?.id]);
     expect(answer.tier).toBe("trueWithTell"); // effect = 9 - 6 = 3
+  });
+});
+
+const LOCK_CYCLED_FACT = {
+  id: "f1",
+  wall: 0,
+  t: { day: 7, slot: "DOCKSIDE" as const },
+  kind: "lock.cycled",
+  actor: { kind: "npc" as const, id: "npc:kessler" },
+  payload: { door: "aft-bay-door", codeClass: "CAPT-OVR", time: "0340" },
+  visibility: { level: "referee" as const },
+};
+
+describe("runEvidenceInvestigation [M1-16, Spec §10.1]", () => {
+  it("access failure narrates and stops -- commits nothing, no roll cost", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+    const deniedContext = {
+      presence: { declarations: { "pc:zhan|7|DOCKSIDE": { kind: "hex" as const, hex: "Vantage" } } },
+      actorId: "pc:zhan",
+      day: 7,
+      slot: "DOCKSIDE",
+      heldGear: new Set<string>(),
+      codeHolders: new Set<string>(),
+      holdsPrisoner: false,
+    };
+
+    const plan = runEvidenceInvestigation(ledger, EVIDENCE_QUERY, [LOCK_CYCLED_FACT], 10, 6, { day: 7, slot: "DOCKSIDE" }, deniedContext);
+
+    expect(plan.ok).toBe(false);
+    expect(ledger.all()).toHaveLength(0);
+  });
+
+  it("access granted at low effect reveals non-identity fields only, never the identity field", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+
+    const plan = runEvidenceInvestigation(ledger, EVIDENCE_QUERY, [LOCK_CYCLED_FACT], 8, 6, { day: 7, slot: "DOCKSIDE" });
+
+    expect(plan.ok).toBe(true);
+    const reveals = ledger.all().filter((f) => f.kind === "reveal");
+    expect(reveals.every((f) => !(f.payload.fields as string[]).includes("actor"))).toBe(true);
+  });
+
+  it("access granted at high effect eventually reveals the identity field after non-identity fields are exhausted", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+
+    const plan = runEvidenceInvestigation(ledger, EVIDENCE_QUERY, [LOCK_CYCLED_FACT], 10, 6, { day: 7, slot: "DOCKSIDE" });
+
+    expect(plan.ok).toBe(true);
+    const reveals = ledger.all().filter((f) => f.kind === "reveal");
+    const allFields = reveals.flatMap((f) => f.payload.fields as string[]);
+    expect(allFields).toContain("actor");
+    expect(ledger.all().some((f) => f.kind === "clock.tick")).toBe(true);
   });
 });
 
@@ -144,5 +196,20 @@ describe("App [M1-13 real trade campaign]", () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit interrogation roll" }));
 
     expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/nothing/i);
+  });
+
+  it("offers an Investigate control at COMMS, and a submitted roll reveals fields into the public ticker", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+
+    fireEvent.click(screen.getByRole("button", { name: "Investigate" }));
+    const rollInput = screen.getByRole("spinbutton", { name: "evidence roll total" });
+    fireEvent.change(rollInput, { target: { value: "10" } }); // difficulty 6 -> effect 4
+    fireEvent.click(screen.getByRole("button", { name: "Submit evidence roll" }));
+
+    // "reveal" is a public fact (kinds-v0.ts); it belongs in the public ship's log once committed.
+    const ticker = screen.getByRole("list", { name: "ship's log" });
+    expect(within(ticker).getByText("reveal")).toBeTruthy();
+    expect(screen.getByTestId("evidence-reveal").textContent).toMatch(/door|codeClass|time|actor/);
   });
 });
