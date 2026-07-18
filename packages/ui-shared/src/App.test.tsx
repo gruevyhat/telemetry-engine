@@ -1,9 +1,37 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { App } from "./App.js";
+import {
+  createKindRegistry,
+  createLedger,
+  createPhaseInterpreter,
+  loadPhaseScript,
+  KINDS_V0,
+  type PhaseScript,
+} from "@telemetry/engine";
+import { App, runInterrogation } from "./App.js";
 
 afterEach(cleanup);
+
+const TRIVIAL_SCRIPT: PhaseScript = { frame: "test", start: "s", steps: [{ id: "s", kind: "announce", next: "s" }] };
+
+describe("runInterrogation [M1-15, fact-kinds-v0.md §3]", () => {
+  it("commits check.reported, npc.statement (table), and npc.truthTierAssigned (referee) linked by causes", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+    const interpreter = createPhaseInterpreter(ledger, loadPhaseScript(TRIVIAL_SCRIPT));
+    const npc = { id: "npc:kessler", disposition: "naive" as const, tells: ["a tell"] };
+
+    const answer = runInterrogation(ledger, interpreter, npc, "persuade", 9, { day: 7, slot: "COMMS" }, { kind: "pc", id: "pc:zhan" });
+
+    const statement = ledger.all().find((f) => f.kind === "npc.statement");
+    const tierAssignment = ledger.all().find((f) => f.kind === "npc.truthTierAssigned");
+    expect(ledger.all().some((f) => f.kind === "check.reported")).toBe(true);
+    expect(statement?.visibility).toEqual({ level: "table" });
+    expect(tierAssignment?.visibility).toEqual({ level: "referee" });
+    expect(tierAssignment?.causes).toEqual([statement?.id]);
+    expect(answer.tier).toBe("trueWithTell"); // effect = 9 - 6 = 3
+  });
+});
 
 describe("App [M1-13 real trade campaign]", () => {
   it("renders the shared-screen regions and hand-to-player interstitial", () => {
@@ -89,7 +117,7 @@ describe("App [M1-13 real trade campaign]", () => {
     expect(screen.getByRole("button", { name: /Intimidate npc:kessler/i })).toBeTruthy();
   });
 
-  it("a high-effect interrogation roll renders a straight answer with a tell, and commits only check.reported", () => {
+  it("a high-effect interrogation roll renders a straight answer with a tell, and leaves no npc.statement/truthTierAssigned in the public ticker", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
 
@@ -99,6 +127,11 @@ describe("App [M1-13 real trade campaign]", () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit interrogation roll" }));
 
     expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/log entry/i);
+    // npc.statement is table-visibility and npc.truthTierAssigned is referee-visibility (fact-
+    // kinds-v0.md §3) -- neither is "public", so neither belongs in the public ship's log.
+    const ticker = screen.getByRole("list", { name: "ship's log" });
+    expect(ticker.textContent).not.toContain("npc.statement");
+    expect(ticker.textContent).not.toContain("npc.truthTierAssigned");
   });
 
   it("a low-effect interrogation roll renders an evasive answer", () => {

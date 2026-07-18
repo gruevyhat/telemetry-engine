@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   assembleInterrogationAnswer,
   clocksProjection,
+  commitInterrogationAnswer,
   createKindRegistry,
   createLedger,
   createPhaseInterpreter,
@@ -19,7 +20,9 @@ import {
   type GoodDef,
   type IncidentFrame,
   type InterrogationAnswer,
+  type Ledger,
   type NpcDef,
+  type PhaseInterpreter,
   type PhaseScript,
   type PhaseStep,
 } from "@telemetry/engine";
@@ -80,6 +83,28 @@ const NPC_DEFS: Readonly<Record<string, NpcDef>> = {
 
 function firstNpcActor(committed: readonly Fact[]): string | undefined {
   return committed.find((fact) => fact.actor.kind === "npc")?.actor.id;
+}
+
+/** [M1-15, Spec §12, fact-kinds-v0.md §3] The full interrogation-answer commit: logs the roll
+ * (check.reported, via the interpreter's reportCheck), then commits the split-visibility fact
+ * pair fact-kinds-v0.md §3 defines for an interrogation answer (npc.statement at table
+ * visibility, npc.truthTierAssigned at referee visibility, linked by `causes`) via
+ * commitInterrogationAnswer. Exported standalone (not inlined in the component) so it's testable
+ * against a real ledger without exposing App's internal session state. */
+export function runInterrogation(
+  ledger: Ledger,
+  interpreter: PhaseInterpreter,
+  npc: NpcDef,
+  approach: "persuade" | "intimidate",
+  checkTotal: number,
+  t: GameTime,
+  actor: ActorRef,
+): InterrogationAnswer {
+  interpreter.reportCheck(t, actor, { skill: approach, dm: 0, total: checkTotal, difficulty: INTERROGATION_DIFFICULTY });
+  const effect = checkTotal - INTERROGATION_DIFFICULTY;
+  const answer = assembleInterrogationAnswer(npc, "the incident", factsOwnedBy(ledger.all(), npc.id), effect);
+  commitInterrogationAnswer(ledger, answer, t);
+  return answer;
 }
 
 function answerText(npcId: string, answer: InterrogationAnswer): string {
@@ -170,14 +195,7 @@ export function App() {
     if (!interrogationApproach || !lastIncidentNpcId) return;
     const npc = NPC_DEFS[lastIncidentNpcId];
     if (!npc) return;
-    interpreter.reportCheck(currentTime, { kind: "pc", id: "pc:zhan" }, {
-      skill: interrogationApproach,
-      dm: 0,
-      total: checkTotal,
-      difficulty: INTERROGATION_DIFFICULTY,
-    });
-    const effect = checkTotal - INTERROGATION_DIFFICULTY;
-    const answer = assembleInterrogationAnswer(npc, "the incident", factsOwnedBy(ledger.all(), npc.id), effect);
+    const answer = runInterrogation(ledger, interpreter, npc, interrogationApproach, checkTotal, currentTime, { kind: "pc", id: "pc:zhan" });
     setInterrogationAnswer(answerText(npc.id, answer));
     renderRevision((revision) => revision + 1);
   }
