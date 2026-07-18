@@ -95,27 +95,44 @@ try {
   const advance = page.getByRole("button", { name: "Advance turn" });
   if ((await advance.count()) !== 1) throw new Error("built page did not expose the trade-campaign advance control");
 
-  // Turn 1: DOCKSIDE -> COMMS -> TRANSIT -> ARRIVAL. Each click resolves the step being *left*,
-  // so a step's own facts appear in the ticker only after the click that departs it.
-  await advance.click(); // resolves t1-dockside's generate step (an incident), lands on COMMS.
+  // Every turn is 5 advances: DOCKSIDE (generate) -> COMMS (stub) -> the TRANSIT check (a roll
+  // submission, not a click) -> whichever check branch fired -> ARRIVAL. A step's own facts
+  // commit only on the click that departs it, so e.g. jump.plotted appears after the branch step
+  // is left, not after the roll that reached it.
+  async function advanceOneStep() {
+    const rollInput = page.getByRole("spinbutton", { name: "roll total" });
+    if ((await rollInput.count()) === 1) {
+      await rollInput.fill("9"); // trade-campaign's check difficulty is 7 -> onSuccess
+      await page.getByRole("button", { name: "Submit roll" }).click();
+      return;
+    }
+    await advance.click();
+  }
+
+  // Turn 1: DOCKSIDE -> COMMS -> check -> TRANSIT branch -> ARRIVAL.
+  await advanceOneStep(); // resolves t1-dockside's generate step (an incident), lands on COMMS.
   if ((await page.getByTestId("beat-COMMS").getAttribute("aria-current")) !== "step") {
     throw new Error("turn 1 did not advance to COMMS");
   }
-  await advance.click(); // resolves t1-comms (no-op stub), lands on TRANSIT.
-  if ((await page.getByTestId("beat-TRANSIT").getAttribute("aria-current")) !== "step") {
-    throw new Error("turn 1 did not advance to TRANSIT");
+  await advanceOneStep(); // resolves t1-comms (no-op stub), lands on the TRANSIT check step.
+  if ((await page.getByRole("spinbutton", { name: "roll total" }).count()) !== 1) {
+    throw new Error("turn 1's TRANSIT check step did not expose a roll-entry control");
   }
-  await advance.click(); // resolves t1-transit, commits jump.plotted, lands on ARRIVAL.
+  await advanceOneStep(); // submits the roll, resolves the check, lands on the onSuccess branch.
+  if ((await page.getByTestId("main-panel").textContent())?.includes("flown clean") !== true) {
+    throw new Error("the check's onSuccess branch did not render");
+  }
+  await advanceOneStep(); // resolves the branch step, commits jump.plotted, lands on ARRIVAL.
   if ((await page.getByTestId("beat-ARRIVAL").getAttribute("aria-current")) !== "step") {
     throw new Error("turn 1 did not advance to ARRIVAL");
   }
   if ((await ticker.getByText("jump.plotted", { exact: true }).count()) !== 1) {
-    throw new Error("TRANSIT did not publish jump.plotted");
+    throw new Error("the check's branch step did not publish jump.plotted");
   }
   if (screenshotDir) {
     await page.screenshot({ fullPage: true, path: join(screenshotDir, "m1-mid-campaign.png") });
   }
-  await advance.click(); // resolves t1-arrival, commits sale.settled, auto-skips into t2-dockside.
+  await advanceOneStep(); // resolves t1-arrival, commits sale.settled, auto-skips into t2-dockside.
   if ((await ticker.getByText("sale.settled", { exact: true }).count()) !== 1) {
     throw new Error("ARRIVAL did not publish sale.settled");
   }
@@ -125,9 +142,9 @@ try {
     throw new Error("turn 1 did not auto-skip its seed step into turn 2's DOCKSIDE");
   }
 
-  // Turns 2-4: 12 more advances complete the 16-advance, 4-turn campaign.
-  for (let i = 0; i < 12; i += 1) {
-    await advance.click();
+  // Turns 2-4: 15 more advances (5 per turn) complete the 20-advance, 4-turn campaign.
+  for (let i = 0; i < 15; i += 1) {
+    await advanceOneStep();
   }
   if (!(await advance.isDisabled())) {
     throw new Error("advance control did not disable after the 4-turn campaign completed");
@@ -137,7 +154,7 @@ try {
     await page.screenshot({ fullPage: true, path: join(screenshotDir, "m1-complete.png") });
   }
 
-  console.log("pages smoke: M1-13 hotseat and 4-turn trade-campaign playthrough passed under /telemetry-engine/");
+  console.log("pages smoke: M1-13/M1-14 hotseat and 4-turn trade-campaign playthrough (incl. check step) passed under /telemetry-engine/");
 } finally {
   await browser?.close();
   await killGroup(preview);

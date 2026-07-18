@@ -59,6 +59,13 @@ function skipAutomaticSteps(
   }
 }
 
+/** [M1-14] One playthrough of trade-campaign/turn.json advances 5 steps per turn (DOCKSIDE
+ * generate, COMMS stub, the TRANSIT check, whichever of its two branches fires, ARRIVAL) x 4
+ * turns -- counted directly rather than derived from `script.stepsById.size`, since that would
+ * also count the branch never taken on a given run. */
+const ADVANCES_PER_TURN = 5;
+const TRADE_CAMPAIGN_TURNS = 4;
+
 function createTradeSession() {
   const ledger = createLedger(createKindRegistry(KINDS_V0));
   const script = loadPhaseScript(tradeTurnJson as unknown as PhaseScript);
@@ -92,18 +99,19 @@ export function App() {
     holdState: "18/20t",
   };
 
-  // Four turns x four beats each (DOCKSIDE -> COMMS -> TRANSIT -> ARRIVAL); the script loops back
-  // to t1-dockside afterward (INV-2/3: no interpreter state beyond the ledger), so the button
-  // disables at 16 advances rather than silently starting a second, unrequested lap.
-  const campaignLength = [...script.stepsById.values()].filter((step) => !step.automatic).length;
+  // The script loops back to t1-seed afterward (INV-2/3: no interpreter state beyond the
+  // ledger), so the control disables at the end of one full run rather than silently starting a
+  // second, unrequested lap.
+  const campaignLength = ADVANCES_PER_TURN * TRADE_CAMPAIGN_TURNS;
   const campaignComplete = advanceCount >= campaignLength;
+  const isCheckStep = currentStep?.kind === "check";
 
-  function advanceTurn(): void {
+  function advanceTurn(input?: { checkTotal: number }): void {
     if (!currentStep || campaignComplete) return;
-    const result = interpreter.advance(gameTimeFor(currentStep), REFEREE);
+    const result = interpreter.advance(gameTimeFor(currentStep), REFEREE, input);
     const newCount = advanceCount + 1;
-    // Only skip forward through automatic steps while more of the campaign remains -- at 16 the
-    // script's own "next" wraps back to t1-seed, and re-running that seed here would silently
+    // Only skip forward through automatic steps while more of the campaign remains -- at the end
+    // the script's own "next" wraps back to t1-seed, and re-running that seed here would silently
     // re-commit turn 1's market/purchase facts a second time.
     if (newCount < campaignLength) {
       skipAutomaticSteps(script, interpreter);
@@ -122,13 +130,40 @@ export function App() {
           <p style={{ margin: 0 }}>{announcement}</p>
         )}
       </SharedScreen>
-      <button type="button" onClick={advanceTurn} disabled={campaignComplete}>
-        Advance turn
-      </button>
+      {isCheckStep ? (
+        <CheckControl onSubmit={(checkTotal) => advanceTurn({ checkTotal })} />
+      ) : (
+        <button type="button" onClick={() => advanceTurn()} disabled={campaignComplete}>
+          Advance turn
+        </button>
+      )}
       <Interstitial
         playerName="Zhan"
         visibleFacts={ledger.visibleTo({ scope: "private", playerId: "pc:zhan" })}
       />
     </>
+  );
+}
+
+/** [M1-14, Spec §6] "The engine never rolls for a PC" -- a plain number entry for the player's
+ * own roll total, not a simulated die. */
+function CheckControl({ onSubmit }: { onSubmit: (checkTotal: number) => void }) {
+  const [value, setValue] = useState("");
+
+  return (
+    <div>
+      <label>
+        Roll total
+        <input
+          type="number"
+          aria-label="roll total"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      </label>
+      <button type="button" onClick={() => onSubmit(Number(value))} disabled={value === ""}>
+        Submit roll
+      </button>
+    </div>
   );
 }
