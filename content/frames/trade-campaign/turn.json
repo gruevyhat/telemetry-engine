@@ -1,0 +1,158 @@
+{
+  "frame": "trade-campaign",
+  "start": "t1-dockside",
+  "steps": [
+    {
+      "id": "t1-dockside",
+      "kind": "generate",
+      "slot": "DOCKSIDE",
+      "gen": { "frameId": "trade:bay-lock-cycle" },
+      "facts": [
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 410, "week": 1 } },
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 188, "week": 1 } },
+        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 940 } }
+      ],
+      "next": "t1-comms"
+    },
+    {
+      "id": "t1-comms",
+      "kind": "commsWindow",
+      "slot": "COMMS",
+      "next": "t1-transit"
+    },
+    {
+      "id": "t1-transit",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.1",
+      "facts": [
+        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-1-jump" } }
+      ],
+      "next": "t1-arrival"
+    },
+    {
+      "id": "t1-arrival",
+      "kind": "announce",
+      "slot": "ARRIVAL",
+      "render": "trade.arrival.1",
+      "facts": [
+        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2050 } }
+      ],
+      "next": "t2-dockside"
+    },
+    {
+      "id": "t2-dockside",
+      "kind": "generate",
+      "slot": "DOCKSIDE",
+      "gen": { "frameId": "trade:manifest-shortfall" },
+      "facts": [
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 418, "week": 2 } },
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 181, "week": 2 } },
+        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 905 } }
+      ],
+      "next": "t2-comms"
+    },
+    {
+      "id": "t2-comms",
+      "kind": "commsWindow",
+      "slot": "COMMS",
+      "next": "t2-transit"
+    },
+    {
+      "id": "t2-transit",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.2",
+      "facts": [
+        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-2-jump" } }
+      ],
+      "next": "t2-arrival"
+    },
+    {
+      "id": "t2-arrival",
+      "kind": "announce",
+      "slot": "ARRIVAL",
+      "render": "trade.arrival.2",
+      "facts": [
+        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2090 } }
+      ],
+      "next": "t3-dockside"
+    },
+    {
+      "id": "t3-dockside",
+      "kind": "generate",
+      "slot": "DOCKSIDE",
+      "gen": { "frameId": "trade:price-substitution" },
+      "facts": [
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 402, "week": 3 } },
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 195, "week": 3 } },
+        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 975 } }
+      ],
+      "next": "t3-comms"
+    },
+    {
+      "id": "t3-comms",
+      "kind": "commsWindow",
+      "slot": "COMMS",
+      "next": "t3-transit"
+    },
+    {
+      "id": "t3-transit",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.3",
+      "facts": [
+        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-3-jump" } }
+      ],
+      "next": "t3-arrival"
+    },
+    {
+      "id": "t3-arrival",
+      "kind": "announce",
+      "slot": "ARRIVAL",
+      "render": "trade.arrival.3",
+      "facts": [
+        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2010 } }
+      ],
+      "next": "t4-dockside"
+    },
+    {
+      "id": "t4-dockside",
+      "kind": "generate",
+      "slot": "DOCKSIDE",
+      "gen": { "frameId": "trade:comms-leak" },
+      "facts": [
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "machine-parts", "price": 425, "week": 4 } },
+        { "kind": "market.tick", "actor": { "kind": "world", "id": "market" }, "payload": { "hex": "Regina", "good": "refined-ore", "price": 179, "week": 4 } },
+        { "kind": "purchase.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "refined-ore", "tons": 5, "amount": 895 } }
+      ],
+      "next": "t4-comms"
+    },
+    {
+      "id": "t4-comms",
+      "kind": "commsWindow",
+      "slot": "COMMS",
+      "next": "t4-transit"
+    },
+    {
+      "id": "t4-transit",
+      "kind": "announce",
+      "slot": "TRANSIT",
+      "render": "trade.transit.4",
+      "facts": [
+        { "kind": "jump.plotted", "actor": { "kind": "pc", "id": "pc:brennan" }, "payload": { "fromHex": "Regina", "toHex": "Regina", "parsecs": 0, "checkRef": "trade-4-jump" } }
+      ],
+      "next": "t4-arrival"
+    },
+    {
+      "id": "t4-arrival",
+      "kind": "announce",
+      "slot": "ARRIVAL",
+      "render": "trade.arrival.4",
+      "facts": [
+        { "kind": "sale.settled", "actor": { "kind": "pc", "id": "pc:zhan" }, "payload": { "good": "machine-parts", "tons": 5, "amount": 2125 } }
+      ],
+      "next": "t1-dockside"
+    }
+  ]
+}
