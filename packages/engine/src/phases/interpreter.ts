@@ -184,7 +184,8 @@ function requirePlainNext(step: PhaseStep): StepRef {
   return step.next;
 }
 
-/** Per-kind resolution. vote/confrontation UI+generation are out of scope (M0-07/M2) — steps just transition. */
+/** Per-kind resolution. Confrontation mechanics remain content-ordered; the terminal vote
+ * transaction is committed by resolveConfrontation below. */
 function resolveStep(
   step: PhaseStep,
   t: GameTime,
@@ -282,10 +283,15 @@ function resolveStep(
       ]);
     }
     case "announce":
-    case "vote":
       return resolved(requirePlainNext(step));
+    case "vote": {
+      if (typeof step.next === "string") return resolved(step.next);
+      const branchKey = input?.branchKey;
+      if (!branchKey || !(branchKey in step.next)) throw new Error(`step "${step.id}": vote requires a valid input.branchKey`);
+      return resolved(step.next[branchKey]!);
+    }
     case "confrontation":
-      throw new Error(`step "${step.id}": confrontation sub-script is not implemented until M2`);
+      return resolved(requirePlainNext(step));
   }
 }
 
@@ -306,10 +312,21 @@ export interface PhaseInterpreter {
   commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   queueCommsAction(action: QueueCommsActionInput): Fact;
+  resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] };
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
    * `check.reported` fact and does not move `currentStep()`. */
   reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
+}
+
+export interface ResolveConfrontationInput {
+  readonly t: GameTime;
+  readonly declarer: string;
+  readonly target: { readonly kind: "pc" | "npc"; readonly id: string };
+  readonly eligiblePlayerIds: readonly string[];
+  readonly ballots: Readonly<Record<string, boolean>>;
+  readonly objectiveFactId: string;
+  readonly contents: unknown;
 }
 
 export interface QueueCommsActionInput {
@@ -518,5 +535,47 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     });
   }
 
-  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, reportCheck };
+  function resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] } {
+    if (input.target.kind === "npc") throw new Error("NPC targets cannot be burned; use interrogation and evidence");
+    const eligible = [...input.eligiblePlayerIds];
+    if (eligible.length === 0 || new Set(eligible).size !== eligible.length) throw new Error("confrontation eligibility must be a non-empty unique PC set");
+    if (!eligible.includes(input.target.id)) throw new Error("the accused PC must be eligible to vote");
+    const ballotIds = Object.keys(input.ballots);
+    if (ballotIds.some((id) => !eligible.includes(id))) throw new Error("confrontation ballot came from an ineligible player");
+    const threshold = Math.floor(eligible.length / 2) + 1;
+    const carried = Object.values(input.ballots).filter(Boolean).length >= threshold;
+    const failed = !carried && ballotIds.length === eligible.length;
+    const actor: ActorRef = { kind: "pc", id: input.declarer };
+    const vote = ledger.append({
+      t: input.t,
+      kind: "vote.recorded",
+      actor,
+      payload: { topic: `burn:${input.target.id}`, eligiblePlayerIds: eligible, threshold, ballots: { ...input.ballots }, status: carried ? "carried" : failed ? "failed" : "open" },
+    });
+
+    if (!carried && !failed) return { committed: [vote] };
+    if (failed) {
+      const resolution = ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "failed", logNote: "strict-majority-not-reached" }, causes: [vote.id] }]);
+      return { committed: [vote, ...resolution] };
+    }
+
+    const objective = ledger.all().find((fact) => fact.id === input.objectiveFactId);
+    if (!objective || objective.kind !== "objective.assigned" || objective.payload.playerId !== input.target.id) {
+      throw new Error("forced burn objectiveFactId must name the target PC's assigned objective");
+    }
+    const agendaFacts = ledger.all().filter((fact) =>
+      (fact.kind === "agenda.dealt" || fact.kind === "objective.assigned" || fact.kind === "agenda.actionTaken") && fact.payload.playerId === input.target.id,
+    );
+    const caused = (proposal: AppendInput): AppendInput => ({ ...proposal, causes: [...(proposal.causes ?? []), vote.id] });
+    const consequences = ledger.appendAll([
+      caused({ t: input.t, kind: "envelope.opened", actor: { kind: "pc", id: input.target.id }, payload: { playerId: input.target.id, contents: input.contents } }),
+      caused({ t: input.t, kind: "objective.forfeit", actor: { kind: "pc", id: input.target.id }, payload: { playerId: input.target.id } }),
+      caused({ t: input.t, kind: "deferredReveal.minted", actor: { kind: "referee", id: "referee" }, payload: { playerId: input.target.id, objectiveFactId: objective.id } }),
+      ...agendaFacts.map((fact) => caused({ t: input.t, kind: "reveal", actor: { kind: "referee", id: "referee" }, payload: { targets: [fact.id], fields: ["*"] } })),
+      caused({ t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "burned", logNote: "strict-majority-carried" } }),
+    ]);
+    return { committed: [vote, ...consequences] };
+  }
+
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, resolveConfrontation, reportCheck };
 }

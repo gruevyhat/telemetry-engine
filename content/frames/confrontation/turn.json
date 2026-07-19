@@ -1,0 +1,46 @@
+{
+  "frame": "confrontation",
+  "start": "declare",
+  "steps": [
+    {
+      "id": "declare",
+      "kind": "confrontation",
+      "render": "confrontation.declare",
+      "next": "timer-expiry"
+    },
+    {
+      "id": "timer-expiry",
+      "kind": "confrontation",
+      "render": "confrontation.captain-owns-expiry",
+      "timer": 300,
+      "next": "accusation-vote"
+    },
+    {
+      "id": "accusation-vote",
+      "kind": "vote",
+      "render": "confrontation.vote",
+      "next": { "carried": "forced-burn", "failed": "resolution" }
+    },
+    {
+      "id": "forced-burn",
+      "kind": "confrontation",
+      "render": "confrontation.forced-burn",
+      "automatic": true,
+      "next": "deferred-reveal"
+    },
+    {
+      "id": "deferred-reveal",
+      "kind": "confrontation",
+      "render": "confrontation.deferred-reveal",
+      "automatic": true,
+      "next": "resolution"
+    },
+    {
+      "id": "resolution",
+      "kind": "confrontation",
+      "render": "confrontation.resolution",
+      "automatic": true,
+      "next": "declare"
+    }
+  ]
+}

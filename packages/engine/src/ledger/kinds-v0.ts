@@ -32,7 +32,7 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "reveal", defaultVisibility: "public", payload: { targets: f("array"), fields: f("array") } },
   { kind: "action.fizzled", defaultVisibility: "referee", payload: { attemptedActionId: f("string"), reason: f("string") } },
   { kind: "degrade.reported", defaultVisibility: "referee", payload: { rung: f("string"), context: f("string") } },
-  { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), tally: f("object"), captainBreak: f("boolean", true) } },
+  { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), eligiblePlayerIds: f("array"), threshold: f("number"), ballots: f("object"), status: f("string"), captainBreak: f("boolean", true) } },
 
   // position / access
   {
@@ -71,6 +71,8 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "agenda.actionTaken", defaultVisibility: "referee", payload: { playerId: f("string"), windowId: f("string"), actionId: f("string"), targetFactId: f("string", true), clientCommandId: f("string"), frameClaim: f("string", true) } },
   { kind: "envelope.opened", defaultVisibility: "public", payload: { playerId: f("string"), contents: f("unknown") } },
   { kind: "objective.forfeit", defaultVisibility: "public", payload: { playerId: f("string") } },
+  { kind: "deferredReveal.minted", defaultVisibility: "referee", payload: { playerId: f("string"), objectiveFactId: f("string") } },
+  { kind: "deferredReveal.cashed", defaultVisibility: "referee", payload: { tokenFactId: f("string") } },
   { kind: "confrontation.opened", defaultVisibility: "public", payload: { declarer: f("string"), mode: f("string"), target: f("string", true) } },
   { kind: "confrontation.resolved", defaultVisibility: "public", payload: { outcome: f("string"), logNote: f("string") } },
   { kind: "npc.hired", defaultVisibility: "public", payload: { npcId: f("string"), role: f("string"), wage: f("number") } },

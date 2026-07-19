@@ -45,7 +45,7 @@ describe("forced confrontation burn [M2-07, INV-2/4/6]", () => {
     fc.assert(fc.property(fc.array(fc.boolean(), { minLength: 3, maxLength: 3 }), (votes) => {
       const run = () => {
         const f = fixture();
-        f.interpreter.resolveConfrontation({ t: T, declarer: "pc:zhan", target: { kind: "pc", id: "pc:deuce" }, eligiblePlayerIds: ["a", "b", "c"], ballots: { a: votes[0]!, b: votes[1]!, c: votes[2]! }, objectiveFactId: f.objective.id, contents: "sealed" });
+        f.interpreter.resolveConfrontation({ t: T, declarer: "pc:zhan", target: { kind: "pc", id: "pc:deuce" }, eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": votes[0]!, "pc:deuce": votes[1]!, "pc:brennan": votes[2]! }, objectiveFactId: f.objective.id, contents: "sealed" });
         const stableIds = new Map([[f.agenda.id, "<agenda>"], [f.objective.id, "<objective>"]]);
         return f.ledger.all().map((fact) => ({
           kind: fact.kind,

@@ -1,0 +1,8 @@
+{
+  "confrontation.declare": "A confrontation has been declared. The accusation and eligible crew are now fixed.",
+  "confrontation.captain-owns-expiry": "Five minutes. If the vote does not carry, the captain owns what follows.",
+  "confrontation.vote": "Vote recorded. The envelope opens only if a strict majority carries.",
+  "confrontation.forced-burn": "The majority carries. The envelope is open and the private objective is forfeit.",
+  "confrontation.deferred-reveal": "I have retained the objective record. Its timing is now mine.",
+  "confrontation.resolution": "The confrontation is resolved. The black box has the names and the tally."
+}
