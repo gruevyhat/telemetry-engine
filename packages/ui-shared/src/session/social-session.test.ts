@@ -48,6 +48,7 @@ describe("social session orchestrator [M2-15b, INV-6/13]", () => {
     const interpreter = createPhaseInterpreter(ledger, SCRIPT, {
       rng: createRng("session-seed"),
       deck: [],
+      commitReveal: { campaignSeed: "session-seed", campaignSalt: "session-salt" },
       agenda: { actions: [ACTION], currentHex: "Regina", registry: createKindRegistry(KINDS_V0) },
     });
     const session = createSocialSession({ interpreter });
@@ -64,7 +65,7 @@ describe("social session orchestrator [M2-15b, INV-6/13]", () => {
     expect(receivedAck.payload).toEqual({ clientCommandId: "zhan-1", committedFactId: ack.committedFactId });
     expect(ledger.all().some((fact) => fact.id === ack.committedFactId && fact.kind === "agenda.actionTaken")).toBe(true);
 
-    session.closeCommsWindow(T, { kind: "referee", id: "referee" });
+    await session.advanceStep(T, { kind: "referee", id: "referee" });
     expect(ledger.all().some((fact) => fact.kind === "cargo.diverted" && fact.actor.id === "pc:zhan")).toBe(true);
 
     const accuseMessage: ProtocolMessage = {
