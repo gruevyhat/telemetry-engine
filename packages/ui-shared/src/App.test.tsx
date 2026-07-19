@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createKindRegistry,
@@ -14,6 +14,20 @@ import { App, EVIDENCE_QUERY, runEvidenceInvestigation, runInterrogation } from 
 afterEach(cleanup);
 
 const TRIVIAL_SCRIPT: PhaseScript = { frame: "test", start: "s", steps: [{ id: "s", kind: "announce", next: "s" }] };
+
+function campaignSignature(): string {
+  const phase = screen.getByRole("list", { name: "phase track" }).querySelector('[aria-current="step"]')?.textContent;
+  const main = screen.getByTestId("main-panel").textContent;
+  const hasRoll = Boolean(screen.queryByRole("spinbutton", { name: "roll total" }));
+  const advance = screen.queryByRole("button", { name: "Advance turn" }) as HTMLButtonElement | null;
+  return JSON.stringify({ phase, main, hasRoll, complete: advance?.disabled ?? false });
+}
+
+async function clickCampaignControl(control: HTMLElement): Promise<void> {
+  const before = campaignSignature();
+  fireEvent.click(control);
+  await waitFor(() => expect(campaignSignature()).not.toBe(before));
+}
 
 describe("runInterrogation [M1-15, fact-kinds-v0.md §3]", () => {
   it("commits check.reported, npc.statement (table), and npc.truthTierAssigned (referee) linked by causes", () => {
@@ -107,7 +121,7 @@ describe("App [M1-13 real trade campaign]", () => {
     expect(screen.getByTestId("feed-line-0").textContent).toMatch(/machine-parts|refined-ore/);
   });
 
-  it("plays a full 4-turn campaign by hand: funds change and a real trade-deck incident fires", () => {
+  it("plays a full 4-turn campaign by hand: funds change and a real trade-deck incident fires", async () => {
     render(<App />);
 
     // 4 turns x 5 beats (DOCKSIDE -> COMMS -> check -> TRANSIT branch -> ARRIVAL) = 20 advances.
@@ -115,63 +129,63 @@ describe("App [M1-13 real trade campaign]", () => {
       const rollInput = screen.queryByRole("spinbutton", { name: "roll total" });
       if (rollInput) {
         fireEvent.change(rollInput, { target: { value: "8" } });
-        fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+        await clickCampaignControl(screen.getByRole("button", { name: "Submit roll" }));
         continue;
       }
       const advance = screen.getByRole("button", { name: "Advance turn" });
       expect((advance as HTMLButtonElement).disabled).toBe(false);
-      fireEvent.click(advance);
+      await clickCampaignControl(advance);
     }
 
     expect((screen.getByRole("button", { name: "Advance turn" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId("status-funds").textContent).not.toBe("Cr0");
   });
 
-  it("fires a real incident from the trade deck on the first DOCKSIDE generate step", () => {
+  it("fires a real incident from the trade deck on the first DOCKSIDE generate step", async () => {
     render(<App />);
     const advance = screen.getByRole("button", { name: "Advance turn" });
 
     // t1-dockside -> t1-comms: the generate step's own advance() commits the incident.
-    fireEvent.click(advance);
+    await clickCampaignControl(advance);
 
     expect(screen.getByTestId("main-panel").textContent).not.toBe("");
   });
 
-  it("takes the check step's onSuccess branch when the entered roll meets the difficulty", () => {
+  it("takes the check step's onSuccess branch when the entered roll meets the difficulty", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
 
     const rollInput = screen.getByRole("spinbutton", { name: "roll total" });
     fireEvent.change(rollInput, { target: { value: "9" } }); // difficulty is 7
-    fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+    await clickCampaignControl(screen.getByRole("button", { name: "Submit roll" }));
 
     expect(screen.getByTestId("main-panel").textContent).toContain("flown clean");
   });
 
-  it("takes the check step's onFail branch when the entered roll misses the difficulty", () => {
+  it("takes the check step's onFail branch when the entered roll misses the difficulty", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-comms -> t1-check
 
     const rollInput = screen.getByRole("spinbutton", { name: "roll total" });
     fireEvent.change(rollInput, { target: { value: "2" } }); // difficulty is 7
-    fireEvent.click(screen.getByRole("button", { name: "Submit roll" }));
+    await clickCampaignControl(screen.getByRole("button", { name: "Submit roll" }));
 
     expect(screen.getByTestId("main-panel").textContent).toContain("flown rough");
   });
 
-  it("offers an interrogation control at COMMS for the NPC named in that turn's incident", () => {
+  it("offers an interrogation control at COMMS for the NPC named in that turn's incident", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside (fires trade:bay-lock-cycle, npc:kessler) -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside (fires trade:bay-lock-cycle, npc:kessler) -> t1-comms
 
     expect(screen.getByRole("button", { name: /Persuade npc:kessler/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Intimidate npc:kessler/i })).toBeTruthy();
   });
 
-  it("a high-effect interrogation roll renders a straight answer with a tell, and leaves no npc.statement/truthTierAssigned in the public ticker", () => {
+  it("a high-effect interrogation roll renders a straight answer with a tell, and leaves no npc.statement/truthTierAssigned in the public ticker", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
 
     fireEvent.click(screen.getByRole("button", { name: /Persuade npc:kessler/i }));
     const rollInput = screen.getByRole("spinbutton", { name: "interrogation roll total" });
@@ -186,9 +200,9 @@ describe("App [M1-13 real trade campaign]", () => {
     expect(ticker.textContent).not.toContain("npc.truthTierAssigned");
   });
 
-  it("a low-effect interrogation roll renders an evasive answer", () => {
+  it("a low-effect interrogation roll renders an evasive answer", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // -> t1-comms
 
     fireEvent.click(screen.getByRole("button", { name: /Intimidate npc:kessler/i }));
     const rollInput = screen.getByRole("spinbutton", { name: "interrogation roll total" });
@@ -198,9 +212,9 @@ describe("App [M1-13 real trade campaign]", () => {
     expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/nothing/i);
   });
 
-  it("offers an Investigate control at COMMS, and a submitted roll reveals fields into the public ticker", () => {
+  it("offers an Investigate control at COMMS, and a submitted roll reveals fields into the public ticker", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
+    await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
 
     fireEvent.click(screen.getByRole("button", { name: "Investigate" }));
     const rollInput = screen.getByRole("spinbutton", { name: "evidence roll total" });

@@ -200,25 +200,38 @@ export async function createSecretDrawCommitment<T extends JsonValue>(input: {
   const stream = input.rng.derive(input.streamId);
   const drawIndex = stream.drawCount;
   const result = input.resolve(stream.next());
+  return createRecordedSecretDrawCommitment({ ...input, drawIndex, result });
+}
+
+/** M2-02 adapter for an existing draw site whose named stream/result were recorded in place. */
+export async function createRecordedSecretDrawCommitment<T extends JsonValue>(input: {
+  campaignSeed: string;
+  campaignSalt: string;
+  streamId: string;
+  drawIndex: number;
+  result: T;
+  seedCommitment: { factId: string; hash: string };
+  t: GameTime;
+}): Promise<SecretDrawCommitment<T>> {
   // Validate before constructing any proposal or preimage that could escape this API.
-  canonicalizeJson(result);
+  canonicalizeJson(input.result);
   const drawSalt = await deriveDrawSalt({
     campaignSeed: input.campaignSeed,
     campaignSalt: input.campaignSalt,
     streamId: input.streamId,
-    drawIndex,
+    drawIndex: input.drawIndex,
   });
   const preimage: SecretDrawPreimage<T> = {
     scheme: COMMIT_SCHEME,
     seedCommitmentHash: input.seedCommitment.hash,
     streamId: input.streamId,
-    drawIndex,
-    result,
+    drawIndex: input.drawIndex,
+    result: input.result,
     drawSalt,
   };
   const hash = await secretDrawHash(preimage);
   return {
-    result,
+    result: input.result,
     hash,
     preimage,
     proposal: {

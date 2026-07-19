@@ -1,10 +1,18 @@
 import { derive, type Projection } from "../ledger/derive.js";
+import { generateCommittedWeeklyTicks, type GenerateCommittedWeeklyTicksInput } from "../economy/market.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import { ask } from "../oracle/oracle.js";
 import { degradeReportedProposal, runDegradeLadder, type DegradeOutcome } from "../degrade/index.js";
-import type { Rng } from "../rng/index.js";
+import {
+  createCampaignSeedCommitment,
+  createRecordedSecretDrawCommitment,
+  type CampaignSeedPreimage,
+  type Rng,
+  type RngStream,
+  type SecretDrawPreimage,
+} from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { LoadedPhaseScript } from "./load.js";
 import type { PhaseStep, StepRef } from "./types.js";
@@ -28,6 +36,56 @@ export interface AdvanceResult {
 export interface PhaseInterpreterDeps {
   rng: Rng;
   deck: readonly IncidentFrame[];
+  commitReveal?: {
+    readonly campaignSeed: string;
+    readonly campaignSalt: string;
+  };
+}
+
+interface RecordedDraw {
+  readonly streamId: string;
+  readonly drawIndex: number;
+  readonly result: number;
+}
+
+function recordingRng(base: Rng): { rng: Rng; drain: () => readonly RecordedDraw[] } {
+  const records: RecordedDraw[] = [];
+  const streams = new Map<string, RngStream>();
+
+  function shouldCommit(streamId: string): boolean {
+    return streamId.includes(":twin:");
+  }
+
+  return {
+    rng: {
+      derive(streamId) {
+        let wrapped = streams.get(streamId);
+        if (wrapped) return wrapped;
+        const stream = base.derive(streamId);
+        const draw = (): number => {
+          const drawIndex = stream.drawCount;
+          const result = stream.next();
+          if (shouldCommit(streamId)) records.push({ streamId, drawIndex, result });
+          return result;
+        };
+        wrapped = {
+          name: stream.name,
+          get drawCount() {
+            return stream.drawCount;
+          },
+          next: draw,
+          nextInt(maxExclusive) {
+            return Math.floor(draw() * maxExclusive);
+          },
+        };
+        streams.set(streamId, wrapped);
+        return wrapped;
+      },
+    },
+    drain() {
+      return records.splice(0, records.length);
+    },
+  };
 }
 
 /** [INV-12] Stands in for M1-09's real MAGGIE-voice renderer: a plain key:value join of the
@@ -237,12 +295,24 @@ export interface CheckReportInput {
 export interface PhaseInterpreter {
   currentStep(): StepRef;
   advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult;
+  advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }>;
+  commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   queueCommsAction(action: Readonly<Record<string, unknown>>): void;
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
    * `check.reported` fact and does not move `currentStep()`. */
   reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
 }
+
+export interface CommitmentPreimages {
+  readonly seed?: CampaignSeedPreimage;
+  readonly draws: readonly SecretDrawPreimage<number>[];
+}
+
+export type CommitMarketTicksInput = Omit<
+  GenerateCommittedWeeklyTicksInput,
+  "rng" | "campaignSeed" | "campaignSalt" | "seedCommitment"
+>;
 
 /**
  * [Spec §3.2, INV-6] The only ledger.append call site in the codebase. Holds no state of its
@@ -253,12 +323,14 @@ export interface PhaseInterpreter {
  */
 export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript, deps?: PhaseInterpreterDeps): PhaseInterpreter {
   let commsQueue: Record<string, unknown>[] = [];
+  const recorder = deps?.commitReveal ? recordingRng(deps.rng) : undefined;
+  const resolvedDeps = deps ? { ...deps, rng: recorder?.rng ?? deps.rng } : undefined;
 
   function currentStep(): StepRef {
     return currentStepOf(ledger.all(), script);
   }
 
-  function advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
+  function advanceCore(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
     const fromStep = currentStep();
     const step = script.stepsById.get(fromStep);
     if (!step) {
@@ -266,7 +338,7 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     }
 
     const visitSalt = `step:${fromStep}:${priorVisitCount(ledger, script, fromStep)}`;
-    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, deps, visitSalt);
+    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, resolvedDeps, visitSalt);
 
     const committed: Fact[] = [];
     for (const proposal of proposals) {
@@ -288,6 +360,75 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     return { fromStep, toStep: nextStepId, committed, ...(rendered !== undefined ? { rendered } : {}) };
   }
 
+  function advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
+    const step = script.stepsById.get(currentStep());
+    if (step?.kind === "generate" && deps?.commitReveal) {
+      throw new Error("generate steps with commit/reveal configured require await advanceCommitted()");
+    }
+    return advanceCore(t, actor, input);
+  }
+
+  async function ensureSeedCommitment(t: GameTime): Promise<{
+    fact: Fact;
+    committed: readonly Fact[];
+    preimage?: CampaignSeedPreimage;
+  }> {
+    const context = deps?.commitReveal;
+    if (!context) {
+      throw new Error("committed random draws require commitReveal {campaignSeed, campaignSalt}");
+    }
+    const expected = await createCampaignSeedCommitment({ ...context, t });
+    const existing = ledger.all().find((fact) => fact.kind === "campaign.seedCommitted");
+    if (existing) {
+      if (existing.payload.hash !== expected.hash || existing.payload.scheme !== expected.proposal.payload.scheme) {
+        throw new Error("campaign seed commitment does not match the configured campaign seed/salt");
+      }
+      return { fact: existing, committed: [] };
+    }
+    const fact = ledger.append(expected.proposal);
+    return { fact, committed: [fact], preimage: expected.preimage };
+  }
+
+  async function advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }> {
+    recorder?.drain();
+    const seed = await ensureSeedCommitment(t);
+    const result = advanceCore(t, actor, input);
+    const records = recorder?.drain() ?? [];
+    const drawFacts: Fact[] = [];
+    const drawPreimages: SecretDrawPreimage<number>[] = [];
+    for (const record of records) {
+      const committed = await createRecordedSecretDrawCommitment({
+        ...deps!.commitReveal!,
+        ...record,
+        seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string },
+        t,
+      });
+      drawFacts.push(ledger.append(committed.proposal));
+      drawPreimages.push(committed.preimage);
+    }
+    return {
+      ...result,
+      committed: [...seed.committed, ...result.committed, ...drawFacts],
+      commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: drawPreimages },
+    };
+  }
+
+  async function commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }> {
+    const seed = await ensureSeedCommitment(input.t);
+    const context = deps!.commitReveal!;
+    const plan = await generateCommittedWeeklyTicks({
+      ...input,
+      ...context,
+      rng: deps!.rng,
+      seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string },
+    });
+    const committed = ledger.appendAll(plan.proposals);
+    return {
+      committed: [...seed.committed, ...committed],
+      commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: plan.preimages },
+    };
+  }
+
   function queueCommsAction(action: Readonly<Record<string, unknown>>): void {
     commsQueue.push(action);
   }
@@ -302,5 +443,5 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     });
   }
 
-  return { currentStep, advance, queueCommsAction, reportCheck };
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, queueCommsAction, reportCheck };
 }

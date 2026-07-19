@@ -189,8 +189,13 @@ const TRADE_CAMPAIGN_TURNS = 4;
 function createTradeSession() {
   const ledger = createLedger(createKindRegistry(KINDS_V0));
   const script = loadPhaseScript(tradeTurnJson as unknown as PhaseScript);
-  const rng = createRng("m1-13-by-hand-demo");
-  const interpreter = createPhaseInterpreter(ledger, script, { rng, deck: TRADE_DECK.concat(GENERIC_DECK) });
+  const campaignSeed = "m1-13-by-hand-demo";
+  const rng = createRng(campaignSeed);
+  const interpreter = createPhaseInterpreter(ledger, script, {
+    rng,
+    deck: TRADE_DECK.concat(GENERIC_DECK),
+    commitReveal: { campaignSeed, campaignSalt: "m2-browser-demo" },
+  });
 
   skipAutomaticSteps(script, interpreter);
 
@@ -201,6 +206,7 @@ export function App() {
   const [session] = useState(createTradeSession);
   const [, renderRevision] = useState(0);
   const [advanceCount, setAdvanceCount] = useState(0);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const [lastRendered, setLastRendered] = useState<string | undefined>(undefined);
   const [lastIncidentNpcId, setLastIncidentNpcId] = useState<string | undefined>(undefined);
   const [lastIncidentFacts, setLastIncidentFacts] = useState<readonly Fact[]>([]);
@@ -232,28 +238,36 @@ export function App() {
   const campaignComplete = advanceCount >= campaignLength;
   const isCheckStep = currentStep?.kind === "check";
 
-  function advanceTurn(input?: { checkTotal: number }): void {
-    if (!currentStep || campaignComplete) return;
-    const result = interpreter.advance(gameTimeFor(currentStep), REFEREE, input);
-    const newCount = advanceCount + 1;
-    // Only skip forward through automatic steps while more of the campaign remains -- at the end
-    // the script's own "next" wraps back to t1-seed, and re-running that seed here would silently
-    // re-commit turn 1's market/purchase facts a second time.
-    if (newCount < campaignLength) {
-      skipAutomaticSteps(script, interpreter);
+  async function advanceTurn(input?: { checkTotal: number }): Promise<void> {
+    if (!currentStep || campaignComplete || isAdvancing) return;
+    setIsAdvancing(true);
+    try {
+      const result =
+        currentStep.kind === "generate"
+          ? await interpreter.advanceCommitted(gameTimeFor(currentStep), REFEREE, input)
+          : interpreter.advance(gameTimeFor(currentStep), REFEREE, input);
+      const newCount = advanceCount + 1;
+      // Only skip forward through automatic steps while more of the campaign remains -- at the end
+      // the script's own "next" wraps back to t1-seed, and re-running that seed here would silently
+      // re-commit turn 1's market/purchase facts a second time.
+      if (newCount < campaignLength) {
+        skipAutomaticSteps(script, interpreter);
+      }
+      const npcId = firstNpcActor(result.committed);
+      if (npcId) {
+        setLastIncidentNpcId(npcId);
+      }
+      setLastIncidentFacts(result.committed.filter((fact) => fact.kind !== "phase.transition" && fact.kind !== "secretRoll.committed"));
+      setInterrogationApproach(undefined);
+      setInterrogationAnswer(undefined);
+      setEvidenceStarted(false);
+      setEvidenceResult(undefined);
+      setLastRendered(result.rendered);
+      setAdvanceCount(newCount);
+      renderRevision((revision) => revision + 1);
+    } finally {
+      setIsAdvancing(false);
     }
-    const npcId = firstNpcActor(result.committed);
-    if (npcId) {
-      setLastIncidentNpcId(npcId);
-    }
-    setLastIncidentFacts(result.committed.filter((fact) => fact.kind !== "phase.transition"));
-    setInterrogationApproach(undefined);
-    setInterrogationAnswer(undefined);
-    setEvidenceStarted(false);
-    setEvidenceResult(undefined);
-    setLastRendered(result.rendered);
-    setAdvanceCount(newCount);
-    renderRevision((revision) => revision + 1);
   }
 
   function submitInterrogation(checkTotal: number): void {
@@ -305,8 +319,8 @@ export function App() {
       {isCheckStep ? (
         <CheckControl onSubmit={(checkTotal) => advanceTurn({ checkTotal })} />
       ) : (
-        <button type="button" onClick={() => advanceTurn()} disabled={campaignComplete}>
-          Advance turn
+        <button type="button" onClick={() => void advanceTurn()} disabled={campaignComplete || isAdvancing}>
+          {isAdvancing ? "Working" : "Advance turn"}
         </button>
       )}
       <Interstitial
