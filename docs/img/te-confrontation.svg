@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 480" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa4b2"/>
+    </marker>
+  </defs>
+  <rect width="940" height="480" fill="#0f1117"/>
+
+  <!-- trigger -->
+  <rect x="290" y="24" width="360" height="58" rx="10" fill="#25203a" stroke="#c77dff" stroke-width="1.8"/>
+  <text x="470" y="49" text-anchor="middle" font-size="15" font-weight="700" fill="#e8ecf3">CONFRONTATION DECLARED</text>
+  <text x="470" y="70" text-anchor="middle" font-size="12" fill="#c9d1da">by any player · or forced by a clock — 5:00 on the shared screen</text>
+
+  <line x1="470" y1="82" x2="470" y2="112" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr2)"/>
+
+  <!-- three-way split rail -->
+  <line x1="150" y1="115" x2="790" y2="115" stroke="#9aa4b2" stroke-width="1.4"/>
+  <line x1="150" y1="115" x2="150" y2="142" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr2)"/>
+  <line x1="470" y1="115" x2="470" y2="142" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr2)"/>
+  <line x1="790" y1="115" x2="790" y2="142" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr2)"/>
+
+  <!-- ACCUSE -->
+  <rect x="40" y="145" width="220" height="76" rx="10" fill="#331a1a" stroke="#e05c5c" stroke-width="1.6"/>
+  <text x="150" y="175" text-anchor="middle" font-size="15" font-weight="700" fill="#ff9a9a">ACCUSE</text>
+  <text x="150" y="196" text-anchor="middle" font-size="12" fill="#c9d1da">name a crewmate, publicly</text>
+  <text x="150" y="212" text-anchor="middle" font-size="12" fill="#c9d1da">the crew votes:</text>
+
+  <!-- accused choice split -->
+  <line x1="84" y1="221" x2="84" y2="252" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arr2)"/>
+  <line x1="205" y1="221" x2="205" y2="252" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arr2)"/>
+
+  <rect x="30" y="255" width="108" height="104" rx="10" fill="#1a2233" stroke="#4a9eff" stroke-width="1.4"/>
+  <text x="84" y="280" text-anchor="middle" font-size="13" font-weight="700" fill="#9fd0ff">CARRIES</text>
+  <text x="84" y="299" text-anchor="middle" font-size="11.5" fill="#c9d1da">torn · truth shown</text>
+  <text x="84" y="315" text-anchor="middle" font-size="11.5" fill="#e0a94c">burned</text>
+  <text x="84" y="333" text-anchor="middle" font-size="11.5" fill="#e0a94c">objective forfeit</text>
+  <text x="84" y="349" text-anchor="middle" font-size="11.5" fill="#e0a94c">secret to MAGGIE</text>
+
+  <rect x="140" y="255" width="130" height="104" rx="10" fill="#161a22" stroke="#8f96a3" stroke-width="1.4"/>
+  <text x="205" y="280" text-anchor="middle" font-size="13" font-weight="700" fill="#d4d9e1">FAILS</text>
+  <text x="205" y="299" text-anchor="middle" font-size="11.5" fill="#c9d1da">envelope stays shut</text>
+  <text x="205" y="317" text-anchor="middle" font-size="11.5" fill="#e0a94c">vote logged —</text>
+  <text x="205" y="333" text-anchor="middle" font-size="11.5" fill="#e0a94c">accuser, count, and all</text>
+
+  <!-- SEARCH -->
+  <rect x="360" y="145" width="220" height="76" rx="10" fill="#1a2233" stroke="#4a9eff" stroke-width="1.6"/>
+  <text x="470" y="175" text-anchor="middle" font-size="15" font-weight="700" fill="#9fd0ff">SEARCH</text>
+  <text x="470" y="196" text-anchor="middle" font-size="12" fill="#c9d1da">toss a space or person</text>
+  <text x="470" y="212" text-anchor="middle" font-size="12" fill="#c9d1da">Investigate check</text>
+
+  <line x1="470" y1="221" x2="470" y2="252" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arr2)"/>
+  <rect x="360" y="255" width="220" height="80" rx="10" fill="#161a22" stroke="#3a3f4b"/>
+  <text x="470" y="283" text-anchor="middle" font-size="12.5" fill="#c9d1da">finds whatever is physically there —</text>
+  <text x="470" y="302" text-anchor="middle" font-size="12.5" fill="#e0a94c">including bystanders' secrets.</text>
+  <text x="470" y="322" text-anchor="middle" font-size="12" font-style="italic" fill="#8f96a3">searches are not precision instruments</text>
+
+  <!-- LET IT LIE -->
+  <rect x="680" y="145" width="220" height="76" rx="10" fill="#161a22" stroke="#8f96a3" stroke-width="1.6"/>
+  <text x="790" y="175" text-anchor="middle" font-size="15" font-weight="700" fill="#d4d9e1">LET IT LIE</text>
+  <text x="790" y="196" text-anchor="middle" font-size="12" fill="#c9d1da">the loss stands</text>
+  <text x="790" y="212" text-anchor="middle" font-size="12" fill="#c9d1da">no one asks</text>
+
+  <line x1="790" y1="221" x2="790" y2="252" stroke="#9aa4b2" stroke-width="1.6" marker-end="url(#arr2)"/>
+  <rect x="680" y="255" width="220" height="80" rx="10" fill="#161a22" stroke="#3a3f4b"/>
+  <text x="790" y="283" text-anchor="middle" font-size="12.5" fill="#c9d1da">logged: this crew doesn't ask.</text>
+  <text x="790" y="302" text-anchor="middle" font-size="12.5" fill="#e0a94c">some patrons read that log.</text>
+  <text x="790" y="322" text-anchor="middle" font-size="12" font-style="italic" fill="#8f96a3">so do some intelligence services</text>
+
+  <!-- footer rail -->
+  <rect x="40" y="384" width="860" height="70" rx="10" fill="#0f1520" stroke="#3a3f4b"/>
+  <text x="470" y="410" text-anchor="middle" font-size="12.5" fill="#c9d1da">Timer expires without consensus → the CAPTAIN decides and owns the log entry.</text>
+  <text x="470" y="432" text-anchor="middle" font-size="12.5" fill="#c9d1da">At any confrontation: motion to replace the captain (majority) · or put someone off-ship at next port (unanimous −1).</text>
+  <text x="470" y="449" text-anchor="middle" font-size="11.5" font-style="italic" fill="#8f96a3">A loyal envelope opened logs every yes vote. Crews remember. MAGGIE makes sure.</text>
+</svg>
