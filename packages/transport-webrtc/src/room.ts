@@ -1,7 +1,20 @@
 import type { EncryptedEnvelope } from "@telemetry/transport";
-import type { DataPayload, Room } from "trystero";
+import { joinRoom, type DataPayload, type Room } from "trystero";
 
 const ENVELOPE_ACTION = "te-envelope";
+
+export interface SessionRoomConfig {
+  readonly appId: string;
+  readonly sessionId: string;
+}
+
+/** [M2-15b] The one place `trystero`'s own `joinRoom` is called. `sessionId` is the room id --
+ * every player pairing into the same campaign session joins the same trystero room -- and
+ * nothing beyond `{appId, sessionId}` is passed, since the encrypted-envelope boundary
+ * (`createEnvelopeChannel`) is the only thing that ever needs to know a session exists. */
+export function joinSessionRoom(config: SessionRoomConfig): Room {
+  return joinRoom({ appId: config.appId }, config.sessionId);
+}
 
 export interface EnvelopeChannel {
   send(envelope: EncryptedEnvelope, targetPeerId?: string): void;

@@ -10,6 +10,8 @@ import {
   type ReplayGuard,
 } from "@telemetry/transport";
 
+export { createEnvelopeChannel, joinSessionRoom, type EnvelopeChannel, type SessionRoomConfig } from "./room.js";
+
 export interface PairingOffer {
   readonly playerId: string;
   readonly bindingEpoch: number;
