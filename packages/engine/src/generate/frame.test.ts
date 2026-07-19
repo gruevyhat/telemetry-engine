@@ -163,6 +163,38 @@ describe("cooldowns and recurrence [Spec §8.3]", () => {
 
 const OTHER_FRAME: IncidentFrame = { ...FIXTURE_FRAME, id: "fixture:other" };
 
+describe("agenda claimant seam [Spec §8.2/§10.2, INV-10]", () => {
+  const claimable = { ...FIXTURE_FRAME, claimant: { agendaActionId: "agenda:divert" } };
+  const claim = {
+    agendaActionId: "agenda:divert",
+    proposals: [{ t: T, kind: "cargo.diverted", actor: { kind: "pc" as const, id: "pc:zhan" }, payload: { lotId: "L1", qty: 1, channel: "private" } }],
+  };
+
+  it("claimed and innocent paths produce byte-identical surface descriptors across seeds", () => {
+    fc.assert(fc.property(fc.string({ minLength: 1 }), (seed) => {
+      const innocent = fireFrame(claimable, T, createRng(seed));
+      const claimed = fireFrame(claimable, T, createRng(seed), claim);
+      expect(claimed.surface).toEqual(innocent.surface);
+      expect(claimed.causeSource).toBe("agenda");
+      expect(innocent.causeSource).toBe("innocentTwin");
+    }));
+  });
+
+  it("retains a concrete innocent alternative for every surfaced claimed incident", () => {
+    fc.assert(fc.property(fc.string({ minLength: 1 }), (seed) => {
+      const claimed = fireFrame(claimable, T, createRng(seed), claim);
+      expect(claimed.innocentAlternativeProposals.length).toBeGreaterThan(0);
+      expect(claimed.surface).toEqual(fireFrame(claimable, T, createRng(seed)).surface);
+    }));
+  });
+
+  it("ignores an unmatched queued action and instantiates the twin", () => {
+    const fired = fireFrame(claimable, T, createRng("unmatched"), { ...claim, agendaActionId: "agenda:other" });
+    expect(fired.causeSource).toBe("innocentTwin");
+    expect(fired.causeProposals[0]!.kind).toBe("lock.cycled");
+  });
+});
+
 describe("drawFrame — a weighted pick from an eligible pool [Spec §8.3, M1-12]", () => {
   it("returns undefined for an empty pool rather than throwing", () => {
     expect(drawFrame([], createRng("seed").derive("draw"))).toBeUndefined();
