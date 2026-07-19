@@ -1,4 +1,4 @@
-import type { ActorRef, Fact, GameTime, PhaseInterpreter } from "@telemetry/engine";
+import type { ActorRef, AdvanceResult, CommitmentPreimages, Fact, GameTime, PhaseInterpreter } from "@telemetry/engine";
 import type { ProtocolPayloadMap } from "@telemetry/transport";
 
 export interface SocialSessionDeps {
@@ -21,8 +21,14 @@ export type CastVoteResult =
 export interface SocialSession {
   /** `comms.queue` (decrypted) -> `queueCommsAction` -> `comms.ack` payload to send back. */
   handleCommsQueue(t: GameTime, message: ProtocolPayloadMap["comms.queue"]): ProtocolPayloadMap["comms.ack"];
-  /** Closes the comms window (referee-driven `advance`); the resulting facts are read off the ledger. */
-  closeCommsWindow(t: GameTime, actor: ActorRef): { readonly committed: readonly Fact[] };
+  /** Advances the current phase-script step (referee-driven) -- closes a comms window (M2-05:
+   * seeded close-order) or fires the incident `generate` step alike. Always goes through
+   * `advanceCommitted`, never the sync `advance`: every M2 step this session drives carries
+   * seeded RNG needing a commit/reveal seal (INV-8), and `advance` throws for exactly these step
+   * kinds once `commitReveal` is configured (interpreter.ts). Not named after one specific step
+   * kind because the same call shape serves both -- the interpreter, not this session, knows what
+   * the current step actually is. */
+  advanceStep(t: GameTime, actor: ActorRef): Promise<AdvanceResult & { readonly commitmentPreimages: CommitmentPreimages }>;
   /** `confrontation.command` (decrypted) -> `declareConfrontation` for `command: "accuse"`. The
    * other typed commands (search/let-lie/replace-captain/put-off-ship) are real protocol shapes
    * but M2-07 itself scoped their branches out unless separately carded, and this card's own
@@ -70,8 +76,8 @@ export function createSocialSession(deps: SocialSessionDeps): SocialSession {
       return { clientCommandId: message.clientCommandId, committedFactId: fact.id };
     },
 
-    closeCommsWindow(t, actor) {
-      return deps.interpreter.advance(t, actor);
+    advanceStep(t, actor) {
+      return deps.interpreter.advanceCommitted(t, actor);
     },
 
     handleConfrontationCommand(t, message) {
