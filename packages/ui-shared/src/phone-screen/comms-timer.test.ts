@@ -32,3 +32,36 @@ describe("host-authoritative COMMS timer [M2-12]", () => {
     expect(timer.isOpen()).toBe(false);
   });
 });
+
+describe("pause and resume on disconnect [M2-13]", () => {
+  it("freezes the exact remaining duration while paused and ignores ticks until resumed", () => {
+    const timer = createCommsWindowTimer(30);
+    timer.tick(13);
+    expect(timer.remainingSeconds()).toBe(17);
+
+    timer.pause();
+    expect(timer.isPaused()).toBe(true);
+    timer.tick(5);
+    timer.tick(100);
+    expect(timer.remainingSeconds()).toBe(17);
+    expect(timer.isOpen()).toBe(true);
+
+    timer.resume();
+    expect(timer.isPaused()).toBe(false);
+    timer.tick(17);
+    expect(timer.remainingSeconds()).toBe(0);
+    expect(timer.isOpen()).toBe(true);
+  });
+
+  it("close still wins even while paused", () => {
+    const timer = createCommsWindowTimer(30);
+    timer.tick(10);
+    timer.pause();
+    timer.close();
+    expect(timer.isOpen()).toBe(false);
+    timer.resume();
+    timer.tick(5);
+    expect(timer.remainingSeconds()).toBe(20);
+    expect(timer.isOpen()).toBe(false);
+  });
+});
