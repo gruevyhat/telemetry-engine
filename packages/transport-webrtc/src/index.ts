@@ -63,6 +63,15 @@ export interface PairingHost {
    * time (INV-13: a client cannot make its message decrypt, or be attributed, under another
    * seat's key just by writing a different playerId in the plaintext). */
   receive(peerId: string, envelope: EncryptedEnvelope): Promise<ReceiveResult>;
+  /** Resolves an inbound `pair.claim` envelope to the right offer by trying each offer's own key
+   * in turn -- the host cannot look a key up by peerId until a claim has already succeeded, so
+   * this is the one place that ordering is inverted (INV-13: only a genuinely correct per-offer
+   * key ever decrypts, so this never widens which envelope binds to which player). A resend of
+   * the same claim token from a new peer id (a real WebRTC reconnect commonly changes trystero's
+   * peer id) is treated as reconnect, not rejected as claimed-by-other. Returns `undefined` when
+   * no offer's key decrypts the envelope at all -- unattributable noise, not a rejection of any
+   * particular claim. */
+  receiveClaim(peerId: string, envelope: EncryptedEnvelope): Promise<ClaimResult | undefined>;
 }
 
 interface Binding {
@@ -92,7 +101,7 @@ export function createPairingHost(config: PairingHostConfig): PairingHost {
     return undefined;
   }
 
-  return {
+  const host: PairingHost = {
     claim(peerId, claim) {
       const binding = bindings.get(claim.playerId);
       if (binding === undefined) {
@@ -147,7 +156,27 @@ export function createPairingHost(config: PairingHostConfig): PairingHost {
       }
       return { status: "accepted", playerId: found.playerId, message };
     },
+    async receiveClaim(peerId, envelope) {
+      for (const [playerId, binding] of bindings) {
+        let message: ProtocolMessage;
+        try {
+          message = await decryptMessage(binding.offer.key, envelope);
+        } catch {
+          continue;
+        }
+        if (message.header.type !== "pair.claim") continue;
+        const payload = message.payload as { playerId: string; claimToken: string };
+        if (payload.playerId !== playerId || payload.claimToken !== binding.offer.claimToken) continue;
+        if (binding.peerId !== undefined && binding.peerId !== peerId) {
+          host.reconnect(playerId, peerId);
+          return { status: "accepted", playerId };
+        }
+        return host.claim(peerId, { playerId, bindingEpoch: binding.offer.bindingEpoch, claimToken: payload.claimToken });
+      }
+      return undefined;
+    },
   };
+  return host;
 }
 
 export interface PairingClientConfig {
