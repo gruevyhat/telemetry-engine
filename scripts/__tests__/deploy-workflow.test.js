@@ -47,6 +47,15 @@ describe("typecheck gate", () => {
   });
 });
 
+describe("integration test gate", () => {
+  it("runs pnpm test:integration in the gate job -- found missing during the M1 retro: no CI job invoked it at all", () => {
+    const gateStart = workflow.indexOf("\n  gate:");
+    expect(gateStart).toBeGreaterThan(0);
+    const gate = workflow.slice(gateStart, workflow.indexOf("\n  content-gate:"));
+    expect(gate).toContain("run: pnpm test:integration");
+  });
+});
+
 describe("content gate change detection", () => {
   it("gates pushes against the pre-push tip so content pushed straight to main is checked", () => {
     const contentGateStart = workflow.indexOf("\n  content-gate:");

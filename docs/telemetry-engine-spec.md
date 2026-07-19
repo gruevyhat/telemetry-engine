@@ -1,5 +1,5 @@
 # TELEMETRY ENGINE — Implementation Specification
-**Short name:** the Spec · **Status:** v0.2 · **Supersedes:** telemetry-engine-tdd.md (v0.1)
+**Short name:** the Spec · **Status:** v0.3 · **Supersedes:** telemetry-engine-tdd.md (v0.1)
 **Audience:** implementing agents, human and LLM. Significant portions of this project will be built by weaker models under supervision. The Spec is therefore written to be *executed*, not just read: every load-bearing module carries a *Contract*, explicit *Invariants*, a *Why* (so an implementer who hits an unspecified case can extrapolate the intent instead of guessing), a worked *Example*, and *Do-not* items naming the tempting wrong turns.
 
 **Conventions.** MUST/SHOULD/MAY per RFC 2119. `code` identifiers are normative names. "Content" means data files under `content/`; "engine" means code under `packages/engine`. A requirement tagged **[INV-n]** is a testable invariant; the Test Plan (§21) enumerates all of them.
@@ -121,6 +121,12 @@ interface PhaseStep {
 
 Guarantees: exactly one active step; every transition logged as a fact; resumable from any save mid-step. The four beats are `content/frames/*/turn.json`; confrontations are a sub-script invoked by clock triggers or player declaration.
 **Do not:** hard-code any beat sequence in engine code. If a frame wants five beats, that's a content file.
+
+**Mid-beat player actions.** Not every ledger write is a beat transition. A player-initiated action reachable *during* a beat (interrogating an NPC, pursuing evidence) still falls under INV-6 ("nothing writes to the ledger except the phase-engine interpreter"), but has no natural `PhaseStep.kind`/`resolveStep` case, since it's chosen live rather than pre-scripted. Two sanctioned shapes, decided case by case against the action's actual needs (M1-15/M1-16, 2026-07-18):
+- **A `PhaseInterpreter` action method**, sibling to `advance()`, when the action needs to compute something from live input and append through the interpreter's own state — e.g. `reportCheck(t, actor, {skill, dm, total, difficulty})`, which computes `effect = total - difficulty` and appends one `check.reported` fact without moving `currentStep()`.
+- **A standalone commit function** under `packages/engine/src/phases/` (not a `PhaseInterpreter` method) when the action's proposal is already assembled by a pure function elsewhere and the only remaining job is the ledger write itself — e.g. `commitEvidenceReveal(ledger, plan)` wrapping `ledger.appendAll` for a plan `rankAndPlanReveal` already built, or `commitInterrogationAnswer(ledger, answer, t)` committing the `npc.statement`(table)/`npc.truthTierAssigned`(referee) fact pair (fact-kinds-v0.md §3). These exist because INV-6's boundary is the `phases/` directory, not the `PhaseInterpreter` type — a function needing only a `Ledger`, no script/step context, doesn't need to be a method.
+
+Before adding a new action of either shape, check `packages/engine/src/phases/commits.ts` for one that already does it — both M1-15 and M1-16 initially proposed a new interpreter method before finding the real commit function already existed there with zero callers.
 
 ---
 
@@ -246,7 +252,7 @@ interface Agenda {
 }
 ```
 
-Chosen actions queue per §3.3, validate like world events (agenda work obeys physics), and register as **claimants** on matching incident frames — the mechanical seam where traitor action and innocent twin produce identical surfaces. Envelope-open: all agenda facts for that player widen to `public`; `objective.forfeit` posts; MAGGIE gains a **deferred-reveal token** on the player's private-objective facts — a scheduled event the phase engine MAY cash in later.
+Chosen actions queue per §3.3, validate like world events (agenda work obeys physics), and register as **claimants** on matching incident frames — the mechanical seam where traitor action and innocent twin produce identical surfaces. Envelope-open — forced only by a majority confrontation vote (rulebook §8.2; the player-facing term is **burned**), never voluntary: all agenda facts for that player widen to `public`; `objective.forfeit` posts; MAGGIE gains a **deferred-reveal token** on the player's private-objective facts — a scheduled event the phase engine MAY cash in later. The vote itself, carried or failed, posts as a public `vote.recorded` fact carrying the per-player tally.
 
 ---
 
@@ -449,8 +455,8 @@ The canonical end-to-end trace; every module PR keeps this current (§21.5.5). C
 | F19 | `clock.tick` | d14→15 | referee | public | obligation −1 day | INV-11 |
 | F20 | `check.reported` | d15·ARR | pc:brennan | public | Computers 11 vs 8, Effect 3 | |
 | F21 | `reveal` | d15·ARR | referee | table | widens F11 {time, door, code-class} — **not** actor identity | Effect-ranked partial widening (§10.1) |
-| F22 | `confrontation.opened` | d15·ARR | pc:zhan | public | accuses pc:deuce | sub-script |
-| F23 | `envelope.opened` | d15·ARR | pc:deuce | public | LOYAL; objective.forfeit; deferred-reveal token minted | |
+| F22 | `confrontation.opened` | d15·ARR | pc:zhan | public | accuses pc:deuce; vote carries 2–1 | sub-script; a majority forces the open |
+| F23 | `envelope.opened` | d15·ARR | pc:deuce | public | LOYAL — burned; objective.forfeit; deferred-reveal token minted | forced by the carried vote (its `vote.recorded` fact elided from this trace); never voluntary |
 | F24 | `reveal` | d15·ARR | referee | public | F11 actor class: retained crew code, kessler named via F03 linkage | confrontation resolution widens the rest |
 
 Black box at campaign end prints F00–F24 with all scopes lifted, plus commitment preimages (F14 et al.) so the table can verify that no traitor draw ever happened — which, this campaign, is the whole tragedy.

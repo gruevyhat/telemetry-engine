@@ -81,6 +81,8 @@ Write `docs/handoffs/<task-id>-<n>.md`: state of the branch · what's red/green 
 
 Tasks are sized for one focused session (≤ ~600 changed lines including tests). M0–M1 are broken down fully now; M2–M5 are epic-level and get task breakdown at milestone planning, informed by the prior retro (§8). Task cards live in `docs/tasks/` as files with this front-matter: `{id, title, spec_refs[], invariants[], tests_first[], done_when[], do_not[]}`.
 
+A task that stands up a whole new package (multiple real sub-deliverables under one `packages/*` directory that didn't exist before, the way M1-12 built `packages/sim`'s roster enumeration, campaign loop, lineup configs, metric collectors, export, and headless runner as a single card) should default to being split into one card per sub-deliverable at milestone-planning time, the way M1-11 was split into M1-11a/M1-11b — not sized down after the fact once it's already overrun. Flagged at the M1 retro after M1-12 landed at 1015 changed lines under one card.
+
 ### Demo at every milestone
 
 Every milestone MUST end with a runnable demo of the capability that milestone adds. A local demo is the minimum acceptable form; a hosted build MAY supplement it but MUST NOT be required to prove the milestone. The demo must use shipped UI and content, exercise the milestone's defining path end to end, and be repeatable from a clean checkout with documented commands and a short walkthrough under `docs/demos/M<n>.md`. The owner runs that walkthrough before the milestone PR opens and records the outcome in the retro. Passing automated gates without a runnable demo does not close a milestone.
@@ -120,7 +122,7 @@ Every milestone MUST end with a runnable demo of the capability that milestone a
 **M1 exit demo:** the owner plays a full 4-turn solo cycle by hand, start to Obligation payment, using only the locally launched shipped UI and content. Fun is assessed at the retro; mechanics are assessed by the gate.
 
 ### M2–M5 — epics (task breakdown at each milestone planning)
-- **M2 the social game:** agenda deal + commitment facts · comms-window queue/shuffle/fizzle (Spec §3.3) · confrontation sub-script · envelope/forfeit/deferred-reveal · WebRTC transport + QR pairing + timer pause · commit-reveal (INV-8) · referee-scope encryption at rest (§16) · sim bots gain accuse/vote policies; misattribution tuning begins.
+- **M2 the social game:** agenda deal + commitment facts · comms-window queue/shuffle/fizzle (Spec §3.3) · confrontation sub-script (envelope opens are forced by majority vote, rulebook §8.2 — no voluntary open) · envelope/forfeit/deferred-reveal · WebRTC transport + QR pairing + timer pause · commit-reveal (INV-8) · referee-scope encryption at rest (§16) · sim bots gain accuse/vote policies; misattribution tuning begins.
 - **M3 Traveller plugin:** character import (travtools JSON round-trip) · SEC sector import + TravelModel · trust mode · career edges · INV-9 over real sector data.
 - **M4 exploration + props:** fog visibility on hexes · survey charters frame · print pack pipeline (HTML print stylesheet; manifest-with-embedded-skim first).
 - **M5 full pillar set:** engagement resolver (§13) · heat + legends with reverse validation (§11) · LLM renderer behind flag with entity guard; sim parity run (metrics identical LLM on/off).
