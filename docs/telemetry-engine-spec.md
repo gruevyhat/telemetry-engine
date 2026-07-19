@@ -246,7 +246,7 @@ interface Agenda {
 }
 ```
 
-Chosen actions queue per §3.3, validate like world events (agenda work obeys physics), and register as **claimants** on matching incident frames — the mechanical seam where traitor action and innocent twin produce identical surfaces. Envelope-open: all agenda facts for that player widen to `public`; `objective.forfeit` posts; MAGGIE gains a **deferred-reveal token** on the player's private-objective facts — a scheduled event the phase engine MAY cash in later.
+Chosen actions queue per §3.3, validate like world events (agenda work obeys physics), and register as **claimants** on matching incident frames — the mechanical seam where traitor action and innocent twin produce identical surfaces. Envelope-open — forced only by a majority confrontation vote (rulebook §8.2; the player-facing term is **burned**), never voluntary: all agenda facts for that player widen to `public`; `objective.forfeit` posts; MAGGIE gains a **deferred-reveal token** on the player's private-objective facts — a scheduled event the phase engine MAY cash in later. The vote itself, carried or failed, posts as a public `vote.recorded` fact carrying the per-player tally.
 
 ---
 
@@ -449,8 +449,8 @@ The canonical end-to-end trace; every module PR keeps this current (§21.5.5). C
 | F19 | `clock.tick` | d14→15 | referee | public | obligation −1 day | INV-11 |
 | F20 | `check.reported` | d15·ARR | pc:brennan | public | Computers 11 vs 8, Effect 3 | |
 | F21 | `reveal` | d15·ARR | referee | table | widens F11 {time, door, code-class} — **not** actor identity | Effect-ranked partial widening (§10.1) |
-| F22 | `confrontation.opened` | d15·ARR | pc:zhan | public | accuses pc:deuce | sub-script |
-| F23 | `envelope.opened` | d15·ARR | pc:deuce | public | LOYAL; objective.forfeit; deferred-reveal token minted | |
+| F22 | `confrontation.opened` | d15·ARR | pc:zhan | public | accuses pc:deuce; vote carries 2–1 | sub-script; a majority forces the open |
+| F23 | `envelope.opened` | d15·ARR | pc:deuce | public | LOYAL — burned; objective.forfeit; deferred-reveal token minted | forced by the carried vote (its `vote.recorded` fact elided from this trace); never voluntary |
 | F24 | `reveal` | d15·ARR | referee | public | F11 actor class: retained crew code, kessler named via F03 linkage | confrontation resolution widens the rest |
 
 Black box at campaign end prints F00–F24 with all scopes lifted, plus commitment preimages (F14 et al.) so the table can verify that no traitor draw ever happened — which, this campaign, is the whole tragedy.

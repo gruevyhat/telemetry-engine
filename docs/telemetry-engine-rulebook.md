@@ -174,9 +174,11 @@ Declare what you're checking — a log, a lock, a cover story, a crate's seals, 
 
 Triggered by any player, or by MAGGIE when a clock demands it. Five minutes on the shared screen. Three resolutions:
 
-- **Accuse.** Name a crewmate publicly. The accused chooses: **open their envelope** — proving exactly what they are, forfeiting their private objective, and surrendering their secret to MAGGIE's timing — or **refuse**, accepting formally logged suspicion. False accusations are logged against the accuser. Crews remember. MAGGIE makes sure.
+- **Accuse.** Name a crewmate and make the case inside the five minutes; then the crew votes, accused included. **A majority carries: the accused must open their envelope.** No refusing, no bargaining — once the count goes against you, the envelope belongs to the crew. It is read aloud: exactly what they are, agenda or no. The opened crewmate is **burned** — their private objective is forfeit, and their secret passes to MAGGIE's timing. A failed vote is logged, accuser and count and all. A vote that opens a **loyal** envelope is logged with every yes attached. Crews remember. MAGGIE makes sure. And yes — you may call the vote on yourself, if proof seems worth the price. The crew is under no obligation to grant it.
 - **Search.** Toss a space or a person: Investigate check. A search finds *whatever is physically there* — including bystanders' secrets. Searches are not precision instruments.
 - **Let it lie.** The loss stands, and the log records that this crew doesn't ask questions. Some patrons read that log. So do some intelligence services.
+
+**A burned crew member plays on.** Berth, skills, wages, dice, comms windows — all of it continues, and every phone still lights up during the window; the silence protects the burned as much as anyone. What is gone is the private game: no objective, no agenda, nothing left to hide and nothing left to win alone. The ship's fate is their whole score now. Some of the most dangerous people in this game have nothing left to lose and a vote they would like somebody to regret.
 
 Timer expires without consensus → the **captain** decides and owns the entry. At any confrontation a player may instead move to **replace the captain** (majority) or **put someone off at the next port** (unanimous minus one). Both are logged in language the black box will quote back at you.
 
@@ -215,7 +217,7 @@ Two scores: the **ship's fate** (shared) and **your objective** (yours alone). T
 
 **Ship outcomes, per cycle:** **PAID IN FULL** (obligation met, Cr10,000+ remaining) · **SCRAPED BY** (met, nothing left) · **DEFAULT** (campaign ends).
 
-**Personal outcomes:** your private objective **completed**, **failed**, or **forfeited** (you opened your envelope). Completing it is your win regardless of the ship's ledger. Agendas score the same way. Get paid any two ways you like: rich and loyal, poor and treacherous, or the rare clean sweep.
+**Personal outcomes:** your private objective **completed**, **failed**, or **forfeited** (burned: the crew voted your envelope open). Completing it is your win regardless of the ship's ledger. Agendas score the same way. Get paid any two ways you like: rich and loyal, poor and treacherous, or the rare clean sweep.
 
 **Campaign end:** obligation retired in full (the grand shared victory) · default · a vote to disband · no crew left standing.
 
@@ -231,7 +233,7 @@ Two scores: the **ship's fate** (shared) and **your objective** (yours alone). T
 
 **Duo — "Cold Partnership."** Two PCs plus 2–3 NPC crew. Base mode is cooperative: the world and possibly an NPC are the problem. The optional **Cold Start** toggle deals both players envelopes at the published odds — *both, one, or neither* of you may be working a side — which turns a two-hander into a very quiet knife fight. Recommended only for couples with strong communication or siblings with none.
 
-**NPC crew mechanics (both modes):** NPCs roll their own competence when tasked (MAGGIE rolls openly), consume wages and life support, appear in evidence trails exactly like players, and can be searched, accused, confronted, and put off the ship. They cannot open envelopes; interrogation and evidence are your only windows into them. MAGGIE plays them fair and plays them selfish.
+**NPC crew mechanics (both modes):** NPCs roll their own competence when tasked (MAGGIE rolls openly), consume wages and life support, appear in evidence trails exactly like players, and can be searched, accused, confronted, and put off the ship. They cannot be burned — their envelopes stay shut until the black box; interrogation and evidence are your only windows into them. MAGGIE plays them fair and plays them selfish.
 
 ---
 
@@ -262,7 +264,7 @@ Characters persist in the roster across campaigns, carrying scars, credits, and 
 > **DEUCE:** "I ran that loading."
 > **ZHAN:** "You also voted to take the mystery box."
 > **MAGGIE:** "A confrontation has been declared. Five minutes." *(timer appears; the ticker logs: CONFRONTATION — ACCUSER: OKONKWO)*
-> *Four loud minutes later, Zhan formally accuses Deuce. Deuce slides his envelope across the table and tears it open himself: LOYAL — private objective forfeited.*
+> *Four loud minutes later, Zhan formally accuses Deuce and calls the vote. Brennan hesitates, then sides with the captain: two to one. Deuce slides his envelope across the table and tears it open himself: LOYAL — burned, private objective forfeited.*
 > **MAGGIE:** "Accusation resolved: unfounded, and logged. For the record: the 0340 cycle used the captain's duty override — a code your engineer, discharged at Vantage three weeks ago *for cause*, never returned. Dock pilferage with inside help is common on C-class ports. Funds: Cr194,400 against Cr154,000 due in 14 days. Next market feed at 0800. The camera has been repaired. Sleep well."
 >
 > *Nobody was a traitor. The crew now has a logged false accusation, a forfeited secret MAGGIE will spend later, and a captain whose override code is dirty. Turn 3 is going to be talkative.*
@@ -289,13 +291,13 @@ Incidents arrive in families; knowing the families is fair, knowing the tells is
 | Phones up, 30 seconds, silence | Every COMMS window |
 | Evidence action = 1 day | DOCKSIDE or ARRIVAL |
 | Accuse / search / let it lie | Confrontations, 5:00 |
-| Envelope open = truth + forfeit | Your call, once, ever |
+| Vote an envelope open = burned: truth + forfeit | Majority at a confrontation; once each, ever |
 | Mind the staleness tag | Every feed, every rumor |
 | The Obligation | Always. Yes, always. |
 
 ## GLOSSARY
 
-**Agenda** — secret work against the crew's interest; held by all, some, or none. · **Beat** — one of the four phases of a turn (DOCKSIDE, COMMS, TRANSIT, ARRIVAL). · **Black box** — end-of-campaign ground truth, printed and read aloud. · **Boon/Bane** — 3d6 keep best/worst two. · **Check** — 2d6 + skill vs. difficulty (plugin-defined). · **Comms window** — the timed, universal, silent private phase. · **Effect** — margin of success; MAGGIE converts it to outcomes. · **Engagement** — warfare's three-decision battle resolution. · **Envelope** — your sealed identity; opening it is proof at a price. · **Frame** — a campaign configuration: lead pillar, Obligation, agenda odds. · **Heat** — espionage's clock: institutional attention, slow to cool. · **Information horizon** — news is stale by one week per parsec; every feed is tagged. · **Jump rating** — parsecs per transit; the leash on your ambitions. · **Legend** — an issued cover identity; contradict it and heat rises. · **MAGGIE** — *Manifest Auditing, General Governance & Incident Evaluation*; the Traveller plugin's ship's-computer persona — referee, recordkeeper, and the bank's most local representative. That expansion is what the lease paperwork says; crews of the *Margin Call* insist it's just short for the ship's name. Both are true, and MAGGIE declines to settle it. · **NPC crew** — MAGGIE-run crew in 1–2 player games; searchable, accusable, occasionally guilty. · **Obligation** — the frame's doom clock; the game's true antagonist. · **Pillar** — one of four trouble genres: trade, exploration, warfare, espionage. · **Plugin** — the rules-and-setting module under the engine; Traveller is the launch plugin. · **Staleness tag** — the age of any information, in weeks, always shown. · **The reckoning / edge-of-map vote / after-action review / unmasking** — the four pillars' signature confrontations.
+**Agenda** — secret work against the crew's interest; held by all, some, or none. · **Beat** — one of the four phases of a turn (DOCKSIDE, COMMS, TRANSIT, ARRIVAL). · **Black box** — end-of-campaign ground truth, printed and read aloud. · **Boon/Bane** — 3d6 keep best/worst two. · **Burned** — voted open by the crew; truth shown, private game over, still aboard. · **Check** — 2d6 + skill vs. difficulty (plugin-defined). · **Comms window** — the timed, universal, silent private phase. · **Effect** — margin of success; MAGGIE converts it to outcomes. · **Engagement** — warfare's three-decision battle resolution. · **Envelope** — your sealed identity; the crew can vote it open, burning its holder. · **Frame** — a campaign configuration: lead pillar, Obligation, agenda odds. · **Heat** — espionage's clock: institutional attention, slow to cool. · **Information horizon** — news is stale by one week per parsec; every feed is tagged. · **Jump rating** — parsecs per transit; the leash on your ambitions. · **Legend** — an issued cover identity; contradict it and heat rises. · **MAGGIE** — *Manifest Auditing, General Governance & Incident Evaluation*; the Traveller plugin's ship's-computer persona — referee, recordkeeper, and the bank's most local representative. That expansion is what the lease paperwork says; crews of the *Margin Call* insist it's just short for the ship's name. Both are true, and MAGGIE declines to settle it. · **NPC crew** — MAGGIE-run crew in 1–2 player games; searchable, accusable, occasionally guilty. · **Obligation** — the frame's doom clock; the game's true antagonist. · **Pillar** — one of four trouble genres: trade, exploration, warfare, espionage. · **Plugin** — the rules-and-setting module under the engine; Traveller is the launch plugin. · **Staleness tag** — the age of any information, in weeks, always shown. · **The reckoning / edge-of-map vote / after-action review / unmasking** — the four pillars' signature confrontations.
 
 ---
 

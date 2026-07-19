@@ -68,10 +68,10 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 |---|---|---|---|
 | `agenda.dealt` | {playerId: string, result: boolean, tier?: string} | referee | — |
 | `agenda.actionTaken` | {playerId: string, actionId: string, frameClaim?: string} | referee | action-specific: each AgendaAction carries its own implies bundle in content, validated by content-lint against this catalog |
-| `envelope.opened` | {playerId: string, contents: unknown} | public | — |
+| `envelope.opened` | {playerId: string, contents: unknown} — committed only by the confrontation sub-script after a majority vote carries (rulebook §8.2's *burned* state, 2026-07-18 redesign); linked to its `vote.recorded` fact via `causes`; never voluntary | public | — |
 | `objective.forfeit` | {playerId: string} | public | — |
 | `confrontation.opened` | {declarer: string, mode: string, target?: string} | public | — |
-| `confrontation.resolved` | {outcome: string, logNote: string} | public | — |
+| `confrontation.resolved` | {outcome: string, logNote: string} — the accusation vote's per-player tally is *not* here: it posts as the existing `vote.recorded` kind, linked via `causes` (2026-07-18 vote-forced-open redesign; rulebook §8.2 logs every yes on a carried open, accuser and count on a failed one) | public | — |
 | `npc.hired` | {npcId: string, role: string, wage: number} | public | — |
 | `npc.statement` | {npcId: string, topic: string} | table | — (companion `npc.truthTierAssigned` fact carries the referee-scoped tier, see below and §3) |
 | `npc.truthTierAssigned` | {tier: string — intended values `'evasion'\|'partial'\|'trueWithTell'\|'true'`, not yet enum-enforced by the registry (`FieldSchema` has no enum type as of M0)} | referee | — (linked to its `npc.statement` via the fact-level `causes` field, not a payload field — see §3; named at the M0 retro, closing the gap the original table left as prose-only) |
