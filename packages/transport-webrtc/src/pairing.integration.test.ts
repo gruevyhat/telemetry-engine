@@ -64,4 +64,32 @@ describe("WebRTC pairing core [M2-11, INV-13]", () => {
     const staleEnvelope = await encryptMessage(zhanKey, { header: { ...header, messageId: "client-msg-0", sequence: 0 }, payload: message.payload });
     expect(await host.receive("peer-zhan", staleEnvelope)).toEqual({ status: "rejected", reasonCode: "replay" });
   });
+
+  it("resolves an inbound pair.claim envelope to the right offer without knowing the peer id in advance, and treats a resend from a new peer id as reconnect", async () => {
+    const host = createPairingHost({ sessionId: "session-a", hostEpoch: 1, offers: [
+      { playerId: "pc:zhan", bindingEpoch: 1, claimToken: "claim-zhan", key: zhanKey },
+      { playerId: "pc:deuce", bindingEpoch: 1, claimToken: "claim-deuce", key: deuceKey },
+    ] });
+    const claimHeader: BoundHeader<"pair.claim"> = { protocolVersion: PROTOCOL_VERSION, sessionId: "session-a", hostEpoch: 1, bindingEpoch: 1, sequence: 1, messageId: "claim-1", type: "pair.claim" };
+    const zhanClaimEnvelope = await encryptMessage(zhanKey, { header: claimHeader, payload: { playerId: "pc:zhan", claimToken: "claim-zhan" } });
+
+    // No offer's key decrypts noise -- an unrelated peer produces no attributable claim at all.
+    const noise = await encryptMessage(new Uint8Array(32).fill(7), { header: claimHeader, payload: { playerId: "pc:zhan", claimToken: "claim-zhan" } });
+    expect(await host.receiveClaim("peer-noise", noise)).toBeUndefined();
+
+    // A fresh, correctly keyed claim resolves to the right player without the caller ever naming
+    // a peer -> offer mapping itself.
+    expect(await host.receiveClaim("peer-zhan", zhanClaimEnvelope)).toEqual({ status: "accepted", playerId: "pc:zhan" });
+
+    // The same claim token, re-sent from a different peer id (a real WebRTC reconnect after a
+    // network drop routinely gets a new trystero peer id) -- token possession is the
+    // authorization (screens-v2: "retry while offer is valid"), so this is accepted as a
+    // reconnect, not rejected as a hijack.
+    expect(await host.receiveClaim("peer-zhan-reconnected", zhanClaimEnvelope)).toEqual({ status: "accepted", playerId: "pc:zhan" });
+
+    // The rebind is real: only the new peer id can now decrypt as pc:zhan via receive().
+    const queueHeader: BoundHeader<"comms.queue"> = { protocolVersion: PROTOCOL_VERSION, sessionId: "session-a", hostEpoch: 1, bindingEpoch: 1, sequence: 2, messageId: "queue-1", type: "comms.queue" };
+    const queueEnvelope = await encryptMessage(zhanKey, { header: queueHeader, payload: { playerId: "pc:zhan", clientSequence: 1, clientCommandId: "zhan-1", windowId: "window-1", actionId: "agenda:skim" } });
+    expect((await host.receive("peer-zhan-reconnected", queueEnvelope)).status).toBe("accepted");
+  });
 });
