@@ -52,4 +52,8 @@ PR descriptions and commit messages are read by humans inspecting the change, no
 - Extrapolation notes should read as a short, followable account — what was ambiguous, what you chose, why — not a compressed citation trail.
 
 ## Current milestone
-M1 — the solo trade game ("Quiet Ship"). Take the lowest-numbered unclaimed card in `docs/tasks/M1-*.md`. M0 shipped and merged to `main` on 2026-07-13 (PR #5).
+M2 — the social game (agenda deal, comms-window queue, forced confrontation opens, envelope/forfeit/deferred-reveal, WebRTC transport + QR pairing, commit-reveal, referee-scope encryption at rest; Plan §5). M1 shipped and merged to `main` on 2026-07-18 (PR #7), with a small post-merge follow-up (PR #8) and the M1 retro's Actions 1-4 (PR #9) on 2026-07-19.
+
+M2 has no task cards yet — Plan §5 treats M2-M5 as epic-level, broken into cards only at milestone planning, and that breakdown hasn't happened as a recorded step even though `milestone/M2` already carries substantial commit history. Do not assume the existing M2 branch commits constitute a completed or owner-reviewed task breakdown; if you're starting M2 work, check whether cards exist first and flag it if they don't.
+
+**Open gate, not yet resolved:** Plan §9's schedule posture states the project's falsifiable bet in bold — "if M1's solo trade loop isn't fun with templates and one clock, stop and redesign before M2." The M1 retro (`docs/retros/M1.md`, Action 5) left this explicitly open pending the owner's own account of the M1 walkthrough; it was deferred, not resolved, and M2 work proceeded regardless. Do not treat M1's fun as validated just because M2 has commits.
