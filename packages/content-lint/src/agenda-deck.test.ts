@@ -11,7 +11,7 @@ const validate = new Ajv({ allErrors: true }).compile(schema);
 const VALID = {
   id: "fixture:agendas",
   odds: 0.3,
-  tierWeights: { orthogonal: 0.2, parasitic: 0.5, hostile: 0.3 },
+  tierWeights: { orthogonal: 0, parasitic: 0, hostile: 1 },
   routineObjective: {
     id: "routine:survive",
     successCondition: { kinds: ["jump.plotted"], rankBy: "probative", threshold: 1 },
@@ -59,8 +59,13 @@ describe("agenda deck schema and referential lint [Spec §10.2/§19, M2-03]", ()
     invalid.agendas[0]!.successCondition.kinds = ["missing.kind"];
     invalid.agendas[0]!.actions[0]!.labelTemplate = "missing.template";
     invalid.agendas[0]!.actions[0]!.target!.kinds = ["jump.plotted"];
-    invalid.agendas[0]!.actions[0]!.proposals[0]!.kind = "missing.proposal";
-    invalid.agendas[0]!.actions[0]!.proposals[0]!.payload = { missingField: 1 };
+    invalid.agendas[0]!.actions[0]!.proposals[0]!.payload = {
+      lotId: { ref: "target", field: "lotId" },
+      qty: 1,
+      channel: "private",
+      missingField: 1,
+    };
+    invalid.agendas[0]!.actions[0]!.proposals.push({ kind: "missing.proposal", actor: { ref: "self" }, payload: {} });
     invalid.agendas[0]!.actions[0]!.implies = [{ kind: "missing.implication" }];
 
     const errors = agendaReferentialErrors(invalid, [{ id: "frame:test", claimant: { agendaActionId: "missing.action" } }], "fixture");

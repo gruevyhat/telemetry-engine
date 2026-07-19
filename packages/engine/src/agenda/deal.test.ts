@@ -74,7 +74,7 @@ const RAW_DECK = {
 
 function setup(odds: number) {
   const deck: AgendaDeck = loadAgendaDeck({ ...RAW_DECK, odds });
-  const campaignSeed = "agenda-deal-seed";
+  const campaignSeed = "agenda-1";
   const campaignSalt = "agenda-deal-salt";
   const ledger = createLedger(createKindRegistry(KINDS_V0));
   const interpreter = createPhaseInterpreter(ledger, loadPhaseScript(SCRIPT), {

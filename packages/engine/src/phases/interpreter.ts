@@ -1,5 +1,6 @@
 import { derive, type Projection } from "../ledger/derive.js";
 import { generateCommittedWeeklyTicks, type GenerateCommittedWeeklyTicksInput } from "../economy/market.js";
+import { planAgendaDeal, type AgendaDeck } from "../agenda/index.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
@@ -297,6 +298,7 @@ export interface PhaseInterpreter {
   advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult;
   advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }>;
   commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
+  dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   queueCommsAction(action: Readonly<Record<string, unknown>>): void;
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
@@ -306,7 +308,7 @@ export interface PhaseInterpreter {
 
 export interface CommitmentPreimages {
   readonly seed?: CampaignSeedPreimage;
-  readonly draws: readonly SecretDrawPreimage<number>[];
+  readonly draws: readonly SecretDrawPreimage[];
 }
 
 export type CommitMarketTicksInput = Omit<
@@ -429,6 +431,14 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     };
   }
 
+  async function dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }) {
+    const seed = await ensureSeedCommitment(input.t);
+    const context = deps!.commitReveal!;
+    const plan = await planAgendaDeal({ ...input, ...context, rng: deps!.rng, seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string } });
+    const committed = ledger.appendAll(plan.proposals);
+    return { committed: [...seed.committed, ...committed], commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: plan.preimages } };
+  }
+
   function queueCommsAction(action: Readonly<Record<string, unknown>>): void {
     commsQueue.push(action);
   }
@@ -443,5 +453,5 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     });
   }
 
-  return { currentStep, advance, advanceCommitted, commitMarketTicks, queueCommsAction, reportCheck };
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, reportCheck };
 }

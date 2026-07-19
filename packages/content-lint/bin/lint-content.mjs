@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import Ajv from "ajv";
+import { agendaReferentialErrors } from "../src/agenda-lint.js";
 
 const contentDir = new URL("../../../content/", import.meta.url);
 const framesDir = new URL("frames/", contentDir);
@@ -8,6 +9,7 @@ const phaseSchemaUrl = new URL("../../engine/src/phases/phase-script.schema.json
 const templatesSchemaUrl = new URL("../../engine/src/phases/announce-templates.schema.json", import.meta.url);
 const incidentFrameSchemaUrl = new URL("../../engine/src/generate/incident-frame.schema.json", import.meta.url);
 const slotTablesSchemaUrl = new URL("../../engine/src/generate/slot-tables.schema.json", import.meta.url);
+const agendaDeckSchemaUrl = new URL("../../engine/src/agenda/agenda-deck.schema.json", import.meta.url);
 
 function readJson(url) {
   return JSON.parse(readFileSync(url, "utf8"));
@@ -72,11 +74,13 @@ const validateScript = ajv.compile(readJson(phaseSchemaUrl));
 const validateTemplates = ajv.compile(readJson(templatesSchemaUrl));
 const validateFrame = ajv.compile(readJson(incidentFrameSchemaUrl));
 const validateSlotTables = ajv.compile(readJson(slotTablesSchemaUrl));
+const validateAgendaDeck = ajv.compile(readJson(agendaDeckSchemaUrl));
 const failures = [];
 let scriptCount = 0;
 let templateCount = 0;
 let frameCount = 0;
 let slotTableCount = 0;
+let agendaCount = 0;
 
 for (const entry of readdirSync(framesDir, { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
@@ -151,7 +155,23 @@ if (existsSync(decksDir)) {
         }
       }
 
-      if (deckValid && slotTablesValid) {
+      const agendasUrl = new URL("agendas.json", deckDir);
+      let agendasValid = true;
+      if (existsSync(agendasUrl)) {
+        const agendas = readJson(agendasUrl);
+        agendasValid = validateAgendaDeck(agendas);
+        if (!agendasValid) failures.push(`${label}/agendas.json: ${ajv.errorsText(validateAgendaDeck.errors)}`);
+        else {
+          const agendaErrors = agendaReferentialErrors(agendas, frames, `${label}/agendas.json`);
+          if (agendaErrors.length > 0) { agendasValid = false; failures.push(...agendaErrors); }
+          else agendaCount += agendas.agendas.length;
+        }
+      } else if (frames.some((frame) => frame.claimant)) {
+        agendasValid = false;
+        failures.push(`${label}: frames with agenda claimants require agendas.json`);
+      }
+
+      if (deckValid && slotTablesValid && agendasValid) {
         frameCount += frames.length;
         if (existsSync(slotTablesUrl)) {
           slotTableCount += Object.keys(readJson(slotTablesUrl)).length;
@@ -169,6 +189,7 @@ if (failures.length > 0) {
 }
 
 const deckSummary = frameCount > 0 ? ` and ${frameCount} incident frame${frameCount === 1 ? "" : "s"} (${slotTableCount} named slot table${slotTableCount === 1 ? "" : "s"})` : "";
+const agendaSummary = agendaCount > 0 ? ` and ${agendaCount} agenda${agendaCount === 1 ? "" : "s"}` : "";
 console.log(
-  `content-lint: ${scriptCount} phase script${scriptCount === 1 ? "" : "s"} and ${templateCount} announce templates valid${deckSummary}.`,
+  `content-lint: ${scriptCount} phase script${scriptCount === 1 ? "" : "s"} and ${templateCount} announce templates valid${deckSummary}${agendaSummary}.`,
 );
