@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { EncryptedEnvelope } from "@telemetry/transport";
 import type { Room } from "trystero";
-import { createEnvelopeChannel } from "./room.js";
+import { createEnvelopeChannel, joinSessionRoom } from "./room.js";
+
+const joinRoomMock = vi.fn();
+vi.mock("trystero", () => ({ joinRoom: (...args: unknown[]) => joinRoomMock(...args) }));
 
 interface FakeAction {
   send: (data: unknown, options?: { target?: string }) => Promise<void>;
@@ -52,5 +55,17 @@ describe("thin trystero envelope channel [M2-11, INV-13]", () => {
     channelA.send(envelope, "peer-b");
 
     expect(received).toEqual([{ envelope, peerId: "peer-a" }]);
+  });
+});
+
+describe("session room join [M2-15b]", () => {
+  it("joins trystero under the app's own appId and the session id as the room id, nothing else", () => {
+    const fakeRoom = { makeAction: () => ({ send: async () => {}, onMessage: null }) } as unknown as Room;
+    joinRoomMock.mockReturnValue(fakeRoom);
+
+    const room = joinSessionRoom({ appId: "telemetry-engine", sessionId: "session-a" });
+
+    expect(room).toBe(fakeRoom);
+    expect(joinRoomMock).toHaveBeenCalledWith({ appId: "telemetry-engine" }, "session-a");
   });
 });
