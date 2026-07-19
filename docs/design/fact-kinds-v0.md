@@ -24,7 +24,8 @@ re-guessing. `?` marks an optional field.
 | `phase.transition` | {fromStep: string, toStep: string, frame?: string} | public | — |
 | `clock.tick` | {clockId: string, delta: number, cause?: string} | per clock def | — |
 | `check.reported` | {actor: string, skill: string, dm: number, total: number, difficulty: number, effect: number} | public | — |
-| `secretRoll.committed` | {hash: string} | public | — |
+| `campaign.seedCommitted` | {hash: string, scheme: string} | public | — |
+| `secretRoll.committed` | {hash: string, scheme: string, seedCommitmentFactId: FactID} | public | — |
 | `oracle.answered` | {question: string, likelihood: string, answer: string, texture?: string} | table | — |
 | `correction` | {supersedes: FactID, note: string} | inherits target | — |
 | `reveal` | {targets: FactID[], fields: string[]} | public | — (reveals are meta; the checker evaluates their *targets*) |

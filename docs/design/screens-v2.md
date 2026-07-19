@@ -15,6 +15,7 @@ These are recommendations until the owner approves them in `docs/tasks/M2-00.md`
 5. Save schema v2 performs a one-way migration from M1. It persists transport replay metadata and encrypted referee material, but not live peer ids or one-time pairing tokens.
 6. A phone reload requires re-pairing. An ordinary network disconnect does not: the phone retains its in-memory key and reconnects to the same session.
 7. Confrontation ballots are public as cast, matching the bot policy's `majority-so-far` rule. COMMS actions remain sealed until close.
+8. Commit/reveal uses the owner-approved `te-commit-v1` scheme: a campaign-seed commitment precedes all draws, and every secret-draw commitment binds its canonical result as well as stream, index, and salt.
 
 ## 1. Trust topology
 
@@ -195,7 +196,9 @@ A phone page reload loses its key and returns to pairing. The host remains pause
 
 ## 6. Black-box verification
 
-At campaign end the host decrypts referee material in memory and builds a one-time black-box artifact. The shared screen lists every secret draw with stream id, draw index, result, salt/preimage, public commitment hash, and verification result. Live ledger visibility is not mutated to render this view.
+At campaign end the host decrypts referee material in memory and builds a one-time black-box artifact. The artifact includes `te-commit-v1`, the RNG and canonicalization versions, campaign seed and campaign salt, the public `campaign.seedCommitted` fact, and for every secret draw: seed-commitment fact id, stream id, draw index, canonical result, draw salt, public commitment fact id/hash, and ground-truth fact id. The shared screen lists both the seed verification and every draw verification. Live ledger visibility is not mutated to render this view.
+
+The independent verifier performs three checks in order: verify the revealed seed and campaign salt against the setup-time commitment; re-derive the indexed draw from that seed and compare the canonical result; verify the draw hash over the scheme, seed-commitment hash, stream, index, canonical result, and draw salt. Inputs use domain-separated, length-prefixed UTF-8 fields so concatenation is unambiguous. Canonical JSON sorts object keys recursively, preserves array order, rejects non-finite/non-JSON values, and uses versioned finite-number/string encoding. Any failed stage names the exact commitment and stage; a hash match cannot conceal a result that disagrees with the seeded RNG.
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -278,7 +281,7 @@ Recommended dependencies after owner approval: the Spec-prescribed [trystero](ht
 
 ## 10. Appendix A touchpoints
 
-- Agenda setup adds one private/referee deal result and one public commitment per player, including negative results.
+- Campaign setup adds one public seed commitment before any random draw. Agenda setup then adds one private/referee deal result and one linked public draw commitment per player, including negative results.
 - F14's secret cause-resolution draw gains its verifiable preimage record while the public commitment remains visible.
 - The comms action that causes F11–F13 is queued as `agenda.actionTaken`, resolved only at window close, and may claim the incident frame without changing its surface.
 - F22 includes the public per-player `vote.recorded` tally.

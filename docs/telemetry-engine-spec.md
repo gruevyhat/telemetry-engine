@@ -136,7 +136,7 @@ One campaign seed; **named streams** derived per subsystem (`world-events`, `age
 
 Player dice are physical; results enter as `check.reported` facts. The engine never rolls for a PC — which removes the largest determinism hole by design.
 
-**Secret rolls (commit-reveal, decided — build at M2):** any `referee`-scoped roll posts a *public* companion fact `{kind:'secretRoll.committed', hash: H(streamId‖drawIndex‖salt)}` at roll time. The black box publishes the preimages; any player can re-derive every secret draw. **[INV-8]** Every `referee`-scoped random draw has a public commitment fact. *Why:* upgrades "MAGGIE plays fair" from a promise to a proof, for about a day of work.
+**Secret rolls (commit-reveal, decided — build at M2):** before the first draw, campaign setup posts one public `campaign.seedCommitted` fact. Its hash binds a scheme version, the campaign seed, and a campaign salt. Any `referee`-scoped roll then posts a public companion `secretRoll.committed` fact whose hash binds the scheme version, campaign-seed commitment hash, stream id, draw index, canonical result, and draw salt. Both hashes use SHA-256 over domain-separated, length-prefixed UTF-8 fields; results use canonical JSON (object keys sorted recursively, array order retained, and only finite JSON values). The black box publishes both preimages, algorithm identifiers, and canonicalization version; an independent verifier first checks the seed commitment, then re-derives each draw from that seed, compares its canonical result, and checks the draw commitment. **[INV-8]** Every `referee`-scoped random draw has exactly one public commitment fact. This proves that published results follow the seed committed before play; it does not prove that a malicious host did not search for a favorable seed before committing it. *Why:* changed results, streams, indices, seeds, or salts must fail audit rather than merely verifying unrelated draw metadata.
 
 ---
 
@@ -377,7 +377,7 @@ Content is JSON validated by JSON Schemas that live **with the engine** (schemas
 | Manual | table scripts (Appendix A run live; the rulebook §14 transcript as acceptance script) | human | milestone |
 
 ### 21.2 Invariant → test mapping (the property suite)
-INV-1 CI stub-plugin build · INV-2/3 replay determinism over 100 random seeds, plus cross-run byte-compare · INV-4 no visibility narrowing over generated fact streams · INV-5/10 sim bots run brute-force implication closure; assert no incident is uniquely attributable from visible facts alone · INV-6 static: no ledger writes outside the interpreter (lint rule) · INV-7 clock projections equal tick-fact sums · INV-8 every `referee` draw has a commitment fact; black-box preimages verify · INV-9 remote-feed answers equal historical local answers (time-travel property test) · INV-11 evidence transactions atomic under injected mid-commit failure · INV-12 static: renderer output type is a terminal type, no ingest path · INV-13 transport fuzz: no `referee`/foreign-`private` fact in any client payload · INV-14 chaos content (deliberately broken decks) always reaches a playable step.
+INV-1 CI stub-plugin build · INV-2/3 replay determinism over 100 random seeds, plus cross-run byte-compare · INV-4 no visibility narrowing over generated fact streams · INV-5/10 sim bots run brute-force implication closure; assert no incident is uniquely attributable from visible facts alone · INV-6 static: no ledger writes outside the interpreter (lint rule) · INV-7 clock projections equal tick-fact sums · INV-8 exactly one seed commitment precedes every `referee` draw commitment; black-box seed, RNG result, and draw preimages verify · INV-9 remote-feed answers equal historical local answers (time-travel property test) · INV-11 evidence transactions atomic under injected mid-commit failure · INV-12 static: renderer output type is a terminal type, no ingest path · INV-13 transport fuzz: no `referee`/foreign-`private` fact in any client payload · INV-14 chaos content (deliberately broken decks) always reaches a playable step.
 
 ### 21.3 Milestone acceptance (definition of done)
 - **M0:** INV-2/3/6/7 green; scripted demo turn replays identically on two machines; hotseat interstitial usable.
@@ -433,7 +433,7 @@ M0–M1 remains the falsifiable bet: if the solo trade loop isn't fun with templ
 
 ## APPENDIX A — THE SKIM AS A FACT TRACE (worked example)
 
-The canonical end-to-end trace; every module PR keeps this current (§21.5.5). Campaign seed `S`, players Zhan/Deuce/Brennan, NPC ex-engineer `npc:kessler` discharged at Vantage (facts F00–F03, setup, omitted). Agenda deal at odds 0.28: three draws on `agenda-deal` → all negative; three `referee` facts + three commitment facts (INV-8). *No traitor exists in this campaign.*
+The canonical end-to-end trace; every module PR keeps this current (§21.5.5). Campaign seed `S`, players Zhan/Deuce/Brennan, NPC ex-engineer `npc:kessler` discharged at Vantage (facts F00–F03, setup, omitted). Setup first posts one public `campaign.seedCommitted` fact. Agenda deal at odds 0.28: three draws on `agenda-deal` → all negative; three `referee` facts + three draw-commitment facts linked to that seed commitment (INV-8). *No traitor exists in this campaign.*
 
 | # | kind | t | actor | visibility | payload (abridged) | notes |
 |---|---|---|---|---|---|---|
@@ -441,7 +441,7 @@ The canonical end-to-end trace; every module PR keeps this current (§21.5.5). C
 | F11 | `lock.cycled` | d7·DOCK | npc:kessler | referee | bay door, code:CAPT-OVR, 0340 | innocent twin instantiates: frame T1 fired with no claimant; composer drew `actor:port-insider` slot → kessler (retained codes, F03) |
 | F12 | `camera.looped` | d7·DOCK | npc:kessler | referee | aft bay cam, 0332 | trace slot |
 | F13 | `cargo.diverted` | d7·DOCK | npc:kessler | referee | 2 crates → fence | causes:[F11] |
-| F14 | `secretRoll.committed` | d7·DOCK | referee | public | hash(...) | covers the T1 cause resolution draw |
+| F14 | `secretRoll.committed` | d7·DOCK | referee | public | `te-commit-v1`, seed-commitment link, hash(...) | binds the T1 cause-resolution stream, index, canonical result, and draw salt |
 | F15 | `jump.plotted` | d7·TRANSIT | pc:brennan | public | 2114, check 9 vs 6 | day += 7 |
 | F16 | `oracle.answered` | d11·TRANSIT | referee | table | sensor ghost: NO,and | jump event; "and" texture surfaces F12's existence (a reveal fact widens `camera.looped` to table — *not* its actor) |
 | F17 | `sale.settled` | d14·ARR | world | public | Cr169,200, 18 crates vs M1:20 | **surface event**; INV-10 holds: kessler-explanation live |
@@ -453,7 +453,7 @@ The canonical end-to-end trace; every module PR keeps this current (§21.5.5). C
 | F23 | `envelope.opened` | d15·ARR | pc:deuce | public | LOYAL — burned; objective.forfeit; deferred-reveal token minted | forced by the carried vote (its `vote.recorded` fact elided from this trace); never voluntary |
 | F24 | `reveal` | d15·ARR | referee | public | F11 actor class: retained crew code, kessler named via F03 linkage | confrontation resolution widens the rest |
 
-Black box at campaign end prints F00–F24 with all scopes lifted, plus commitment preimages (F14 et al.) so the table can verify that no traitor draw ever happened — which, this campaign, is the whole tragedy.
+Black box at campaign end prints F00–F24 with all scopes lifted, plus the campaign-seed and draw preimages (F14 et al.) so the table can verify the seed committed before play and re-derive that no traitor draw ever happened — which, this campaign, is the whole tragedy.
 
 ---
 
