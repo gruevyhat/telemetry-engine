@@ -6,3 +6,4 @@ export * from "./Interstitial.js";
 export * from "./SharedScreen.js";
 export * from "./MarketFeed.js";
 export * from "./ConfrontationPanel.js";
+export * from "./PairingCard.js";
