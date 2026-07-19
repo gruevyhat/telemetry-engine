@@ -20,6 +20,11 @@ export interface SocialSession {
   handleCommsQueue(t: GameTime, message: ProtocolPayloadMap["comms.queue"]): ProtocolPayloadMap["comms.ack"];
   /** Closes the comms window (referee-driven `advance`); the resulting facts are read off the ledger. */
   closeCommsWindow(t: GameTime, actor: ActorRef): { readonly committed: readonly Fact[] };
+  /** `confrontation.command` (decrypted) -> `declareConfrontation` for `command: "accuse"`. The
+   * other typed commands (search/let-lie/replace-captain/put-off-ship) are real protocol shapes
+   * but M2-07 itself scoped their branches out unless separately carded, and this card's own
+   * walkthrough only exercises an accusation vote, so they throw rather than silently no-op. */
+  handleConfrontationCommand(t: GameTime, message: ProtocolPayloadMap["confrontation.command"]): Fact;
   /** `vote.cast` (decrypted) accumulates into an in-memory ballot for its topic; no ledger write yet. */
   castVote(topic: string, playerId: string, value: boolean): void;
   /** Resolves the accumulated ballots for one topic via `resolveConfrontation`, returns the `vote.resolved` payload. */
@@ -54,6 +59,12 @@ export function createSocialSession(deps: SocialSessionDeps): SocialSession {
 
     closeCommsWindow(t, actor) {
       return deps.interpreter.advance(t, actor);
+    },
+
+    handleConfrontationCommand(t, message) {
+      if (message.command !== "accuse") throw new Error(`confrontation command "${message.command}" is not wired for this demo`);
+      if (message.targetId === undefined) throw new Error("an accusation command requires targetId");
+      return deps.interpreter.declareConfrontation(t, { kind: "pc", id: message.playerId }, { mode: "accusation", target: message.targetId });
     },
 
     castVote(topic, playerId, value) {
