@@ -93,11 +93,11 @@ export type AgendaActionResult =
   | { readonly ok: true; readonly proposals: readonly AppendInput[] }
   | { readonly ok: false; readonly reasonCode: string; readonly proposals: readonly [AppendInput] };
 
-function fizzle(t: GameTime, actionId: string, reasonCode: string): AgendaActionResult {
+function fizzle(t: GameTime, actionId: string, reasonCode: string, playerId = "referee"): AgendaActionResult {
   return {
     ok: false,
     reasonCode,
-    proposals: [{ t, kind: "action.fizzled", actor: { kind: "referee", id: "referee" }, payload: { attemptedActionId: actionId, reason: reasonCode } }],
+    proposals: [{ t, kind: "action.fizzled", actor: playerId === "referee" ? { kind: "referee", id: "referee" } : { kind: "pc", id: playerId }, payload: { attemptedActionId: actionId, reason: reasonCode } }],
   };
 }
 
@@ -130,10 +130,10 @@ export interface AgendaActionEvaluationInput {
 
 /** Pure queue/effect expansion. M2-05 owns ordering and calls this only when the COMMS window closes. */
 export function evaluateAgendaAction(input: AgendaActionEvaluationInput): AgendaActionResult {
-  if (!evaluateAccess(input.action.access, input.accessContext).ok) return fizzle(input.t, input.action.id, "access-denied");
+  if (!evaluateAccess(input.action.access, input.accessContext).ok) return fizzle(input.t, input.action.id, "access-denied", input.playerId);
   if (input.action.target) {
     if (!input.target || !matchesSelector({ kinds: input.action.target.kinds, ...input.action.target.where }, input.target)) {
-      return fizzle(input.t, input.action.id, "target-invalid");
+      return fizzle(input.t, input.action.id, "target-invalid", input.playerId);
     }
   }
   try {
@@ -148,15 +148,32 @@ export function evaluateAgendaAction(input: AgendaActionEvaluationInput): Agenda
       payload: Object.fromEntries(Object.entries(template.payload).map(([field, value]) => [field, resolveActionValue(value, input)])),
     }));
     if (effects.some((proposal) => input.registry.get(proposal.kind)?.defaultVisibility !== "referee")) {
-      return fizzle(input.t, input.action.id, "visibility-invalid");
+      return fizzle(input.t, input.action.id, "visibility-invalid", input.playerId);
     }
     const proposals = [intent, ...effects];
     const checked = validate(proposals, input.priorFacts, input.registry);
-    if (!checked.ok) return fizzle(input.t, input.action.id, `${checked.failures[0]!.pass}-invalid`);
+    if (!checked.ok) return fizzle(input.t, input.action.id, `${checked.failures[0]!.pass}-invalid`, input.playerId);
     return { ok: true, proposals };
   } catch {
-    return fizzle(input.t, input.action.id, "content-invalid");
+    return fizzle(input.t, input.action.id, "content-invalid", input.playerId);
   }
+}
+
+export function agendaFizzleProposal(t: GameTime, playerId: string, actionId: string, reasonCode: string): AppendInput {
+  return fizzle(t, actionId, reasonCode, playerId).proposals[0];
+}
+
+export interface AgendaPrivateFeedback {
+  readonly feedbackId: string;
+  readonly templateKey: "agenda.action-fizzled";
+  readonly reasonCode: string;
+}
+
+/** Engine-owned referee-to-private projector: returns typed data, never the referee fact. */
+export function privateAgendaFeedback(playerId: string, facts: readonly Fact[]): readonly AgendaPrivateFeedback[] {
+  return facts.flatMap((fact) => fact.kind === "action.fizzled" && fact.actor.id === playerId && typeof fact.payload.reason === "string"
+    ? [{ feedbackId: fact.id, templateKey: "agenda.action-fizzled" as const, reasonCode: fact.payload.reason }]
+    : []);
 }
 
 /** One agenda-deal stream sample per player; the sample also deterministically selects tier/content. */

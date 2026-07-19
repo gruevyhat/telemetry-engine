@@ -1,8 +1,9 @@
 import { derive, type Projection } from "../ledger/derive.js";
 import { generateCommittedWeeklyTicks, type GenerateCommittedWeeklyTicksInput } from "../economy/market.js";
-import { planAgendaDeal, type AgendaDeck } from "../agenda/index.js";
+import { agendaFizzleProposal, evaluateAgendaAction, planAgendaDeal, type AgendaActionContent, type AgendaDeck } from "../agenda/index.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
+import type { KindRegistry } from "../ledger/registry.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import { ask } from "../oracle/oracle.js";
 import { degradeReportedProposal, runDegradeLadder, type DegradeOutcome } from "../degrade/index.js";
@@ -41,6 +42,11 @@ export interface PhaseInterpreterDeps {
     readonly campaignSeed: string;
     readonly campaignSalt: string;
   };
+  agenda?: {
+    readonly actions: readonly AgendaActionContent[];
+    readonly currentHex: string;
+    readonly registry: KindRegistry;
+  };
 }
 
 interface RecordedDraw {
@@ -54,7 +60,7 @@ function recordingRng(base: Rng): { rng: Rng; drain: () => readonly RecordedDraw
   const streams = new Map<string, RngStream>();
 
   function shouldCommit(streamId: string): boolean {
-    return streamId.includes(":twin:");
+    return streamId.includes(":twin:") || streamId.includes("comms-order:");
   }
 
   return {
@@ -299,11 +305,20 @@ export interface PhaseInterpreter {
   advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }>;
   commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
-  queueCommsAction(action: Readonly<Record<string, unknown>>): void;
+  queueCommsAction(action: QueueCommsActionInput): Fact;
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
    * `check.reported` fact and does not move `currentStep()`. */
   reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
+}
+
+export interface QueueCommsActionInput {
+  readonly t: GameTime;
+  readonly playerId: string;
+  readonly windowId: string;
+  readonly actionId: string;
+  readonly targetFactId?: string;
+  readonly clientCommandId: string;
 }
 
 export interface CommitmentPreimages {
@@ -324,12 +339,63 @@ export type CommitMarketTicksInput = Omit<
  * uninterrupted run: nothing survives a restart except what's already committed.
  */
 export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript, deps?: PhaseInterpreterDeps): PhaseInterpreter {
-  let commsQueue: Record<string, unknown>[] = [];
   const recorder = deps?.commitReveal ? recordingRng(deps.rng) : undefined;
   const resolvedDeps = deps ? { ...deps, rng: recorder?.rng ?? deps.rng } : undefined;
 
   function currentStep(): StepRef {
     return currentStepOf(ledger.all(), script);
+  }
+
+  function planCommsClose(t: GameTime, activeDeps?: PhaseInterpreterDeps): readonly AppendInput[] {
+    const facts = ledger.all();
+    const intentsById = new Map(facts.filter((fact) => fact.kind === "agenda.actionTaken").map((fact) => [fact.id, fact]));
+    const resolvedWindows = new Set(facts.flatMap((fact) => (fact.causes ?? []).map((id) => intentsById.get(id)?.payload.windowId)).filter((id): id is string => typeof id === "string"));
+    const unresolved = [...intentsById.values()].filter((fact) => !resolvedWindows.has(fact.payload.windowId as string));
+    if (unresolved.length === 0) return [];
+    if (!activeDeps?.agenda) throw new Error("COMMS close with queued actions requires agenda actions in interpreter deps");
+    const windows = new Set(unresolved.map((fact) => fact.payload.windowId as string));
+    if (windows.size !== 1) throw new Error("COMMS close found intents from more than one unresolved window");
+    const windowId = [...windows][0]!;
+    const latestByPlayer = new Map<string, Fact>();
+    for (const fact of unresolved) latestByPlayer.set(fact.payload.playerId as string, fact);
+    const ordered = [...latestByPlayer.values()].sort((a, b) => a.actor.id.localeCompare(b.actor.id));
+    const stream = activeDeps.rng.derive(`comms-order:${windowId}`);
+    for (let index = ordered.length - 1; index > 0; index -= 1) {
+      const swap = stream.nextInt(index + 1);
+      [ordered[index], ordered[swap]] = [ordered[swap]!, ordered[index]!];
+    }
+
+    const proposals: AppendInput[] = [];
+    const workingFacts: Fact[] = [...facts];
+    const claimedTargets = new Set<string>();
+    for (const intent of ordered) {
+      const playerId = intent.payload.playerId as string;
+      const actionId = intent.payload.actionId as string;
+      const targetFactId = intent.payload.targetFactId as string | undefined;
+      const action = activeDeps.agenda.actions.find((candidate) => candidate.id === actionId);
+      const target = targetFactId ? facts.find((fact) => fact.id === targetFactId) : undefined;
+      let effects: readonly AppendInput[];
+      if (targetFactId && claimedTargets.has(targetFactId)) {
+        effects = [agendaFizzleProposal(t, playerId, actionId, "target-conflict")];
+      } else if (!action) {
+        effects = [agendaFizzleProposal(t, playerId, actionId, "content-invalid")];
+      } else {
+        const evaluated = evaluateAgendaAction({
+          action, playerId, windowId, clientCommandId: intent.payload.clientCommandId as string,
+          ...(target ? { target } : {}), t, currentHex: activeDeps.agenda.currentHex,
+          accessContext: { presence: { declarations: {} }, actorId: playerId, day: t.day, slot: t.slot, heldGear: new Set(), codeHolders: new Set(), holdsPrisoner: false },
+          priorFacts: workingFacts, registry: activeDeps.agenda.registry,
+        });
+        effects = evaluated.ok ? evaluated.proposals.slice(1) : evaluated.proposals;
+        if (evaluated.ok && targetFactId) claimedTargets.add(targetFactId);
+      }
+      for (const effect of effects) {
+        const linked = { ...effect, causes: [...(effect.causes ?? []), intent.id] };
+        proposals.push(linked);
+        workingFacts.push({ id: `pending-comms-${workingFacts.length}`, wall: 0, visibility: { level: "referee" }, ...linked });
+      }
+    }
+    return proposals;
   }
 
   function advanceCore(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
@@ -340,32 +406,25 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     }
 
     const visitSalt = `step:${fromStep}:${priorVisitCount(ledger, script, fromStep)}`;
-    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, resolvedDeps, visitSalt);
-
-    const committed: Fact[] = [];
-    for (const proposal of proposals) {
-      committed.push(ledger.append(proposal));
-    }
-    committed.push(
-      ledger.append({
+    const resolved = resolveStep(step, t, actor, input, resolvedDeps, visitSalt);
+    const proposals = step.kind === "commsWindow" ? planCommsClose(t, resolvedDeps) : resolved.proposals;
+    const committed = ledger.appendAll([
+      ...proposals,
+      {
         t,
         kind: "phase.transition",
         actor,
-        payload: { fromStep, toStep: nextStepId, frame: script.frame },
-      }),
-    );
+        payload: { fromStep, toStep: resolved.nextStepId, frame: script.frame },
+      },
+    ]);
 
-    if (step.kind === "commsWindow") {
-      commsQueue = [];
-    }
-
-    return { fromStep, toStep: nextStepId, committed, ...(rendered !== undefined ? { rendered } : {}) };
+    return { fromStep, toStep: resolved.nextStepId, committed, ...(resolved.rendered !== undefined ? { rendered: resolved.rendered } : {}) };
   }
 
   function advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
     const step = script.stepsById.get(currentStep());
-    if (step?.kind === "generate" && deps?.commitReveal) {
-      throw new Error("generate steps with commit/reveal configured require await advanceCommitted()");
+    if ((step?.kind === "generate" || step?.kind === "commsWindow") && deps?.commitReveal) {
+      throw new Error(`${step.kind} steps with commit/reveal configured require await advanceCommitted()`);
     }
     return advanceCore(t, actor, input);
   }
@@ -439,8 +498,14 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     return { committed: [...seed.committed, ...committed], commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: plan.preimages } };
   }
 
-  function queueCommsAction(action: Readonly<Record<string, unknown>>): void {
-    commsQueue.push(action);
+  function queueCommsAction(input: QueueCommsActionInput): Fact {
+    const duplicate = ledger.all().find((fact) => fact.kind === "agenda.actionTaken" && fact.payload.playerId === input.playerId && fact.payload.clientCommandId === input.clientCommandId);
+    if (duplicate) return duplicate;
+    if (!deps?.agenda?.actions.some((action) => action.id === input.actionId)) throw new Error(`unknown agenda action "${input.actionId}"`);
+    return ledger.append({
+      t: input.t, kind: "agenda.actionTaken", actor: { kind: "pc", id: input.playerId },
+      payload: { playerId: input.playerId, windowId: input.windowId, actionId: input.actionId, ...(input.targetFactId ? { targetFactId: input.targetFactId } : {}), clientCommandId: input.clientCommandId },
+    });
   }
 
   function reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact {

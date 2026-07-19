@@ -243,7 +243,7 @@ export function App() {
     setIsAdvancing(true);
     try {
       const result =
-        currentStep.kind === "generate"
+        currentStep.kind === "generate" || currentStep.kind === "commsWindow"
           ? await interpreter.advanceCommitted(gameTimeFor(currentStep), REFEREE, input)
           : interpreter.advance(gameTimeFor(currentStep), REFEREE, input);
       const newCount = advanceCount + 1;

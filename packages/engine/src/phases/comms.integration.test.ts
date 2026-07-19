@@ -21,12 +21,13 @@ const ACTION: AgendaActionContent = {
   implies: [], payout: 1, exposure: { clockId: "heat", delta: 1 },
 };
 
-function fixture(seed = "comms-seed") {
+function fixture(seed = "comms-seed", committed = false) {
   const ledger = createLedger(createKindRegistry(KINDS_V0));
   ledger.append({ t: T, kind: "cargo.loaded", actor: { kind: "world", id: "world" }, payload: { lotId: "L1", tons: 2, manifestId: "M1", bay: "hold" } });
   const make = () => createPhaseInterpreter(ledger, SCRIPT, {
     rng: createRng(seed), deck: [],
-    agenda: { actions: [ACTION], currentHex: "Regina" },
+    agenda: { actions: [ACTION], currentHex: "Regina", registry: createKindRegistry(KINDS_V0) },
+    ...(committed ? { commitReveal: { campaignSeed: seed, campaignSalt: "comms-salt" } } : {}),
   });
   return { ledger, make };
 }
@@ -91,5 +92,17 @@ describe("durable COMMS close [M2-05, INV-3/5/6]", () => {
     const loser = fizzles[0]!.actor.id;
     expect(privateAgendaFeedback(loser, ledger.all())).toHaveLength(1);
     expect(privateAgendaFeedback(loser === "pc:zhan" ? "pc:deuce" : "pc:zhan", ledger.all())).toEqual([]);
+  });
+
+  it("publishes one verifying commitment per hidden comms-order draw", async () => {
+    const { ledger, make } = fixture("committed-order", true);
+    const interpreter = make();
+    const targetFactId = ledger.all()[0]!.id;
+    for (const playerId of ["pc:zhan", "pc:deuce"]) {
+      interpreter.queueCommsAction({ t: T, playerId, windowId: "window-1", actionId: ACTION.id, targetFactId, clientCommandId: playerId });
+    }
+    const result = await interpreter.advanceCommitted(T, { kind: "referee", id: "referee" });
+    expect(result.commitmentPreimages.draws).toHaveLength(1);
+    expect(ledger.all().filter((fact) => fact.kind === "secretRoll.committed")).toHaveLength(1);
   });
 });
