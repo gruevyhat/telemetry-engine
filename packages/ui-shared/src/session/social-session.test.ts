@@ -31,7 +31,7 @@ const ACTION: AgendaActionContent = {
 };
 const key = new Uint8Array(32).fill(4);
 
-function header(sequence: number, type: BoundHeader["type"]): BoundHeader {
+function header<T extends BoundHeader["type"]>(sequence: number, type: T): BoundHeader<T> {
   return { protocolVersion: PROTOCOL_VERSION, sessionId: "session-a", hostEpoch: 1, bindingEpoch: 1, sequence, messageId: `message-${sequence}`, type };
 }
 
