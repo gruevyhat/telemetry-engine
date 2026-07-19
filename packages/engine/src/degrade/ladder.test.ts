@@ -6,7 +6,13 @@ import { degradeReportedProposal, runDegradeLadder, type DegradeLadderDeps } fro
 const T = { day: 14, slot: "DOCKSIDE" as const };
 const REFEREE = { kind: "referee" as const, id: "referee" };
 
-const GENERIC_INCIDENT: FiredIncident = { frameId: "generic:shortfall", surface: { fields: {} }, causeProposals: [] };
+const GENERIC_INCIDENT: FiredIncident = {
+  frameId: "generic:shortfall",
+  surface: { fields: {} },
+  causeProposals: [],
+  causeSource: "innocentTwin",
+  innocentAlternativeProposals: [],
+};
 const ORACLE_ANSWER: OracleAnswer = { question: "Does the crew notice?", likelihood: "even", answer: "YES", texture: "plain" };
 
 function deps(overrides: Partial<DegradeLadderDeps> = {}): DegradeLadderDeps {

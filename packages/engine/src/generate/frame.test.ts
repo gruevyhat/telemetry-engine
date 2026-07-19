@@ -72,7 +72,7 @@ const ROSTER_FACTS: readonly Fact[] = [
   grantFact("npc:kessler", "SR-CREW-OVR"),
 ];
 
-describe("fireFrame — twin path only [Spec §8.2, claimant hook stubbed]", () => {
+describe("fireFrame — innocent twin path [Spec §8.2]", () => {
   it("produces a surface descriptor and referee-scoped cause proposals from the innocent twin", () => {
     const rng = createRng("seed-1");
     const fired = fireFrame(FIXTURE_FRAME, T, rng);

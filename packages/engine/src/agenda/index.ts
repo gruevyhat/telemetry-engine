@@ -1,9 +1,11 @@
-import type { AccessPrecondition, FactSelector } from "../evidence/index.js";
+import { evaluateAccess, matchesSelector, type AccessContext, type AccessPrecondition, type FactSelector } from "../evidence/index.js";
 import type { AppendInput } from "../ledger/ledger.js";
-import type { ActorRef } from "../ledger/types.js";
+import type { KindRegistry } from "../ledger/registry.js";
+import type { ActorRef, Fact } from "../ledger/types.js";
 import type { JsonValue } from "../persistence/index.js";
 import { createSecretDrawCommitment, type Rng, type SecretDrawPreimage } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
+import { validate } from "../validate/index.js";
 
 export type AgendaTier = "orthogonal" | "parasitic" | "hostile";
 export type AgendaSelector = FactSelector & { readonly rankBy: "probative"; readonly threshold: number };
@@ -85,6 +87,76 @@ export function loadAgendaDeck(raw: unknown): AgendaDeck {
 export interface AgendaDealPlan {
   readonly proposals: readonly AppendInput[];
   readonly preimages: readonly SecretDrawPreimage<JsonValue>[];
+}
+
+export type AgendaActionResult =
+  | { readonly ok: true; readonly proposals: readonly AppendInput[] }
+  | { readonly ok: false; readonly reasonCode: string; readonly proposals: readonly [AppendInput] };
+
+function fizzle(t: GameTime, actionId: string, reasonCode: string): AgendaActionResult {
+  return {
+    ok: false,
+    reasonCode,
+    proposals: [{ t, kind: "action.fizzled", actor: { kind: "referee", id: "referee" }, payload: { attemptedActionId: actionId, reason: reasonCode } }],
+  };
+}
+
+function resolveActionValue(value: JsonValue | ActionValueRef, input: AgendaActionEvaluationInput): JsonValue {
+  if (!value || typeof value !== "object" || Array.isArray(value) || !("ref" in value)) return value as JsonValue;
+  const ref = value as ActionValueRef;
+  if (ref.ref === "self") return input.playerId;
+  if (ref.ref === "currentDay") return input.t.day;
+  if (ref.ref === "currentHex") return input.currentHex;
+  if (ref.ref !== "target") throw new Error("unsupported action value reference");
+  const resolved = input.target?.payload[ref.field];
+  if (resolved === undefined || typeof resolved === "function" || typeof resolved === "symbol" || typeof resolved === "bigint") {
+    throw new Error(`target field "${ref.field}" is unavailable`);
+  }
+  return resolved as JsonValue;
+}
+
+export interface AgendaActionEvaluationInput {
+  readonly action: AgendaActionContent;
+  readonly playerId: string;
+  readonly windowId: string;
+  readonly clientCommandId: string;
+  readonly target?: Fact;
+  readonly t: GameTime;
+  readonly currentHex: string;
+  readonly accessContext: AccessContext;
+  readonly priorFacts: readonly Fact[];
+  readonly registry: KindRegistry;
+}
+
+/** Pure queue/effect expansion. M2-05 owns ordering and calls this only when the COMMS window closes. */
+export function evaluateAgendaAction(input: AgendaActionEvaluationInput): AgendaActionResult {
+  if (!evaluateAccess(input.action.access, input.accessContext).ok) return fizzle(input.t, input.action.id, "access-denied");
+  if (input.action.target) {
+    if (!input.target || !matchesSelector({ kinds: input.action.target.kinds, ...input.action.target.where }, input.target)) {
+      return fizzle(input.t, input.action.id, "target-invalid");
+    }
+  }
+  try {
+    const intent: AppendInput = {
+      t: input.t, kind: "agenda.actionTaken", actor: { kind: "pc", id: input.playerId },
+      payload: { playerId: input.playerId, windowId: input.windowId, actionId: input.action.id, ...(input.target ? { targetFactId: input.target.id } : {}), clientCommandId: input.clientCommandId },
+    };
+    const effects = input.action.proposals.map((template): AppendInput => ({
+      t: input.t,
+      kind: template.kind,
+      actor: "ref" in template.actor ? { kind: "pc", id: input.playerId } : template.actor,
+      payload: Object.fromEntries(Object.entries(template.payload).map(([field, value]) => [field, resolveActionValue(value, input)])),
+    }));
+    if (effects.some((proposal) => input.registry.get(proposal.kind)?.defaultVisibility !== "referee")) {
+      return fizzle(input.t, input.action.id, "visibility-invalid");
+    }
+    const proposals = [intent, ...effects];
+    const checked = validate(proposals, input.priorFacts, input.registry);
+    if (!checked.ok) return fizzle(input.t, input.action.id, `${checked.failures[0]!.pass}-invalid`);
+    return { ok: true, proposals };
+  } catch {
+    return fizzle(input.t, input.action.id, "content-invalid");
+  }
 }
 
 /** One agenda-deal stream sample per player; the sample also deterministically selects tier/content. */

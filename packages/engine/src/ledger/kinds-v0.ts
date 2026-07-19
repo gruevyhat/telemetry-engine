@@ -68,7 +68,7 @@ export const KINDS_V0: readonly KindDefinition[] = [
   // social / meta-game
   { kind: "agenda.dealt", defaultVisibility: "referee", payload: { playerId: f("string"), result: f("boolean"), tier: f("string", true) } },
   { kind: "objective.assigned", defaultVisibility: "referee", payload: { playerId: f("string"), objectiveId: f("string"), successCondition: f("object") } },
-  { kind: "agenda.actionTaken", defaultVisibility: "referee", payload: { playerId: f("string"), actionId: f("string"), frameClaim: f("string", true) } },
+  { kind: "agenda.actionTaken", defaultVisibility: "referee", payload: { playerId: f("string"), windowId: f("string"), actionId: f("string"), targetFactId: f("string", true), clientCommandId: f("string"), frameClaim: f("string", true) } },
   { kind: "envelope.opened", defaultVisibility: "public", payload: { playerId: f("string"), contents: f("unknown") } },
   { kind: "objective.forfeit", defaultVisibility: "public", payload: { playerId: f("string") } },
   { kind: "confrontation.opened", defaultVisibility: "public", payload: { declarer: f("string"), mode: f("string"), target: f("string", true) } },
