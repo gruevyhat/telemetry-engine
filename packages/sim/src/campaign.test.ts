@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GENERIC_DECK, TRADE_DECK, runCampaign } from "./campaign.js";
+import { GENERIC_DECK, TRADE_DECK, runCampaign, runSocialCampaign } from "./campaign.js";
 
 describe("runCampaign [Spec §8.3/§17, §21.3 M1 acceptance: \"solo trade campaign completes 4 turns headless\", M1-12]", () => {
   it("completes a 4-turn campaign against the real trade+generic decks without throwing", () => {
@@ -28,5 +28,13 @@ describe("runCampaign [Spec §8.3/§17, §21.3 M1 acceptance: \"solo trade campa
   it("real decks load and are non-empty", () => {
     expect(TRADE_DECK.length).toBeGreaterThan(0);
     expect(GENERIC_DECK.length).toBeGreaterThan(0);
+  });
+});
+
+describe("M2 social stress campaigns", () => {
+  it.each(["L3", "L5"] as const)("%s completes deterministically", (lineup) => {
+    const first = runSocialCampaign("social-replay", 8, lineup);
+    expect(first.events).toHaveLength(8);
+    expect(runSocialCampaign("social-replay", 8, lineup)).toEqual(first);
   });
 });

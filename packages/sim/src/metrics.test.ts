@@ -6,6 +6,7 @@ import {
   misattributionRate,
   obligationFailureCurve,
   recurrenceRate,
+  socialMetrics,
 } from "./metrics.js";
 
 describe("recurrenceRate [Spec §21.4 'frame recurrence within 4 turns < 5%']", () => {
@@ -35,6 +36,15 @@ describe("recurrenceRate [Spec §21.4 'frame recurrence within 4 turns < 5%']", 
       { turn: 10, kind: "incident", frameId: "a", causeActorId: "x" },
     ];
     expect(recurrenceRate(events, 4)).toBe(0);
+  });
+});
+
+describe("M2 social metrics use harness ground truth", () => {
+  it("reports attribution, accusation, burn, detection, and survival without policy ledger access", () => {
+    expect(socialMetrics([
+      { accused: "pc:a", actual: "pc:b", accusation: true, twin: true, burned: true, loyal: true, agendaDetected: false, hadAgenda: true, shipSurvived: true },
+      { accused: "pc:b", actual: "pc:b", accusation: false, twin: false, burned: false, loyal: false, agendaDetected: true, hadAgenda: true, shipSurvived: false },
+    ])).toEqual({ misattributionRate: 0.5, falseAccusationRate: 1, envelopeBurnRate: 0.5, loyalBurnRate: 1, detectionRate: 0.5, shipSurvivalRate: 0.5 });
   });
 });
 

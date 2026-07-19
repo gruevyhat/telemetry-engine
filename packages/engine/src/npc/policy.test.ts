@@ -4,7 +4,7 @@ import { createKindRegistry } from "../ledger/registry.js";
 import { KINDS_V0 } from "../ledger/kinds-v0.js";
 import { createLedger } from "../ledger/ledger.js";
 import { createRng } from "../rng/index.js";
-import { createActorView, decide, type Disposition, type MarketLot } from "./policy.js";
+import { createActorView, decide, decideSocial, type Disposition, type MarketLot } from "./policy.js";
 
 const DISPOSITIONS: readonly Disposition[] = ["naive", "diligent", "paranoid", "loyalist", "selfish"];
 
@@ -16,6 +16,20 @@ describe("createActorView — no policy may read beyond its actor's visibility s
     const view = createActorView(ledger, { scope: "private", playerId: "pc:zhan" });
     expect(view.facts.some((f) => f.kind === "cargo.diverted")).toBe(false); // referee-scoped, not visible to pc:zhan
     expect(() => view.peekFullLedger()).toThrow(/visibility slice/i);
+  });
+});
+
+describe("social policies consume only the actor's scoped view [M2-06, INV-5/10/13]", () => {
+  it("covers comms, accusation, confrontation, and vote without exposing referee facts", () => {
+    const ledger = createLedger(createKindRegistry(KINDS_V0));
+    ledger.append({ t: { day: 1, slot: "COMMS" }, kind: "cargo.diverted", actor: { kind: "pc", id: "pc:hidden" }, payload: { lotId: "L1", qty: 1, channel: "secret" } });
+    const view = createActorView(ledger, { scope: "private", playerId: "pc:zhan" });
+    const rng = createRng("social").derive("npc:zhan");
+    expect(view.facts.some((fact) => fact.kind === "cargo.diverted")).toBe(false);
+    expect(decideSocial({ situation: "commsWindow", offers: [{ actionId: "a", payout: 10, exposure: 0.1, accessible: true }] }, "selfish", view, rng)).toEqual({ kind: "comms.choose", actionId: "a" });
+    expect(decideSocial({ situation: "accusation", candidates: ["pc:a", "pc:b"], unresolvedDiscrepancies: 2 }, "paranoid", view, rng).kind).toBe("accuse");
+    expect(decideSocial({ situation: "confrontation", accused: true, loyal: true, objectiveComplete: true }, "diligent", view, rng)).toEqual({ kind: "envelope.open" });
+    expect(decideSocial({ situation: "vote", captainVote: "guilty", majoritySoFar: "guilty", posterior: 0.8 }, "diligent", view, rng)).toEqual({ kind: "vote", value: "guilty" });
   });
 });
 
