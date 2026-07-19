@@ -1,0 +1,24 @@
+The Traveller game in all forms is owned by Mongoose Publishing. Copyright 1977 - 2024 Mongoose
+Publishing. Traveller is a registered trademark of Mongoose Publishing. Mongoose Publishing
+permits web sites and fanzines for this game, provided it contains this notice, that Mongoose
+Publishing is notified, and subject to a withdrawal of permission on 90 days notice. The contents
+of this site are for personal, non-commercial use only. Any use of Mongoose Publishing's
+copyrighted material or trademarks anywhere on this web site and its files should not be viewed as
+a challenge to those copyrights or trademarks. In addition, any program/articles/file on this site
+cannot be republished or distributed without the consent of the author who contributed it.
+
+---
+
+This notice covers `packages/plugin-traveller`, the optional Fair Use Policy compatibility layer
+described in the Spec (§1, §15) that lets `packages/engine` (which contains zero setting content
+and zero Traveller terms — INV-1) consume Traveller-specific data via a one-time, user-driven
+import of a travellermap.com SEC export. Nothing under `packages/engine` or `content/` reproduces
+Traveller rulebook text; per the Spec's fair-use hygiene requirement, all game content in this
+repository is original dice math and original entries, never rulebook table prose.
+
+Per the Fair Use Policy's FAQ item 1(c) (Traveller Fair Use Policy, PDF, FAQ revision Sept 3,
+2024, https://www.mongoosepublishing.com/pages/traveller-licensing), Mongoose Publishing must
+also be notified directly by email (sales@mongoosepublishing.com) that this site exists at
+https://gruevyhat.github.io/telemetry-engine/. That notification is logged in
+`docs/tasks/M0-00.md` once sent — this file alone is the required on-site disclaimer, not proof
+the notification itself has gone out.
