@@ -1,0 +1,10 @@
+{
+  "frame": "social-scene",
+  "start": "scene-opened",
+  "steps": [
+    { "id": "scene-opened", "kind": "announce", "slot": "COMMS", "render": "socialScene.opened", "next": "comms" },
+    { "id": "comms", "kind": "commsWindow", "slot": "COMMS", "timer": 90, "next": "incident" },
+    { "id": "incident", "kind": "generate", "slot": "COMMS", "gen": { "frameId": "trade:bay-lock-cycle" }, "next": "confrontation" },
+    { "id": "confrontation", "kind": "confrontation", "slot": "COMMS", "timer": 300, "next": "confrontation" }
+  ]
+}
