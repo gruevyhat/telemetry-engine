@@ -31,6 +31,20 @@ describe("social policies consume only the actor's scoped view [M2-06, INV-5/10/
     expect(decideSocial({ situation: "confrontation", accused: true, loyal: true, objectiveComplete: true }, "diligent", view, rng)).toEqual({ kind: "envelope.open" });
     expect(decideSocial({ situation: "vote", captainVote: "guilty", majoritySoFar: "guilty", posterior: 0.8 }, "diligent", view, rng)).toEqual({ kind: "vote", value: "guilty" });
   });
+
+  it("is invariant to arbitrary referee-only facts", () => {
+    fc.assert(fc.property(fc.string({ minLength: 1 }), (hiddenActor) => {
+      const makeView = (withHidden: boolean) => {
+        const ledger = createLedger(createKindRegistry(KINDS_V0));
+        if (withHidden) ledger.append({ t: { day: 1, slot: "COMMS" }, kind: "cargo.diverted", actor: { kind: "pc", id: hiddenActor }, payload: { lotId: "L1", qty: 1, channel: "secret" } });
+        return createActorView(ledger, { scope: "private", playerId: "pc:zhan" });
+      };
+      const input = { situation: "accusation" as const, candidates: ["pc:a", "pc:b"], unresolvedDiscrepancies: 2 };
+      const first = decideSocial(input, "paranoid", makeView(false), createRng("same").derive("npc:zhan"));
+      const second = decideSocial(input, "paranoid", makeView(true), createRng("same").derive("npc:zhan"));
+      expect(second).toEqual(first);
+    }));
+  });
 });
 
 describe("market decision [sim-bot-policies.md §2 market]", () => {

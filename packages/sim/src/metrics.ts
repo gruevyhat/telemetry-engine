@@ -112,3 +112,32 @@ export function obligationFailureCurve(samples: readonly ObligationSample[]): re
     return { turn: sample.turn, cumulativeFailureRate: failures / (index + 1) };
   });
 }
+
+export interface SocialGroundTruthSample {
+  readonly accused: string;
+  readonly actual: string;
+  readonly accusation: boolean;
+  readonly twin: boolean;
+  readonly burned: boolean;
+  readonly loyal: boolean;
+  readonly agendaDetected: boolean;
+  readonly hadAgenda: boolean;
+  readonly shipSurvived: boolean;
+}
+
+function rate(samples: readonly SocialGroundTruthSample[], predicate: (sample: SocialGroundTruthSample) => boolean, eligible: (sample: SocialGroundTruthSample) => boolean = () => true): number {
+  const denominator = samples.filter(eligible);
+  return denominator.length === 0 ? 0 : denominator.filter(predicate).length / denominator.length;
+}
+
+/** Harness-only join of policy outcomes to ground truth; policies never receive these fields. */
+export function socialMetrics(samples: readonly SocialGroundTruthSample[]) {
+  return {
+    misattributionRate: rate(samples, (sample) => sample.accused !== sample.actual),
+    falseAccusationRate: rate(samples, (sample) => sample.twin, (sample) => sample.accusation),
+    envelopeBurnRate: rate(samples, (sample) => sample.burned),
+    loyalBurnRate: rate(samples, (sample) => sample.burned, (sample) => sample.loyal),
+    detectionRate: rate(samples, (sample) => sample.agendaDetected, (sample) => sample.hadAgenda),
+    shipSurvivalRate: rate(samples, (sample) => sample.shipSurvived),
+  };
+}

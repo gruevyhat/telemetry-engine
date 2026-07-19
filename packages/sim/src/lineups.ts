@@ -6,16 +6,9 @@ export interface LineupMember {
   readonly isPC: boolean;
 }
 
-export type LineupName = "L1" | "L2" | "L4";
+export type LineupName = "L1" | "L2" | "L3" | "L4" | "L5";
 
-/**
- * [sim-bot-policies.md §3, M1-12] L3 ("witch hunt") and L5 ("all dirty") are also named in the
- * design doc, but this card's own integration bullet only requires L1/L2/L4 to complete headless
- * -- L3's stress case and L5's agenda-odds=1.0 stress case both need M2 machinery (agendas,
- * confrontation/vote) this milestone doesn't build, so only the three M1-reachable lineups are
- * defined here. L2's "selfish@odds" member is seated as plain `selfish`; the "@odds" qualifier is
- * an M2 agenda-odds parameter with nothing in M1 for it to modify yet.
- */
+/** [sim-bot-policies.md §3] All five standard lineups; L5 fixes agenda odds at 1 below. */
 export const LINEUPS: Readonly<Record<LineupName, readonly LineupMember[]>> = {
   L1: [
     { actorId: "pc:crew-a", disposition: "naive", isPC: true },
@@ -29,10 +22,24 @@ export const LINEUPS: Readonly<Record<LineupName, readonly LineupMember[]>> = {
     { actorId: "pc:naive-crew", disposition: "naive", isPC: true },
     { actorId: "pc:selfish-crew", disposition: "selfish", isPC: true },
   ],
+  L3: [
+    { actorId: "pc:paranoid-a", disposition: "paranoid", isPC: true },
+    { actorId: "pc:paranoid-b", disposition: "paranoid", isPC: true },
+    { actorId: "pc:naive-a", disposition: "naive", isPC: true },
+    { actorId: "pc:naive-b", disposition: "naive", isPC: true },
+  ],
   L4: [
     { actorId: "pc:solo", disposition: "diligent", isPC: true },
     { actorId: "npc:crew-a", disposition: "naive", isPC: false },
     { actorId: "npc:crew-b", disposition: "naive", isPC: false },
     { actorId: "npc:crew-c", disposition: "naive", isPC: false },
   ],
+  L5: [
+    { actorId: "pc:captain", disposition: "loyalist", isPC: true },
+    { actorId: "pc:diligent-crew", disposition: "diligent", isPC: true },
+    { actorId: "pc:naive-crew", disposition: "naive", isPC: true },
+    { actorId: "pc:selfish-crew", disposition: "selfish", isPC: true },
+  ],
 };
+
+export const LINEUP_AGENDA_ODDS: Readonly<Record<LineupName, number>> = { L1: 0, L2: 0.28, L3: 0.28, L4: 0.28, L5: 1 };
