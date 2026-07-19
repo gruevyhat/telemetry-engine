@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PlayerDeliveryDTO } from "@telemetry/transport";
+import { PROTOCOL_VERSION, encryptMessage, type BoundHeader, type PlayerDeliveryDTO, type ProtocolMessage } from "@telemetry/transport";
 import { createPairingClient, createPairingHost } from "./index.js";
 
 const zhanKey = new Uint8Array(32).fill(3);
@@ -33,5 +33,35 @@ describe("WebRTC pairing core [M2-11, INV-13]", () => {
     const zhanEnvelope = await host.snapshot("pc:zhan", delivery("pc:zhan", "ZHAN-PRIVATE"), 1);
     expect(JSON.stringify(zhanEnvelope)).not.toContain("ZHAN-PRIVATE");
     await expect(deuce.receive(zhanEnvelope)).rejects.toThrow();
+  });
+
+  it("routes an inbound client command to the right playerId by peerId, not by payload claim [INV-13]", async () => {
+    const host = createPairingHost({ sessionId: "session-a", hostEpoch: 1, offers: [
+      { playerId: "pc:zhan", bindingEpoch: 1, claimToken: "claim-zhan", key: zhanKey },
+      { playerId: "pc:deuce", bindingEpoch: 1, claimToken: "claim-deuce", key: deuceKey },
+    ] });
+    const zhan = createPairingClient({ playerId: "pc:zhan", bindingEpoch: 1, claimToken: "claim-zhan", key: zhanKey });
+    host.claim("peer-zhan", zhan.claim);
+    host.claim("peer-deuce", createPairingClient({ playerId: "pc:deuce", bindingEpoch: 1, claimToken: "claim-deuce", key: deuceKey }).claim);
+
+    const header: BoundHeader<"comms.queue"> = { protocolVersion: PROTOCOL_VERSION, sessionId: "session-a", hostEpoch: 1, bindingEpoch: 1, sequence: 1, messageId: "client-msg-1", type: "comms.queue" };
+    const message: ProtocolMessage = { header, payload: { playerId: "pc:zhan", clientSequence: 1, clientCommandId: "zhan-1", windowId: "window-1", actionId: "agenda:skim" } };
+    const envelope = await encryptMessage(zhanKey, message);
+
+    const result = await host.receive("peer-zhan", envelope);
+    expect(result).toMatchObject({ status: "accepted", playerId: "pc:zhan", message: { payload: { clientCommandId: "zhan-1" } } });
+
+    // An unclaimed/unknown peer id can never be routed to any player's key.
+    expect(await host.receive("peer-stranger", envelope)).toEqual({ status: "rejected", reasonCode: "unknown-peer" });
+
+    // A ciphertext encrypted under a different binding's key never decrypts as zhan's, even if
+    // sent claiming to come from zhan's peer id.
+    const wrongKeyEnvelope = await encryptMessage(deuceKey, message);
+    expect(await host.receive("peer-zhan", wrongKeyEnvelope)).toEqual({ status: "rejected", reasonCode: "decrypt-failed" });
+
+    // An exact resend is idempotent (accepted again); a stale/reused sequence is rejected.
+    expect((await host.receive("peer-zhan", envelope)).status).toBe("accepted");
+    const staleEnvelope = await encryptMessage(zhanKey, { header: { ...header, messageId: "client-msg-0", sequence: 0 }, payload: message.payload });
+    expect(await host.receive("peer-zhan", staleEnvelope)).toEqual({ status: "rejected", reasonCode: "replay" });
   });
 });
