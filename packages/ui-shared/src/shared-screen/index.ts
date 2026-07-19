@@ -5,3 +5,4 @@ export * from "./Ticker.js";
 export * from "./Interstitial.js";
 export * from "./SharedScreen.js";
 export * from "./MarketFeed.js";
+export * from "./ConfrontationPanel.js";
