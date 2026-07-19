@@ -2,6 +2,7 @@ import { createXoshiro128 } from "./xoshiro128.js";
 
 export * from "./xoshiro128.js";
 export * from "./commit-reveal.js";
+export * from "./black-box.js";
 
 /**
  * [Spec §6] "named streams derived per subsystem ... adding a draw in one system must not
