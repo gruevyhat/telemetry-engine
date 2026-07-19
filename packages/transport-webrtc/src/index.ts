@@ -7,6 +7,7 @@ import {
   type EncryptedEnvelope,
   type PlayerDeliveryDTO,
   type ProtocolMessage,
+  type ReplayGuard,
 } from "@telemetry/transport";
 
 export interface PairingOffer {
@@ -41,6 +42,10 @@ export interface SnapshotOptions {
   readonly paused?: boolean;
 }
 
+export type ReceiveResult =
+  | { readonly status: "accepted"; readonly playerId: string; readonly message: ProtocolMessage }
+  | { readonly status: "rejected"; readonly reasonCode: "unknown-peer" | "decrypt-failed" | "replay" };
+
 export interface PairingHost {
   claim(peerId: string, claim: ClaimPayload): ClaimResult;
   reconnect(playerId: string, peerId: string): void;
@@ -50,10 +55,17 @@ export interface PairingHost {
     sequence: number,
     options?: SnapshotOptions,
   ): Promise<EncryptedEnvelope>;
+  /** Decrypts an inbound envelope with the key bound to `peerId` and applies that binding's own
+   * replay guard (M2-15b). The host never guesses a decrypting key from the payload's claimed
+   * `playerId` -- routing comes only from the trystero-level peerId a binding accepted at claim
+   * time (INV-13: a client cannot make its message decrypt, or be attributed, under another
+   * seat's key just by writing a different playerId in the plaintext). */
+  receive(peerId: string, envelope: EncryptedEnvelope): Promise<ReceiveResult>;
 }
 
 interface Binding {
   readonly offer: PairingOffer;
+  readonly inboundGuard: ReplayGuard;
   peerId?: string;
 }
 
@@ -63,12 +75,19 @@ function snapshotMessageId(playerId: string, sequence: number): string {
 }
 
 export function createPairingHost(config: PairingHostConfig): PairingHost {
-  const bindings = new Map<string, Binding>(config.offers.map((offer) => [offer.playerId, { offer }]));
+  const bindings = new Map<string, Binding>(config.offers.map((offer) => [offer.playerId, { offer, inboundGuard: createReplayGuard() }]));
 
   function requireBinding(playerId: string): Binding {
     const binding = bindings.get(playerId);
     if (binding === undefined) throw new Error(`no pairing offer for player ${playerId}`);
     return binding;
+  }
+
+  function bindingByPeerId(peerId: string): { playerId: string; binding: Binding } | undefined {
+    for (const [playerId, binding] of bindings) {
+      if (binding.peerId === peerId) return { playerId, binding };
+    }
+    return undefined;
   }
 
   return {
@@ -111,6 +130,20 @@ export function createPairingHost(config: PairingHostConfig): PairingHost {
         },
       };
       return encryptMessage(binding.offer.key, message);
+    },
+    async receive(peerId, envelope) {
+      const found = bindingByPeerId(peerId);
+      if (found === undefined) return { status: "rejected", reasonCode: "unknown-peer" };
+      let message: ProtocolMessage;
+      try {
+        message = await decryptMessage(found.binding.offer.key, envelope);
+      } catch {
+        return { status: "rejected", reasonCode: "decrypt-failed" };
+      }
+      if (found.binding.inboundGuard.accept(envelope.header) === "rejected") {
+        return { status: "rejected", reasonCode: "replay" };
+      }
+      return { status: "accepted", playerId: found.playerId, message };
     },
   };
 }
