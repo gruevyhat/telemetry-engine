@@ -313,6 +313,7 @@ export interface PhaseInterpreter {
   commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   queueCommsAction(action: QueueCommsActionInput): Fact;
+  declareConfrontation(t: GameTime, actor: ActorRef, input: { mode: string; target?: string }): Fact;
   resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] };
   resolveConfrontationSearch(input: ResolveConfrontationSearchInput): ConfrontationSearchResult;
   resolveConfrontationBranch(input: ConfrontationBranchInput): { committed: readonly Fact[] };
@@ -564,6 +565,21 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     });
   }
 
+  /** [M2-15b, Spec §4/§10.2, INV-6] "A majority forces the open" (Spec Appendix A) still needs
+   * one player to declare it first. Like `reportCheck`, a player-initiated action that isn't a
+   * beat transition still must go through the interpreter to append a fact -- the "confrontation"
+   * phase-script step itself commits nothing on advance (a stable wait step), and no accusation
+   * ever opens without this. Never voluntarily opens an envelope by itself; that only ever
+   * happens through a later carried `resolveConfrontation` call. */
+  function declareConfrontation(t: GameTime, actor: ActorRef, input: { mode: string; target?: string }): Fact {
+    return ledger.append({
+      t,
+      kind: "confrontation.opened",
+      actor,
+      payload: { declarer: actor.id, mode: input.mode, ...(input.target !== undefined ? { target: input.target } : {}) },
+    });
+  }
+
   function resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] } {
     if (input.target.kind === "npc") throw new Error("NPC targets cannot be burned; use interrogation and evidence");
     const eligible = [...input.eligiblePlayerIds];
@@ -678,5 +694,5 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     return { committed: [vote, ...results] };
   }
 
-  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, resolveConfrontation, resolveConfrontationSearch, resolveConfrontationBranch, reportCheck };
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, declareConfrontation, resolveConfrontation, resolveConfrontationSearch, resolveConfrontationBranch, reportCheck };
 }
