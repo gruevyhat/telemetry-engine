@@ -75,6 +75,8 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "deferredReveal.cashed", defaultVisibility: "referee", payload: { tokenFactId: f("string") } },
   { kind: "confrontation.opened", defaultVisibility: "public", payload: { declarer: f("string"), mode: f("string"), target: f("string", true) } },
   { kind: "confrontation.resolved", defaultVisibility: "public", payload: { outcome: f("string"), logNote: f("string") } },
+  { kind: "captain.assigned", defaultVisibility: "public", payload: { playerId: f("string"), reason: f("string") } },
+  { kind: "crew.removed", defaultVisibility: "public", payload: { actorId: f("string"), atHex: f("string"), reason: f("string") } },
   { kind: "npc.hired", defaultVisibility: "public", payload: { npcId: f("string"), role: f("string"), wage: f("number") } },
   { kind: "npc.statement", defaultVisibility: "table", payload: { npcId: f("string"), topic: f("string") } },
   // Referee-scoped companion to npc.statement (fact-kinds-v0.md §2/§3): the ladder tier links to

@@ -1,4 +1,5 @@
 import { derive, type Projection } from "../ledger/derive.js";
+import { rankAndPlanReveal, type AccessContext, type EvidenceQuery } from "../evidence/evidence.js";
 import { generateCommittedWeeklyTicks, type GenerateCommittedWeeklyTicksInput } from "../economy/market.js";
 import { agendaFizzleProposal, evaluateAgendaAction, planAgendaDeal, type AgendaActionContent, type AgendaDeck } from "../agenda/index.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
@@ -313,11 +314,39 @@ export interface PhaseInterpreter {
   dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
   queueCommsAction(action: QueueCommsActionInput): Fact;
   resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] };
+  resolveConfrontationSearch(input: ResolveConfrontationSearchInput): ConfrontationSearchResult;
+  resolveConfrontationBranch(input: ConfrontationBranchInput): { committed: readonly Fact[] };
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
    * `check.reported` fact and does not move `currentStep()`. */
   reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
 }
+
+export interface ResolveConfrontationSearchInput {
+  readonly t: GameTime;
+  readonly actorId: string;
+  readonly check: CheckReportInput;
+  readonly query: EvidenceQuery;
+  readonly accessContext: AccessContext;
+  readonly costTick?: { readonly clockId: string; readonly delta: number };
+}
+
+export type ConfrontationSearchResult =
+  | { readonly ok: true; readonly committed: readonly Fact[] }
+  | { readonly ok: false; readonly reason: "access-denied"; readonly message: string };
+
+interface GovernanceVoteInput {
+  readonly t: GameTime;
+  readonly actorId: string;
+  readonly eligiblePlayerIds: readonly string[];
+  readonly ballots: Readonly<Record<string, boolean>>;
+}
+
+export type ConfrontationBranchInput =
+  | { readonly kind: "let-lie"; readonly t: GameTime; readonly actorId: string; readonly reason: string }
+  | ({ readonly kind: "replace-captain"; readonly candidateId: string } & GovernanceVoteInput)
+  | ({ readonly kind: "put-off-ship"; readonly targetId: string; readonly atHex: string } & GovernanceVoteInput)
+  | { readonly kind: "timer-expiry"; readonly t: GameTime; readonly captainId: string; readonly decision: "let-lie" };
 
 export interface ResolveConfrontationInput {
   readonly t: GameTime;
@@ -577,5 +606,77 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     return { committed: [vote, ...consequences] };
   }
 
-  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, resolveConfrontation, reportCheck };
+  function resolveConfrontationSearch(input: ResolveConfrontationSearchInput): ConfrontationSearchResult {
+    const effect = input.check.total - input.check.difficulty;
+    const plan = rankAndPlanReveal(input.query, ledger.all(), effect, input.t, input.accessContext, input.costTick);
+    if (!plan.ok) return plan;
+    const actor: ActorRef = { kind: "pc", id: input.actorId };
+    const committed = ledger.appendAll([
+      {
+        t: input.t,
+        kind: "check.reported",
+        actor,
+        payload: { actor: input.actorId, ...input.check, effect },
+      },
+      ...plan.revealProposals,
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "searched", logNote: "investigation-complete" } },
+    ]);
+    return { ok: true, committed };
+  }
+
+  function validateGovernanceVote(input: GovernanceVoteInput, voters: readonly string[], threshold: number, topic: string): { vote: Fact; status: "open" | "failed" | "carried" } {
+    if (voters.length === 0 || new Set(voters).size !== voters.length) throw new Error("governance vote requires a non-empty unique voter set");
+    const ballotIds = Object.keys(input.ballots);
+    if (ballotIds.some((id) => !voters.includes(id))) throw new Error("governance ballot came from an ineligible player");
+    const carried = Object.values(input.ballots).filter(Boolean).length >= threshold;
+    const failed = !carried && ballotIds.length === voters.length;
+    const status = carried ? "carried" : failed ? "failed" : "open";
+    const vote = ledger.append({
+      t: input.t,
+      kind: "vote.recorded",
+      actor: { kind: "pc", id: input.actorId },
+      payload: { topic, eligiblePlayerIds: [...voters], threshold, ballots: { ...input.ballots }, status },
+    });
+    return { vote, status };
+  }
+
+  function resolveConfrontationBranch(input: ConfrontationBranchInput): { committed: readonly Fact[] } {
+    if (input.kind === "let-lie") {
+      return { committed: ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor: { kind: "pc", id: input.actorId }, payload: { outcome: "let-lie", logNote: input.reason } }]) };
+    }
+    if (input.kind === "timer-expiry") {
+      return { committed: ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor: { kind: "pc", id: input.captainId }, payload: { outcome: input.decision, logNote: "timer-expired-captain-owned" } }]) };
+    }
+
+    const allEligible = [...input.eligiblePlayerIds];
+    if (allEligible.length === 0 || new Set(allEligible).size !== allEligible.length) throw new Error("governance eligibility must be a non-empty unique PC set");
+    if (input.kind === "replace-captain") {
+      const threshold = Math.floor(allEligible.length / 2) + 1;
+      const { vote, status } = validateGovernanceVote(input, allEligible, threshold, `replace-captain:${input.candidateId}`);
+      if (status === "open") return { committed: [vote] };
+      const actor: ActorRef = { kind: "pc", id: input.actorId };
+      const results = ledger.appendAll(status === "carried" ? [
+        { t: input.t, kind: "captain.assigned", actor, payload: { playerId: input.candidateId, reason: "majority-vote" }, causes: [vote.id] },
+        { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "captain-replaced", logNote: "strict-majority-carried" }, causes: [vote.id] },
+      ] : [
+        { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "captain-retained", logNote: "strict-majority-not-reached" }, causes: [vote.id] },
+      ]);
+      return { committed: [vote, ...results] };
+    }
+
+    const voters = allEligible.filter((id) => id !== input.targetId);
+    const { vote, status } = validateGovernanceVote(input, voters, voters.length, `put-off-ship:${input.targetId}`);
+    if (status === "open") return { committed: [vote] };
+    const actor: ActorRef = { kind: "pc", id: input.actorId };
+    const results = ledger.appendAll(status === "carried" ? [
+      { t: input.t, kind: "crew.removed", actor, payload: { actorId: input.targetId, atHex: input.atHex, reason: "unanimous-minus-target" }, causes: [vote.id] },
+      { t: input.t, kind: "presence.declared", actor, payload: { actor: input.targetId, hex: input.atHex, day: input.t.day, slot: input.t.slot }, causes: [vote.id] },
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "crew-removed", logNote: "unanimous-minus-target-carried" }, causes: [vote.id] },
+    ] : [
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "crew-retained", logNote: "unanimity-not-reached" }, causes: [vote.id] },
+    ]);
+    return { committed: [vote, ...results] };
+  }
+
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, resolveConfrontation, resolveConfrontationSearch, resolveConfrontationBranch, reportCheck };
 }

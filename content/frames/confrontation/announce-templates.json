@@ -1,8 +1,13 @@
 {
   "confrontation.declare": "A confrontation has been declared. The accusation and eligible crew are now fixed.",
-  "confrontation.captain-owns-expiry": "Five minutes. If the vote does not carry, the captain owns what follows.",
   "confrontation.vote": "Vote recorded. The envelope opens only if a strict majority carries.",
   "confrontation.forced-burn": "The majority carries. The envelope is open and the private objective is forfeit.",
   "confrontation.deferred-reveal": "I have retained the objective record. Its timing is now mine.",
+  "confrontation.search": "The search is committed. One day passes, whether the search finds something or not.",
+  "confrontation.let-lie": "The loss stands. The record will show who chose not to ask again.",
+  "confrontation.captain-vote": "The captaincy is under vote. A strict majority changes the chair.",
+  "confrontation.captain-replaced": "The majority carries. The new captain owns the next order.",
+  "confrontation.removal-vote": "Removal requires every eligible vote except the target's.",
+  "confrontation.crew-removed": "The vote is unanimous where it must be. The berth ends at this port.",
   "confrontation.resolution": "The confrontation is resolved. The black box has the names and the tally."
 }

@@ -212,7 +212,7 @@ describe("App [M1-13 real trade campaign]", () => {
     expect(screen.getByTestId("interrogation-answer").textContent).toMatch(/nothing/i);
   });
 
-  it("offers an Investigate control at COMMS, and a submitted roll reveals fields into the public ticker", async () => {
+  it("offers an Investigate control at COMMS, and renders table-scoped findings outside the public ticker", async () => {
     render(<App />);
     await clickCampaignControl(screen.getByRole("button", { name: "Advance turn" })); // t1-dockside -> t1-comms
 
@@ -221,9 +221,10 @@ describe("App [M1-13 real trade campaign]", () => {
     fireEvent.change(rollInput, { target: { value: "10" } }); // difficulty 6 -> effect 4
     fireEvent.click(screen.getByRole("button", { name: "Submit evidence roll" }));
 
-    // "reveal" is a public fact (kinds-v0.ts); it belongs in the public ship's log once committed.
+    // Evidence reveal descriptors are table-scoped (Spec §10.1 and Appendix A F21), so the
+    // shared main panel may render the finding but the public ship's log does not list it.
     const ticker = screen.getByRole("list", { name: "ship's log" });
-    expect(within(ticker).getAllByText("reveal").length).toBeGreaterThan(0);
+    expect(within(ticker).queryByText("reveal")).toBeNull();
     expect(screen.getByTestId("evidence-reveal").textContent).toMatch(/door|codeClass|time|actor/);
   });
 });

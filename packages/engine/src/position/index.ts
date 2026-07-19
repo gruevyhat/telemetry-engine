@@ -40,3 +40,11 @@ export const presenceProjection: Projection<PresenceState> = {
 export function presenceOf(state: PresenceState, actor: string, day: number, slot: string): PresenceLocation {
   return state.declarations[declarationKey(actor, day, slot)] ?? { kind: "berth" };
 }
+
+/** [M2-07b] Captain authority is whoever the latest append-only assignment names. */
+export const captainProjection: Projection<string | undefined> = {
+  initial: undefined,
+  apply(state, fact) {
+    return fact.kind === "captain.assigned" && typeof fact.payload.playerId === "string" ? fact.payload.playerId : state;
+  },
+};

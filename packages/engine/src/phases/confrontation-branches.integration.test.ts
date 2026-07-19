@@ -20,14 +20,14 @@ describe("confrontation resolution branches [M2-07b, INV-6/11]", () => {
     const { ledger, interpreter } = fixture();
     const secret = ledger.append({ t: T, kind: "lock.cycled", actor: { kind: "npc", id: "npc:kessler" }, payload: { door: "aft", codeClass: "CREW", time: "0340" } });
     const result = interpreter.resolveConfrontationSearch({
-      t: T, actorId: "pc:zhan", effect: 2,
+      t: T, actorId: "pc:zhan", check: { skill: "Investigate", dm: 1, total: 10, difficulty: 8 },
       query: { target: { kinds: ["lock.cycled"] }, access: { kind: "aboard" }, probativeWeights: { "lock.cycled": 10 }, identityFields: new Set(["actor"]) },
       accessContext: { presence: { declarations: {} }, actorId: "pc:zhan", day: 15, slot: "ARRIVAL", heldGear: new Set(), codeHolders: new Set(), holdsPrisoner: false },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.committed.map((fact) => fact.kind)).toEqual(["reveal", "clock.tick", "confrontation.resolved"]);
-    expect(result.committed[0]!.payload.targets).toEqual([secret.id]);
+    expect(result.committed.map((fact) => fact.kind)).toEqual(["check.reported", "reveal", "clock.tick", "confrontation.resolved"]);
+    expect(result.committed[1]!.payload.targets).toEqual([secret.id]);
   });
 
   it("let-it-lie records the unresolved loss without revealing a hidden cause", () => {
@@ -43,13 +43,19 @@ describe("confrontation resolution branches [M2-07b, INV-6/11]", () => {
     const result = interpreter.resolveConfrontationBranch({ kind: "replace-captain", t: T, actorId: "pc:zhan", candidateId: "pc:brennan", eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true, "pc:deuce": false, "pc:brennan": true } });
     expect(result.committed.map((fact) => fact.kind)).toEqual(["vote.recorded", "captain.assigned", "confrontation.resolved"]);
     expect(derive(ledger.all(), captainProjection)).toBe("pc:brennan");
+    const failed = fixture();
+    const retained = failed.interpreter.resolveConfrontationBranch({ kind: "replace-captain", t: T, actorId: "pc:zhan", candidateId: "pc:brennan", eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true, "pc:deuce": false, "pc:brennan": false } });
+    expect(retained.committed.map((fact) => fact.kind)).toEqual(["vote.recorded", "confrontation.resolved"]);
+    expect(derive(failed.ledger.all(), captainProjection)).toBeUndefined();
   });
 
   it("puts a target off ship only with every other eligible PC, while timeout is owned by the captain", () => {
     const { interpreter } = fixture();
     const removed = interpreter.resolveConfrontationBranch({ kind: "put-off-ship", t: T, actorId: "pc:zhan", targetId: "pc:deuce", atHex: "Vantage", eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true, "pc:brennan": true } });
-    expect(removed.committed.map((fact) => fact.kind)).toEqual(["vote.recorded", "crew.removed", "confrontation.resolved"]);
-    const timeout = interpreter.resolveConfrontationBranch({ kind: "timer-expiry", t: T, captainId: "pc:brennan" });
+    expect(removed.committed.map((fact) => fact.kind)).toEqual(["vote.recorded", "crew.removed", "presence.declared", "confrontation.resolved"]);
+    const failed = fixture().interpreter.resolveConfrontationBranch({ kind: "put-off-ship", t: T, actorId: "pc:zhan", targetId: "pc:deuce", atHex: "Vantage", eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true, "pc:brennan": false } });
+    expect(failed.committed.map((fact) => fact.kind)).toEqual(["vote.recorded", "confrontation.resolved"]);
+    const timeout = interpreter.resolveConfrontationBranch({ kind: "timer-expiry", t: T, captainId: "pc:brennan", decision: "let-lie" });
     expect(timeout.committed[0]).toMatchObject({ kind: "confrontation.resolved", actor: { kind: "pc", id: "pc:brennan" }, payload: { outcome: "let-lie", logNote: "timer-expired-captain-owned" } });
   });
 });

@@ -170,6 +170,7 @@ export function rankAndPlanReveal(
           kind: "reveal",
           actor: REFEREE,
           payload: { targets: [fact.id], fields: fieldsInTier.slice(0, spend) },
+          visibility: { level: "table" },
         });
         budget -= spend;
       }
