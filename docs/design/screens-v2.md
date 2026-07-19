@@ -1,12 +1,12 @@
 # Screens v2 — social game, transport, and trust map
 
-**Status:** M2-00 design draft for owner approval  
+**Status:** M2-00 approved implementation basis, 2026-07-18
 **Spec refs:** §3.3, §6, §10.2, §16, §21.3; rulebook §8.2  
 **Hard boundary:** the shared-screen host alone owns the full ledger. A phone receives only public facts plus that player's private slice.
 
 ## 0. Decisions this document is designed around
 
-These are recommendations until the owner approves them in `docs/tasks/M2-00.md`.
+The owner approved these decisions together on 2026-07-18; implementation cards must treat them as normative.
 
 1. Agenda actions are declarative content: access, fact-proposal templates, implication metadata, payout/exposure metadata, and the action id used by incident-frame claimants.
 2. `agenda.actionTaken` records each durable queued selection/replacement with its window, target, and client-command ids. The host rehydrates the latest valid selection from the content id and pinned content hash when COMMS closes; no second queue fact kind is needed.
@@ -78,7 +78,7 @@ The phone claims the seat once. The host invalidates the bootstrap token, binds 
 
 The host makes one independent agenda draw per player. The shared screen reports only `3 packets ready`. Every phone receives the same packet shell: objective, sealed-status marker, and COMMS tab. A negative agenda result supplies routine COMMS content, not an empty or visibly different layout.
 
-### 2.4 Proposed agenda-action content contract
+### 2.4 Approved agenda-action content contract
 
 The action format stays declarative and statically lintable:
 
@@ -250,7 +250,7 @@ This is the exhaustive M2 protocol inventory. A row may have several typed paylo
 
 ## 8. Persistence and key lifetime
 
-Recommended save v2 additions:
+Approved save v2 additions:
 
 ```text
 security:  AEAD/KDF/commit scheme ids, public at-rest salt, wrapped campaign seed, encrypted referee/preimage blob
@@ -268,7 +268,7 @@ After unwrapping the campaign seed, referee material uses Web Crypto AES-GCM wit
 
 M1 save migration is one-way: parse and replay v1 under the existing validator, generate the recovery/salt/key context, wrap the old plaintext campaign seed, encrypt referee material, require confirmation that recovery material was saved, and then persist/export v2 without the plaintext seed. A malformed or future-version save still fails loudly.
 
-### 8.1 Proposed social fact-catalog additions
+### 8.1 Approved social fact-catalog additions
 
 | Kind | Payload | Visibility | Purpose |
 |---|---|---|---|
@@ -305,7 +305,7 @@ The engine owns the single auditable private-delivery boundary. `buildPlayerDeli
 
 `packages/ui-shared` may pass a `Ledger` only to that engine API and may serialize only its returned DTOs. The transport package has no API capable of receiving a `Ledger`, `Fact`, referee view, or content callback. Transport fuzz tests inspect decoded DTOs as well as ciphertext routing to enforce INV-13.
 
-Recommended dependencies after owner approval: the Spec-prescribed [trystero](https://trystero.dev/) in `packages/transport-webrtc`, and browser-capable [qrcode](https://github.com/soldair/node-qrcode) plus its TypeScript definitions in `packages/ui-shared`. Both new workspace packages must be added to the root typecheck gate; neither dependency enters `packages/engine`.
+Approved dependencies: the Spec-prescribed [trystero](https://trystero.dev/) in `packages/transport-webrtc`, and browser-capable [qrcode](https://github.com/soldair/node-qrcode) plus its TypeScript definitions in `packages/ui-shared`. Both new workspace packages must be added to the root typecheck gate; neither dependency enters `packages/engine`.
 
 ## 10. Accessibility and presentation acceptance
 
