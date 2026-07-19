@@ -9,8 +9,9 @@ const T = { day: 7, slot: "COMMS" as const };
 
 describe("buildPlayerDelivery [M2-09, INV-13]", () => {
   it("fuzzes serialized deliveries so referee and foreign-private markers never cross the boundary", () => {
-    fc.assert(fc.property(fc.string({ minLength: 4, maxLength: 24 }), fc.string({ minLength: 4, maxLength: 24 }), (ownMarker, foreignMarker) => {
-      fc.pre(ownMarker !== foreignMarker);
+    fc.assert(fc.property(fc.string({ minLength: 1, maxLength: 24 }), fc.string({ minLength: 1, maxLength: 24 }), (ownValue, foreignValue) => {
+      const ownMarker = `OWN-MARKER:${encodeURIComponent(ownValue)}`;
+      const foreignMarker = `FOREIGN-MARKER:${encodeURIComponent(foreignValue)}`;
       const ledger = createLedger(createKindRegistry(KINDS_V0));
       ledger.append({ t: T, kind: "confrontation.resolved", actor: { kind: "pc", id: "pc:zhan" }, payload: { outcome: "open", logNote: "public-record" } });
       ledger.append({ t: T, kind: "objective.assigned", actor: { kind: "referee", id: "referee" }, payload: { playerId: "pc:zhan", objectiveId: ownMarker, successCondition: {} }, visibility: { level: "private", playerIds: ["pc:zhan"] } });

@@ -56,6 +56,8 @@ importers:
 
   packages/sim: {}
 
+  packages/transport: {}
+
   packages/ui-phone:
     dependencies:
       react:

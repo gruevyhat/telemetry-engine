@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createReplayGuard, decryptMessage, encryptMessage, type ProtocolMessage } from "./index.js";
+import { createClientCommandReplayGuard, createReplayGuard, decryptMessage, encryptMessage, type ProtocolMessage } from "./index.js";
 
 function message(sequence: number, messageId = `message-${sequence}`): ProtocolMessage {
   return {
@@ -32,5 +32,10 @@ describe("scoped encrypted transport envelopes [M2-09, INV-13]", () => {
     expect(guard.accept(message(1).header)).toBe("rejected");
     expect(guard.accept(message(3, "message-2").header)).toBe("rejected");
     expect(guard.accept(message(3).header)).toBe("accepted");
+    const commands = createClientCommandReplayGuard();
+    expect(commands.accept("pc:zhan", 2, 10)).toBe("accepted");
+    expect(commands.accept("pc:zhan", 2, 11)).toBe("accepted");
+    expect(commands.accept("pc:zhan", 2, 10)).toBe("duplicate");
+    expect(commands.accept("pc:zhan", 2, 9)).toBe("rejected");
   });
 });
