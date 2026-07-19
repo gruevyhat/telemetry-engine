@@ -36,6 +36,13 @@ describe("forced confrontation burn [M2-07, INV-2/4/6]", () => {
     expect(ledger.visibleTo({ scope: "public" }).some((fact) => fact.id === objective.id)).toBe(false);
   });
 
+  it("declares a confrontation via the interpreter, appending exactly one public confrontation.opened fact [M2-15b, INV-6]", () => {
+    const { ledger, interpreter } = fixture();
+    const fact = interpreter.declareConfrontation(T, { kind: "pc", id: "pc:zhan" }, { mode: "accusation", target: "pc:deuce" });
+    expect(fact).toMatchObject({ kind: "confrontation.opened", actor: { kind: "pc", id: "pc:zhan" }, payload: { declarer: "pc:zhan", mode: "accusation", target: "pc:deuce" } });
+    expect(ledger.visibleTo({ scope: "public" }).some((f) => f.id === fact.id)).toBe(true);
+  });
+
   it("rejects NPC burn targets", () => {
     const { interpreter, objective } = fixture();
     expect(() => interpreter.resolveConfrontation({ t: T, declarer: "pc:zhan", target: { kind: "npc", id: "npc:kessler" }, eligiblePlayerIds: ["pc:zhan"], ballots: { "pc:zhan": true }, objectiveFactId: objective.id, contents: "x" })).toThrow(/NPC.*burn/i);
