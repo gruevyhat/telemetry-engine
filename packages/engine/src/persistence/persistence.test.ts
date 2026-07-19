@@ -5,10 +5,10 @@ import { fundsProjection } from "../economy/index.js";
 import { combineProjections, derive, SCHEMA_VERSION } from "../ledger/derive.js";
 import type { Fact } from "../ledger/types.js";
 import {
-  exportSave,
-  loadSave,
+  exportLegacyV1Save,
+  loadLegacyV1Save,
   schemaVersionMismatchMessage,
-  type SaveBlob,
+  type LegacySaveV1,
 } from "./index.js";
 
 const projection = combineProjections({ funds: fundsProjection, clocks: clocksProjection });
@@ -64,7 +64,7 @@ const factArbitrary: fc.Arbitrary<Fact[]> = fc
     }),
   );
 
-function saveWith(facts: readonly Fact[], overrides: Partial<SaveBlob> = {}): SaveBlob {
+function saveWith(facts: readonly Fact[], overrides: Partial<LegacySaveV1> = {}): LegacySaveV1 {
   return {
     schemaVersion: SCHEMA_VERSION,
     seedState: { campaignSeed: "skim", streamDraws: { "world-events": 3 } },
@@ -82,17 +82,17 @@ describe("save/load [INV-3 replay determinism]", () => {
     fc.assert(
       fc.property(factArbitrary, (facts) => {
         const save = saveWith(facts);
-        const exported = exportSave(save);
+        const exported = exportLegacyV1Save(save);
         const expectedState = derive(facts, projection);
 
-        const loaded = loadSave(exported, {
+        const loaded = loadLegacyV1Save(exported, {
           schemaVersion: SCHEMA_VERSION,
           contentHashes: save.contentHashes,
           replay: (loadedFacts) => derive(loadedFacts, projection),
         });
 
         expect(JSON.stringify(loaded.state)).toBe(JSON.stringify(expectedState));
-        expect(exportSave(loaded.save)).toBe(exported);
+        expect(exportLegacyV1Save(loaded.save)).toBe(exported);
         expect(loaded.warnings).toEqual([]);
       }),
       { numRuns: 50 },
@@ -103,7 +103,7 @@ describe("save/load [INV-3 replay determinism]", () => {
     const save = saveWith([]);
     const replay = vi.fn(() => ({ validated: true }));
 
-    const loaded = loadSave(exportSave(save), {
+    const loaded = loadLegacyV1Save(exportLegacyV1Save(save), {
       schemaVersion: SCHEMA_VERSION,
       contentHashes: {
         ...save.contentHashes,
@@ -130,7 +130,7 @@ describe("save/load [INV-3 replay determinism]", () => {
     const save = saveWith([], { schemaVersion: SCHEMA_VERSION + 1 });
 
     expect(() =>
-      loadSave(exportSave(save), {
+      loadLegacyV1Save(exportLegacyV1Save(save), {
         schemaVersion: SCHEMA_VERSION,
         contentHashes: save.contentHashes,
         replay,

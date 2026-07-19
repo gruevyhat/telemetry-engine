@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Fact } from "../ledger/types.js";
 import { exportEncryptedSave, loadEncryptedSave, migrateV1Save } from "./secure.js";
 
@@ -25,12 +25,17 @@ describe("authenticated save schema v2 [M2-10, INV-3/13]", () => {
     const parsed = JSON.parse(exported) as { security: { encryptedSeedState: { ciphertext: string } } };
     parsed.security.encryptedSeedState.ciphertext = `${parsed.security.encryptedSeedState.ciphertext.slice(0, -2)}00`;
     await expect(loadEncryptedSave(JSON.stringify(parsed), recoveryKey)).rejects.toThrow(/decrypt|tamper|authentic/i);
+    const factTamper = JSON.parse(exported) as { facts: { id: string }[] };
+    factTamper.facts[1]!.id = "F-secret-renamed";
+    await expect(loadEncryptedSave(JSON.stringify(factTamper), recoveryKey)).rejects.toThrow(/decrypt|tamper|authentic/i);
   });
 
   it("migrates v1 only after recovery confirmation and rejects future schemas actionably", async () => {
     const v1 = JSON.stringify({ schemaVersion: 1, seedState: { campaignSeed: "CAMPAIGN-SEED", draws: 2 }, facts: [secretFact], contentHashes: { content: "hash" } });
-    await expect(migrateV1Save(v1, { campaignId: "campaign-a", recoveryKey, recoveryMaterialSaved: false })).rejects.toThrow(/recovery material/i);
-    const migrated = await migrateV1Save(v1, { campaignId: "campaign-a", recoveryKey, recoveryMaterialSaved: true });
+    const replay = vi.fn();
+    await expect(migrateV1Save(v1, { campaignId: "campaign-a", recoveryKey, recoveryMaterialSaved: false, replay })).rejects.toThrow(/recovery material/i);
+    const migrated = await migrateV1Save(v1, { campaignId: "campaign-a", recoveryKey, recoveryMaterialSaved: true, replay });
+    expect(replay).toHaveBeenCalledWith([secretFact], { draws: 2 });
     expect(JSON.parse(migrated).schemaVersion).toBe(2);
     expect(migrated).not.toContain("CAMPAIGN-SEED");
     await expect(loadEncryptedSave(JSON.stringify({ schemaVersion: 3 }), recoveryKey)).rejects.toThrow(/version 3.*supports.*2/i);
