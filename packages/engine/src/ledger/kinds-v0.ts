@@ -19,7 +19,12 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "phase.transition", defaultVisibility: "public", payload: { fromStep: f("string"), toStep: f("string"), frame: f("string", true) } },
   { kind: "clock.tick", defaultVisibility: "referee", payload: { clockId: f("string"), delta: f("number"), cause: f("string", true) } },
   { kind: "check.reported", defaultVisibility: "public", payload: { actor: f("string"), skill: f("string"), dm: f("number"), total: f("number"), difficulty: f("number"), effect: f("number") } },
-  { kind: "secretRoll.committed", defaultVisibility: "public", payload: { hash: f("string") } },
+  { kind: "campaign.seedCommitted", defaultVisibility: "public", payload: { hash: f("string"), scheme: f("string") } },
+  {
+    kind: "secretRoll.committed",
+    defaultVisibility: "public",
+    payload: { hash: f("string"), scheme: f("string"), seedCommitmentFactId: f("string") },
+  },
   // likelihood corrected from number to string at M1-06: Spec §8.4's ladder is named rungs
   // (certain|likely|even|unlikely|remote), not a raw number -- see fact-kinds-v0.md §4.
   { kind: "oracle.answered", defaultVisibility: "table", payload: { question: f("string"), likelihood: f("string"), answer: f("string"), texture: f("string", true) } },
