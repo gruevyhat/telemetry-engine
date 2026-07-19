@@ -23,7 +23,7 @@ One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...), not o
 
 ## Hard rules — violations are defects even when the code works
 - Tests are never deleted, skipped, or weakened except in an owner-approved commit that says so in its message.
-- Nothing writes to the ledger except the phase-engine interpreter (INV-6). Everything else emits proposals.
+- Nothing writes to the ledger except the phase-engine interpreter (INV-6). Everything else emits proposals. Before designing a new interpreter action API for a player-initiated, mid-beat action, grep `packages/engine/src/phases/commits.ts` — a commit function for your exact case may already exist with zero callers. Both M1-15 and M1-16 independently designed (and got owner sign-off for) a new interpreter method before discovering the real commit function already shipped in an earlier task's bundled commit; this lesson was learned twice in the same milestone before being promoted here.
 - No imports from `plugin-traveller/` or `content/` anywhere in `packages/engine` — not types, not tests, not temporarily (INV-1).
 - Do not touch `Visibility` handling unless your task card names it.
 - No new dependencies in `packages/engine` without owner sign-off.
