@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   createKindRegistry,
   createLedger,
@@ -21,6 +21,8 @@ const SCRIPT = loadPhaseScript({
     { id: "after", kind: "announce" as const, next: "comms" },
   ],
 });
+afterEach(cleanup);
+
 const ACTION: AgendaActionContent = {
   id: "agenda:skim",
   labelTemplate: "agenda.skim.label",

@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommsScreen } from "./CommsScreen.js";
+
+afterEach(cleanup);
 
 describe("phone COMMS shell [M2-12, INV-13]", () => {
   it("shows the same shell and lock text for a routine client and an agenda holder, menu only for the holder", () => {
