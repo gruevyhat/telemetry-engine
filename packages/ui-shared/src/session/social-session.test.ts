@@ -67,6 +67,15 @@ describe("social session orchestrator [M2-15b, INV-6/13]", () => {
     session.closeCommsWindow(T, { kind: "referee", id: "referee" });
     expect(ledger.all().some((fact) => fact.kind === "cargo.diverted" && fact.actor.id === "pc:zhan")).toBe(true);
 
+    const accuseMessage: ProtocolMessage = {
+      header: header(3, "confrontation.command"),
+      payload: { playerId: "pc:deuce", clientSequence: 1, clientCommandId: "deuce-accuse-1", command: "accuse", targetId: "pc:zhan" },
+    };
+    const receivedAccuse = await sendAndReceive(accuseMessage);
+    const declared = session.handleConfrontationCommand(T, receivedAccuse.payload as typeof accuseMessage.payload);
+    expect(declared).toMatchObject({ kind: "confrontation.opened", payload: { declarer: "pc:deuce", mode: "accusation", target: "pc:zhan" } });
+    expect(ledger.all().some((fact) => fact.id === declared.id && fact.kind === "confrontation.opened")).toBe(true);
+
     const objective = ledger.append({
       t: T, kind: "objective.assigned", actor: { kind: "referee", id: "referee" },
       payload: { playerId: "pc:zhan", objectiveId: "routine", successCondition: {} },
