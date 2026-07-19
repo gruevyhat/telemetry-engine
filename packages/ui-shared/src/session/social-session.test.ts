@@ -83,19 +83,38 @@ describe("social session orchestrator [M2-15b, INV-6/13]", () => {
     });
 
     const topic = "burn:pc:zhan";
+    session.openConfrontation({
+      topic, declarer: "pc:deuce", target: { kind: "pc", id: "pc:zhan" },
+      eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], objectiveFactId: objective.id, contents: "SESSION-CONTENTS",
+    });
+
+    const results = [];
     for (const [playerId, value] of [["pc:zhan", false], ["pc:deuce", true], ["pc:brennan", true]] as const) {
       const castMessage: ProtocolMessage = { header: header(3, "vote.cast"), payload: { playerId, clientSequence: 1, topic, value } };
       const receivedCast = await sendAndReceive(castMessage);
-      session.castVote(topic, (receivedCast.payload as { playerId: string }).playerId, (receivedCast.payload as { value: boolean }).value);
+      results.push(session.castVote(T, topic, (receivedCast.payload as { playerId: string }).playerId, (receivedCast.payload as { value: boolean }).value));
     }
 
-    const closed = session.closeConfrontation({
-      t: T, topic, declarer: "pc:deuce", target: { kind: "pc", id: "pc:zhan" },
-      eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], objectiveFactId: objective.id, contents: "SESSION-CONTENTS",
-    });
-    const resolvedMessage: ProtocolMessage = { header: header(4, "vote.resolved"), payload: { topic, status: closed.status, outcome: closed.outcome } };
+    // Per-cast, not single-shot (screens-v2 §4.2/§8.1): the first two ballots (one of three yes)
+    // can't yet clear the strict-majority threshold of two, so each posts only its own
+    // vote.recorded tally fact -- no terminal effect fires early.
+    expect(results[0]).toMatchObject({ topic, status: "open" });
+    expect(results[0]!.committed.map((fact) => fact.kind)).toEqual(["vote.recorded"]);
+    expect(results[1]).toMatchObject({ topic, status: "open" });
+    // The third ballot crosses the threshold and carries in the same call that posts it.
+    expect(results[2]).toMatchObject({ topic, status: "carried", outcome: "burned" });
+
+    const resolvedMessage: ProtocolMessage = { header: header(4, "vote.resolved"), payload: { topic, status: "carried", outcome: "burned" } };
     const receivedResolved = await sendAndReceive(resolvedMessage);
     expect(receivedResolved.payload).toEqual({ topic, status: "carried", outcome: "burned" });
-    expect(ledger.all().some((fact) => fact.kind === "envelope.opened" && fact.payload.playerId === "pc:zhan")).toBe(true);
+    expect(ledger.all().filter((fact) => fact.kind === "envelope.opened" && fact.payload.playerId === "pc:zhan")).toHaveLength(1);
+
+    // A late/duplicate cast after the topic already went terminal must never re-invoke
+    // resolveConfrontation -- the handoff flagged this as unverified-safe; it's the reason
+    // castVote resolves per-cast at all rather than the caller closing once at the end.
+    const late = session.castVote(T, topic, "pc:zhan", true);
+    expect(late).toMatchObject({ topic, status: "carried", outcome: "burned" });
+    expect(ledger.all().filter((fact) => fact.kind === "envelope.opened" && fact.payload.playerId === "pc:zhan")).toHaveLength(1);
+    expect(ledger.all().filter((fact) => fact.kind === "vote.recorded")).toHaveLength(3);
   });
 });
