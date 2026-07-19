@@ -94,6 +94,12 @@ importers:
       '@telemetry/engine':
         specifier: workspace:*
         version: link:../engine
+      '@telemetry/transport':
+        specifier: workspace:*
+        version: link:../transport
+      '@telemetry/transport-webrtc':
+        specifier: workspace:*
+        version: link:../transport-webrtc
       idb:
         specifier: ^8.0.3
         version: 8.0.3

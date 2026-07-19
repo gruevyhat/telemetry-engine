@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@telemetry/engine": "workspace:*",
+    "@telemetry/transport": "workspace:*",
+    "@telemetry/transport-webrtc": "workspace:*",
     "idb": "^8.0.3",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
