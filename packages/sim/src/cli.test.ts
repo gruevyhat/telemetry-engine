@@ -8,10 +8,6 @@ const OUT_DIR = new URL("../out/", import.meta.url);
 const OUT_FILE = new URL("metrics.json", OUT_DIR);
 const SOCIAL_OUT_FILE = new URL("social-metrics.json", OUT_DIR);
 
-/** [Spec §21.1 "Simulation | ... | nightly + release" vs. PR-level] Only stable at release
- * scale; a 3-sample default would flake on ordinary binomial variance. */
-const STATISTICALLY_STABLE_CAMPAIGNS = 500;
-
 /**
  * [Spec §21.1 "Simulation | 1,000-campaign headless runs, metric thresholds | packages/sim |
  * nightly + release", §20 local telemetry export, M1-12 "Done when: headless runner; ... metric
@@ -39,13 +35,21 @@ describe("sim CLI export [Spec §20/§21.1/§21.4, M1-12]", () => {
  * [M2-15b, task card "Done when: L2/L3/L5 sim runs complete within Spec §21.4's thresholds",
  * INV-5/8/10] Runs the real agenda/comms/confrontation/black-box cycle (`runSocialCycle`, not
  * the placeholder trade-only loop `runLineups` still uses) for the three social lineups and
- * writes its own metrics export. Every scale asserts the structural INV-5/8/10 guarantees
- * (no unique twin attribution, every draw verifies); the Spec's numeric misattribution-rate band
- * only gets asserted once the sample is large enough to be a stable statistic (`sim:full`'s
- * N=1000) rather than flaking on `pnpm test`'s fast N=3 default.
+ * writes its own metrics export. Asserts the structural INV-5/8/10 guarantees that genuinely
+ * hold (no unique twin attribution, every draw verifies) at every scale.
+ *
+ * Deliberately does NOT assert Spec §21.4's numeric misattribution-rate band (25-40%) for L2, at
+ * any campaign count, even release scale. That band needs real posterior concentration from
+ * evidence-narrowing pushing an accusation candidate's odds past a disposition's accuse bar
+ * (0.75-0.9); with the flat 1/(candidates-1) prior this cycle currently produces, no bot can ever
+ * cross its bar, so `accusationSamples` is always 0 and the band is unreachable without content
+ * and policy tuning that touches M2-06 -- out of this card's "app assembly, sim wiring, and
+ * milestone demo" scope. Owner-descoped 2026-07-19; tracked as BL-07. `accusationSamples` is
+ * asserted here specifically so a future accidental fix that starts producing samples is visible
+ * (this suite would need updating, not silently keep reporting a meaningless 0%).
  */
 describe("social sim CLI export [Spec §21.4, M2-15b]", () => {
-  it("runs L2/L3/L5 social cycles, writes a metrics export, and holds the release-scale threshold band", async () => {
+  it("runs L2/L3/L5 social cycles and writes a metrics export with honest structural guarantees", async () => {
     const campaignsPerLineup = Number(process.env["SIM_CAMPAIGNS"] ?? 3);
     const exported = await runSocialLineups(["L2", "L3", "L5"], campaignsPerLineup, `sim-cli-social:${campaignsPerLineup}`);
 
@@ -58,12 +62,7 @@ describe("social sim CLI export [Spec §21.4, M2-15b]", () => {
     for (const lineup of exported) {
       expect(lineup.zeroUniqueAttribution).toBe(true);
       expect(lineup.allDrawsVerified).toBe(true);
-    }
-
-    if (campaignsPerLineup >= STATISTICALLY_STABLE_CAMPAIGNS) {
-      const l2 = exported.find((e) => e.lineup === "L2")!;
-      expect(l2.metrics.misattributionRate).toBeGreaterThanOrEqual(0.25);
-      expect(l2.metrics.misattributionRate).toBeLessThanOrEqual(0.40);
+      expect(lineup.accusationSamples).toBe(0);
     }
   });
 });
