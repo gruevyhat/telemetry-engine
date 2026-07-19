@@ -5,8 +5,7 @@ export interface SocialSessionDeps {
   readonly interpreter: PhaseInterpreter;
 }
 
-export interface ConfrontationCloseInput {
-  readonly t: GameTime;
+export interface OpenConfrontationInput {
   readonly topic: string;
   readonly declarer: string;
   readonly target: { readonly kind: "pc" | "npc"; readonly id: string };
@@ -14,6 +13,10 @@ export interface ConfrontationCloseInput {
   readonly objectiveFactId: string;
   readonly contents: unknown;
 }
+
+export type CastVoteResult =
+  | { readonly topic: string; readonly status: "open"; readonly committed: readonly Fact[] }
+  | { readonly topic: string; readonly status: "carried" | "failed"; readonly outcome: string; readonly committed: readonly Fact[] };
 
 export interface SocialSession {
   /** `comms.queue` (decrypted) -> `queueCommsAction` -> `comms.ack` payload to send back. */
@@ -25,10 +28,18 @@ export interface SocialSession {
    * but M2-07 itself scoped their branches out unless separately carded, and this card's own
    * walkthrough only exercises an accusation vote, so they throw rather than silently no-op. */
   handleConfrontationCommand(t: GameTime, message: ProtocolPayloadMap["confrontation.command"]): Fact;
-  /** `vote.cast` (decrypted) accumulates into an in-memory ballot for its topic; no ledger write yet. */
-  castVote(topic: string, playerId: string, value: boolean): void;
-  /** Resolves the accumulated ballots for one topic via `resolveConfrontation`, returns the `vote.resolved` payload. */
-  closeConfrontation(input: ConfrontationCloseInput): ProtocolPayloadMap["vote.resolved"] & { readonly committed: readonly Fact[] };
+  /** Records a topic's static voting context (who's eligible, what's at stake) once, right after
+   * a declared accusation. `castVote` needs this on every cast, and the wire protocol's
+   * `vote.cast` payload carries none of it (screens-v2: eligibility/threshold are `vote.open`'s
+   * own, host-authored fields, not something a client supplies). */
+  openConfrontation(input: OpenConfrontationInput): void;
+  /** `vote.cast` (decrypted) -> one `resolveConfrontation` call per cast, over the accumulated
+   * ballot set for that topic (screens-v2 §4.2/§8.1: append-only, cumulative-tally
+   * `vote.recorded`). Once a topic resolves to `carried`/`failed`, every later cast is a no-op
+   * that returns the same cached result -- `resolveConfrontation` was never verified safe to call
+   * again after a topic goes terminal (a repeat call would re-evaluate the full ballot set and
+   * could re-append `envelope.opened`), so this is the one place that's guarded against it. */
+  castVote(t: GameTime, topic: string, playerId: string, value: boolean): CastVoteResult;
 }
 
 /**
@@ -37,12 +48,14 @@ export interface SocialSession {
  * one interpreter call each names, and shapes the interpreter's result back into the outbound
  * payload the protocol expects. Holds no game logic and no ledger access of its own: every fact
  * this session touches goes through `deps.interpreter`, never `ledger.append` directly (INV-6).
- * The only local state is the in-memory ballot accumulator `castVote` builds up, since the wire
- * protocol casts one ballot per message while `resolveConfrontation` takes the full ballot set in
- * one call.
+ * The only local state is per-topic voting context (`openConfrontation`) and the in-memory ballot
+ * accumulator `castVote` builds up, since the wire protocol casts one ballot per message while
+ * `resolveConfrontation` takes the full ballot set on every call.
  */
 export function createSocialSession(deps: SocialSessionDeps): SocialSession {
   const ballotsByTopic = new Map<string, Record<string, boolean>>();
+  const contextByTopic = new Map<string, OpenConfrontationInput>();
+  const terminalResultByTopic = new Map<string, CastVoteResult & { readonly status: "carried" | "failed" }>();
 
   return {
     handleCommsQueue(t, message) {
@@ -67,27 +80,36 @@ export function createSocialSession(deps: SocialSessionDeps): SocialSession {
       return deps.interpreter.declareConfrontation(t, { kind: "pc", id: message.playerId }, { mode: "accusation", target: message.targetId });
     },
 
-    castVote(topic, playerId, value) {
-      const ballots = ballotsByTopic.get(topic) ?? {};
-      ballotsByTopic.set(topic, { ...ballots, [playerId]: value });
+    openConfrontation(input) {
+      contextByTopic.set(input.topic, input);
     },
 
-    closeConfrontation(input) {
-      const ballots = ballotsByTopic.get(input.topic) ?? {};
+    castVote(t, topic, playerId, value) {
+      const cached = terminalResultByTopic.get(topic);
+      if (cached) return cached;
+
+      const context = contextByTopic.get(topic);
+      if (!context) throw new Error(`castVote for topic "${topic}" before openConfrontation`);
+      const ballots = { ...(ballotsByTopic.get(topic) ?? {}), [playerId]: value };
+      ballotsByTopic.set(topic, ballots);
+
       const { committed } = deps.interpreter.resolveConfrontation({
-        t: input.t,
-        declarer: input.declarer,
-        target: input.target,
-        eligiblePlayerIds: input.eligiblePlayerIds,
+        t,
+        declarer: context.declarer,
+        target: context.target,
+        eligiblePlayerIds: context.eligiblePlayerIds,
         ballots,
-        objectiveFactId: input.objectiveFactId,
-        contents: input.contents,
+        objectiveFactId: context.objectiveFactId,
+        contents: context.contents,
       });
       const vote = committed.find((fact) => fact.kind === "vote.recorded");
       const status = (vote?.payload as { status?: "carried" | "failed" | "open" } | undefined)?.status;
-      if (status !== "carried" && status !== "failed") throw new Error("confrontation did not resolve to a terminal status");
+      if (status === "open" || status === undefined) return { topic, status: "open", committed };
+
       const outcome = status === "carried" ? "burned" : "failed";
-      return { topic: input.topic, status, outcome, committed };
+      const result: CastVoteResult & { status: "carried" | "failed" } = { topic, status, outcome, committed };
+      terminalResultByTopic.set(topic, result);
+      return result;
     },
   };
 }

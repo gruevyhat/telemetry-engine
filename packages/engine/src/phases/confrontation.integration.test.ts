@@ -29,6 +29,14 @@ describe("forced confrontation burn [M2-07, INV-2/4/6]", () => {
     expect(ledger.visibleTo({ scope: "public" }).some((fact) => fact.id === objective.id)).toBe(true);
   });
 
+  it("a partial ballot set (below quorum, not yet everyone) posts only an open tally and no terminal effect [M2-15b]", () => {
+    const { ledger, objective, interpreter } = fixture();
+    const result = interpreter.resolveConfrontation({ t: T, declarer: "pc:zhan", target: { kind: "pc", id: "pc:deuce" }, eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true }, objectiveFactId: objective.id, contents: "LOYAL" });
+    expect(result.committed).toHaveLength(1);
+    expect(result.committed[0]).toMatchObject({ kind: "vote.recorded", payload: { status: "open", ballots: { "pc:zhan": true } } });
+    expect(ledger.all().some((fact) => fact.kind === "envelope.opened" || fact.kind === "confrontation.resolved")).toBe(false);
+  });
+
   it("a failed vote records its fixed tally and resolution but never burns or widens", () => {
     const { ledger, objective, interpreter } = fixture();
     const result = interpreter.resolveConfrontation({ t: T, declarer: "pc:zhan", target: { kind: "pc", id: "pc:deuce" }, eligiblePlayerIds: ["pc:zhan", "pc:deuce", "pc:brennan"], ballots: { "pc:zhan": true, "pc:deuce": false, "pc:brennan": false }, objectiveFactId: objective.id, contents: "LOYAL" });
