@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PairingCard, decodeManualPairingCode, decodePairingFragment } from "./PairingCard.js";
 
-const material = { origin: "https://table.example/game", protocolVersion: 1 as const, sessionId: "session-a", playerId: "pc:zhan", bindingEpoch: 2, claimToken: "claim-token-long", transportKey: new Uint8Array(32).fill(5) };
+const material = { origin: "https://table.example/game", protocolVersion: 1 as const, sessionId: "session-a", playerId: "pc:zhan", bindingEpoch: 2, claimToken: "claim-token-long", transportKey: new Uint8Array(32).fill(5), players: [{ playerId: "pc:zhan", label: "Zhan" }] };
 
 describe("private QR pairing card [M2-11, INV-13]", () => {
   it("QR fragment and full-length manual code represent identical secret material behind a hand-to gate", async () => {

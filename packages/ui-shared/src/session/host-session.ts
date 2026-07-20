@@ -209,6 +209,7 @@ export function createHostSession(config: HostSessionConfig): HostSession {
         bindingEpoch: offer.bindingEpoch,
         claimToken: offer.claimToken,
         transportKey: offer.key,
+        players: config.players,
       };
     },
 

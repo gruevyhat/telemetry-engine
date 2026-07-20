@@ -5,6 +5,11 @@
  * risk if the two ever drifted, not just duplication. Pure encode/decode: no React, no engine,
  * no Ledger, matching this package's own "trystero adapter; no game rules" boundary.
  */
+export interface PairingRosterEntry {
+  readonly playerId: string;
+  readonly label: string;
+}
+
 export interface PairingMaterial {
   readonly origin: string;
   readonly protocolVersion: 1;
@@ -13,6 +18,10 @@ export interface PairingMaterial {
   readonly bindingEpoch: number;
   readonly claimToken: string;
   readonly transportKey: Uint8Array;
+  /** Who else is seated -- not secret (everyone at the table can already see who's playing), so
+   * carrying it here just saves the phone a second lookup for rendering an accusation target
+   * list. Never anything about agendas, objectives, or votes. */
+  readonly players: readonly PairingRosterEntry[];
 }
 
 export interface DecodedPairingMaterial {
@@ -23,6 +32,7 @@ export interface DecodedPairingMaterial {
   readonly bindingEpoch: number;
   readonly claimToken: string;
   readonly transportKey: Uint8Array;
+  readonly players: readonly PairingRosterEntry[];
 }
 
 function hex(bytes: Uint8Array): string {
@@ -56,6 +66,7 @@ interface PairingPayload {
   readonly bindingEpoch: number;
   readonly claimToken: string;
   readonly transportKey: string;
+  readonly players: readonly PairingRosterEntry[];
 }
 
 export function encodePairingPayload(material: PairingMaterial): string {
@@ -67,6 +78,7 @@ export function encodePairingPayload(material: PairingMaterial): string {
     bindingEpoch: material.bindingEpoch,
     claimToken: material.claimToken,
     transportKey: hex(material.transportKey),
+    players: material.players,
   };
   return toBase64Url(JSON.stringify(payload));
 }

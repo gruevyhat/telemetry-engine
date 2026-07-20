@@ -9,6 +9,7 @@ const material: PairingMaterial = {
   bindingEpoch: 2,
   claimToken: "claim-token-long",
   transportKey: new Uint8Array(32).fill(5),
+  players: [{ playerId: "pc:zhan", label: "Zhan" }, { playerId: "pc:deuce", label: "Deuce" }],
 };
 
 describe("pairing material codec [M2-15b]", () => {
@@ -22,6 +23,7 @@ describe("pairing material codec [M2-15b]", () => {
     expect(fromFragment).toEqual(fromManual);
     expect(fromFragment).toMatchObject({ sessionId: "session-a", playerId: "pc:zhan", bindingEpoch: 2, claimToken: "claim-token-long" });
     expect(fromFragment.transportKey).toEqual(material.transportKey);
+    expect(fromFragment.players).toEqual(material.players);
   });
 
   it("rejects a fragment-less URL rather than silently decoding garbage", () => {
