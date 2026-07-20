@@ -20,10 +20,9 @@ import {
   type PhaseInterpreter,
   type SecretDrawPreimage,
 } from "@telemetry/engine";
-import { createPairingHost, type EnvelopeChannel, type PairingHost, type PairingOffer } from "@telemetry/transport-webrtc";
+import { createPairingHost, type EnvelopeChannel, type PairingHost, type PairingMaterial, type PairingOffer } from "@telemetry/transport-webrtc";
 import { PROTOCOL_VERSION, type ProtocolPayloadMap } from "@telemetry/transport";
 import { createSocialSession } from "./social-session.js";
-import type { PairingMaterial } from "../shared-screen/PairingCard.js";
 
 const REFEREE: ActorRef = { kind: "referee", id: "referee" };
 

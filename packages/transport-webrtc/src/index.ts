@@ -11,6 +11,14 @@ import {
 } from "@telemetry/transport";
 
 export { createEnvelopeChannel, joinSessionRoom, type EnvelopeChannel, type SessionRoomConfig } from "./room.js";
+export {
+  decodeManualPairingCode,
+  decodePairingFragment,
+  encodePairingPayload,
+  groupManualCode,
+  type DecodedPairingMaterial,
+  type PairingMaterial,
+} from "./pairing-material.js";
 
 export interface PairingOffer {
   readonly playerId: string;
