@@ -18,6 +18,7 @@ export {
   groupManualCode,
   type DecodedPairingMaterial,
   type PairingMaterial,
+  type PairingRosterEntry,
 } from "./pairing-material.js";
 
 export interface PairingOffer {
