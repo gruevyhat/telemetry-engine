@@ -45,6 +45,10 @@ export interface HostSessionConfig {
   readonly incidentDeck: readonly IncidentFrame[];
   readonly players: readonly HostSessionPlayer[];
   readonly channel: EnvelopeChannel;
+  /** Called after every ledger-changing or pairing-changing operation, including ones triggered
+   * by an inbound phone message the shared screen has no other way to learn about (it isn't
+   * polling). A real UI re-renders off this; tests can ignore it. */
+  readonly onChange?: () => void;
 }
 
 export interface HostSession {
@@ -149,6 +153,7 @@ export function createHostSession(config: HostSessionConfig): HostSession {
           peerIdToPlayerId.set(peerId, claimed.playerId);
           playerIdToPeerId.set(claimed.playerId, peerId);
           await snapshotTo(claimed.playerId);
+          config.onChange?.();
         }
         return;
       }
@@ -161,6 +166,7 @@ export function createHostSession(config: HostSessionConfig): HostSession {
         case "comms.queue": {
           socialSession.handleCommsQueue(config.t, message.payload as ProtocolPayloadMap["comms.queue"]);
           await snapshotTo(playerId);
+          config.onChange?.();
           break;
         }
         case "confrontation.command": {
@@ -180,12 +186,14 @@ export function createHostSession(config: HostSessionConfig): HostSession {
             }
           }
           await snapshotAll();
+          config.onChange?.();
           break;
         }
         case "vote.cast": {
           const payload = message.payload as ProtocolPayloadMap["vote.cast"];
           socialSession.castVote(config.t, payload.topic, payload.playerId, payload.value);
           await snapshotAll();
+          config.onChange?.();
           break;
         }
         default:
@@ -221,12 +229,14 @@ export function createHostSession(config: HostSessionConfig): HostSession {
       const deal = await interpreter.dealAgendas({ t: config.t, players: config.players.map((player) => player.playerId), deck: config.deck });
       recordPreimages(deal.commitmentPreimages);
       await snapshotAll();
+      config.onChange?.();
     },
 
     async advanceStep() {
       const result = await socialSession.advanceStep(config.t, REFEREE);
       recordPreimages(result.commitmentPreimages);
       await snapshotAll();
+      config.onChange?.();
       return { rendered: result.rendered };
     },
 
