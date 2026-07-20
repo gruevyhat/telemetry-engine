@@ -221,4 +221,47 @@ describe("host session [M2-15b]", () => {
     // message -- it isn't polling, so a real UI can only re-render off this notification.
     expect(changeCount).toBeGreaterThan(0);
   });
+
+  it("skips a leading automatic step on its own, so advanceStep's first real call closes comms, not the automatic step [M2-15b]", async () => {
+    const scriptWithIntro = loadPhaseScript({
+      frame: "social-scene",
+      start: "scene-opened",
+      steps: [
+        { id: "scene-opened", kind: "announce" as const, automatic: true, next: "comms" },
+        { id: "comms", kind: "commsWindow" as const, next: "incident" },
+        { id: "incident", kind: "generate" as const, gen: { frameId: "trade:bay-lock-cycle" }, next: "confrontation" },
+        { id: "confrontation", kind: "confrontation" as const, next: "confrontation" },
+      ],
+    });
+    const host = createHostSession({
+      sessionId: "session-b",
+      origin: "https://example.test/telemetry-engine/",
+      campaignSeed: "auto-skip-seed",
+      campaignSalt: "auto-skip-salt",
+      t: T,
+      script: scriptWithIntro,
+      deck: DECK,
+      currentHex: "Regina",
+      incidentDeck: TRADE_DECK,
+      players: [{ playerId: "pc:zhan", label: "Zhan" }],
+      channel: createFakeChannelHub().hostChannel,
+    });
+
+    await waitForCondition(() => host.interpreter.currentStep() === "comms");
+
+    await host.advanceStep();
+    expect(host.interpreter.currentStep()).toBe("incident");
+  });
 });
+
+function waitForCondition(check: () => boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const poll = () => {
+      if (check()) return resolve();
+      if (Date.now() - start > 1000) return reject(new Error("condition never became true"));
+      setTimeout(poll, 5);
+    };
+    poll();
+  });
+}
