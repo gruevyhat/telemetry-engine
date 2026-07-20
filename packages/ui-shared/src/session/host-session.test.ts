@@ -123,6 +123,7 @@ describe("host session [M2-15b]", () => {
       { playerId: "pc:brennan", label: "Brennan" },
     ];
 
+    let changeCount = 0;
     const host = createHostSession({
       sessionId: "session-a",
       origin: "https://example.test/telemetry-engine/",
@@ -135,6 +136,9 @@ describe("host session [M2-15b]", () => {
       incidentDeck: TRADE_DECK,
       players,
       channel: hub.hostChannel,
+      onChange: () => {
+        changeCount += 1;
+      },
     });
 
     // Each phone learns its own pairing material from the shared screen's QR/manual code, builds
@@ -212,5 +216,9 @@ describe("host session [M2-15b]", () => {
     expect(verification.seed).toEqual({ ok: true });
     expect(verification.failedCount).toBe(0);
     expect(artifact.draws.length).toBeGreaterThan(0);
+
+    // The shared screen has no other way to know the ledger changed from an inbound phone
+    // message -- it isn't polling, so a real UI can only re-render off this notification.
+    expect(changeCount).toBeGreaterThan(0);
   });
 });
