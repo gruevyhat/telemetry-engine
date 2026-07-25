@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import QRCode from "qrcode";
-import { loadPhaseScript, type AgendaDeck, type IncidentFrame, type PhaseScript } from "@telemetry/engine";
+import { loadPhaseScript, type AgendaDeck, type BlackBoxVerification, type IncidentFrame, type PhaseScript } from "@telemetry/engine";
 import { createEnvelopeChannel, joinSessionRoom, type EnvelopeChannel } from "@telemetry/transport-webrtc";
 import agendaDeckJson from "../../../content/decks/trade/agendas.json";
 import tradeFramesJson from "../../../content/decks/trade/frames.json";
@@ -54,10 +54,23 @@ export interface SocialAppProps {
  */
 export function SocialApp({ createChannel = defaultCreateChannel }: SocialAppProps = {}) {
   const [, setRevision] = useState(0);
-  const [host] = useState<HostSession>(() => {
+  const [verification, setVerification] = useState<BlackBoxVerification | undefined>(undefined);
+
+  // A guarded ref rather than useState's lazy initializer: this component's render body has been
+  // observed to run more than once for a single mount in at least one test harness configuration
+  // (not React StrictMode -- reactStrictMode is off in this repo's testing-library config -- the
+  // exact mechanism wasn't pinned down). Because constructing a HostSession has a real external
+  // side effect (registering this instance's handler on the shared trystero channel), a second
+  // construction could silently become the "one that's actually wired to the channel" while React
+  // keeps a *different* instance as component state -- messages would land on an object this
+  // component never reads from again. `ref.current` persists across repeated render-body
+  // execution for the same fiber, so guarding on it (rather than trusting exactly-once semantics)
+  // makes construction robust regardless of how many times the render body actually runs.
+  const hostRef = useRef<HostSession>();
+  if (!hostRef.current) {
     const sessionId = `social-${Math.random().toString(36).slice(2)}`;
     const channel = createChannel(sessionId);
-    return createHostSession({
+    hostRef.current = createHostSession({
       sessionId,
       origin: `${window.location.origin}${window.location.pathname}`,
       campaignSeed: CAMPAIGN_SEED,
@@ -71,12 +84,14 @@ export function SocialApp({ createChannel = defaultCreateChannel }: SocialAppPro
       channel,
       onChange: () => setRevision((value) => value + 1),
     });
-  });
+  }
+  const host = hostRef.current;
 
   const claimed = new Set(host.claimedPlayerIds());
   const facts = host.ledger.all();
   const publicFacts = facts.filter((fact) => fact.visibility.level === "public");
   const opened = [...publicFacts].reverse().find((fact) => fact.kind === "confrontation.opened");
+  const resolved = publicFacts.some((fact) => fact.kind === "confrontation.resolved");
   const allClaimed = PLAYERS.every((player) => claimed.has(player.playerId));
   const dealt = facts.some((fact) => fact.kind === "objective.assigned");
   const incidentFired = facts.some((fact) => fact.kind === "lock.cycled");
@@ -119,6 +134,20 @@ export function SocialApp({ createChannel = defaultCreateChannel }: SocialAppPro
           accusationTargets={[]}
           onAccuse={() => {}}
         />
+      )}
+
+      {resolved && !verification && (
+        <button type="button" onClick={() => void host.assembleBlackBox().then((result) => setVerification(result.verification))}>
+          Verify black box
+        </button>
+      )}
+
+      {verification && (
+        <p data-testid="black-box-result">
+          {verification.seed.ok && verification.failedCount === 0
+            ? `All preimages verify. ${verification.verifiedCount} draws checked.`
+            : `Verification failed: ${verification.failedCount} of ${verification.verifiedCount + verification.failedCount} draws did not verify.`}
+        </p>
       )}
 
       <section aria-labelledby="log-heading">
