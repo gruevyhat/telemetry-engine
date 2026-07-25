@@ -4,7 +4,7 @@ You are an implementer session on Telemetry Engine: a GM-less, event-sourced tab
 
 ## Document map and precedence
 1. **the Spec** — `docs/telemetry-engine-spec.md` — authoritative on *what to build*. Invariants are tagged [INV-1..14].
-2. **the Plan** — `docs/telemetry-engine-dev-plan.md` — authoritative on *how we work*. This file is the Plan's cache; if they disagree, the Plan wins and fixing this file is part of your PR.
+2. **the Plan** — `docs/telemetry-engine-dev-plan.md` — authoritative on *how we work*. This file is the Plan's cache; if they disagree, the Plan wins and fixing this file is part of the same change (your PR for M2 work; a direct commit to `main` from M3 onward).
 3. **rulebook** — `docs/telemetry-engine-rulebook.md` — authoritative on player experience.
 4. Design inputs: `docs/design/fact-kinds-v0.md` (the kind catalog + `implies` map), `docs/design/sim-bot-policies.md`, `docs/design/maggie-voice.md` (mandatory for any content/template text).
 
@@ -12,13 +12,15 @@ You are an implementer session on Telemetry Engine: a GM-less, event-sourced tab
 1. Read this file. Read your task card in `docs/tasks/`. Every Spec section the card references. Read Spec Appendix A (The Skim trace).
 2. Read `docs/handoffs/<your-task-id>-*.md` if present.
 3. State back in one paragraph: deliverable, invariants, do-nots. If your paragraph conflicts with the card, STOP and flag — do not begin.
-4. Work the TDD loop (Plan §4): **red first** (failing tests, committed, failing for the intended reason) → green (minimum to pass) → refactor → Appendix A check. Commit both on the current milestone branch (see Branching and PRs below) — no PR yet.
+4. Work the TDD loop (Plan §4): **red first** (failing tests, committed, failing for the intended reason) → green (minimum to pass) → refactor → Appendix A check. Commit both per the current branching model (see Branching and PRs below): on `milestone/M2` if you're working an M2 card, directly on `main` for every other milestone. Either way, no PR yet except M2's single milestone-end PR.
 5. If the task spans sessions, write `docs/handoffs/<task-id>-<n>.md` before ending: branch state, red/green status, decisions + Spec basis, extrapolations, exact next action.
 
 ## Branching and PRs
-One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...), not one branch per task. Each task still lands as its own red-commit-then-green-commit pair on that branch, with the same TDD discipline as always — the only thing that changed is *when a PR opens*, not how a task is built or committed. Run the full local gate (`pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build:stub`) after every task's green commit, same as before; CI also runs on every push to a `milestone/*` branch so we're not flying blind until the end. Every milestone ends with at least a locally runnable demo using the documented `docs/demos/M<n>.md` walkthrough (Plan §6.2). Open exactly one PR, `milestone/M0 → main`, only when every task is done, the milestone acceptance list (Spec §21.3) is met, and that demo passes. That PR's template covers every task landed in the milestone (each required section lists per-task detail, not just one task's).
+**M2 is grandfathered on the old model** — it was already 74 commits into `milestone/M2` when this section changed on 2026-07-19. M2 finishes exactly as before: one long-lived `milestone/M2` branch, each task landing as its own red-commit-then-green-commit pair on it, one PR (`milestone/M2 → main`) opened only once every M2 task is done, the milestone acceptance list (Spec §21.3) is met, and the M2 demo passes. Do not open a `milestone/M2` PR before all of that; do not carry this branch model forward to M3.
 
-**There is no other case that opens a PR.** Retro actions, license/compliance fixes, doc corrections, task-card bookkeeping, CI/config tweaks, anything done directly against `main` between milestones — commit straight to the branch you're on (`main`, or a milestone branch if the work belongs to one), same-branch, no new branch, no PR, no CI-wait. A branch-and-PR round trip costs real time and tokens for a one-file doc fix; don't pay it just because a PR happened to be the pattern in a recent session. On 2026-07-19 a run of post-M1 cleanup work spun up seven separate branches and PRs (#8-#14) for things like a two-line CLAUDE.md correction and a task-card move — none of it milestone completion, all of it unnecessary ceremony. If a change genuinely feels too risky to land without review, say so and ask the owner directly instead of defaulting to a PR to manufacture a review step.
+**Starting M3, Telemetry Engine is always-shippable trunk.** There is no milestone branch and no milestone PR. Every task still lands as its own red-commit-then-green-commit pair, same TDD discipline as always, but both commits go straight onto `main`. Run the full local gate (`pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm build:stub`) after every task's green commit, same as before; CI now runs on every push to `main` instead of to a `milestone/*` branch, so `main` never carries an unverified commit. Milestones still exist as task-card groupings and as closure checkpoints — once every card under a milestone label is landed on `main`, the owner still runs that milestone's demo (`docs/demos/M<n>.md`, Plan §6.2) and the retro still gets written (Plan §8) — but closing a milestone no longer moves any code, since it was already on `main`.
+
+**There is no case that opens a PR, other than M2's single milestone-end PR above.** Retro actions, license/compliance fixes, doc corrections, task-card bookkeeping, CI/config tweaks, and — from M3 onward — ordinary task-card implementation work too: all of it commits straight to `main`, no branch, no PR, no CI-wait. On 2026-07-19 a run of post-M1 cleanup work spun up seven separate branches and PRs (#8-#14) for things like a two-line CLAUDE.md correction and a task-card move — none of it milestone completion, all of it unnecessary ceremony, and part of why this project moved to always-shippable trunk the same day. If a change genuinely feels too risky to land without review, say so and ask the owner directly instead of defaulting to a PR to manufacture a review step.
 
 ## Commands (never invoke tools raw)
 `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm lint` · `pnpm typecheck` · `pnpm lint:content` · `pnpm sim:smoke` · `pnpm sim:full` · `pnpm build:stub` · `pnpm build:pages` · `pnpm demo:m0`
@@ -30,7 +32,7 @@ One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...), not o
 - Do not touch `Visibility` handling unless your task card names it.
 - No new dependencies in `packages/engine` without owner sign-off.
 - Rendered text is presentation only; it is never parsed back into facts (INV-12). The app never transcribes or evaluates spoken play.
-- Where the Spec is silent: extrapolate from the nearest *Why* and record it in your PR's Extrapolations section. An unrecorded correct guess is a defect.
+- Where the Spec is silent: extrapolate from the nearest *Why* and record it — in your green commit's Extrapolations note, rolled up into the PR's Extrapolations section for M2, standing alone as the record from M3 onward. An unrecorded correct guess is a defect.
 - New fact kinds go through `docs/design/fact-kinds-v0.md` first (catalog PR), then code.
 
 ## Stop and ask the owner when
@@ -45,7 +47,7 @@ One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...), not o
 - Conventional commits; the failing-test commit precedes the implementation commit.
 
 ## PR and commit description style
-PR descriptions and commit messages are read by humans inspecting the change, not just by implementers who already hold the Spec in their head. Write for that reader:
+PR descriptions and commit messages are read by humans inspecting the change, not just by implementers who already hold the Spec in their head. Write for that reader — this applies to M2's milestone PR and, from M3 onward, to every task's green commit message alike, since that commit message is now the permanent record (see Branching and PRs, no PR exists to hold it instead):
 - Every PR opens with a `## Summary`: 2-4 plain-language sentences on what the PR accomplishes, before any of the template's structured sections. A reader should be able to stop after the Summary and already know what happened.
 - Lead every section with one plain-English sentence: what actually changed, or what actually happens, *before* citing a Spec section or invariant code. A citation is not an explanation.
 - On first use in a PR, gloss any invariant code in a few plain words — `INV-2 (append-only: nothing mutates or deletes a fact once written)`, not a bare `INV-2`.
@@ -56,6 +58,6 @@ PR descriptions and commit messages are read by humans inspecting the change, no
 ## Current milestone
 M2 — the social game (agenda deal, comms-window queue, forced confrontation opens, envelope/forfeit/deferred-reveal, WebRTC transport + QR pairing, commit-reveal, referee-scope encryption at rest; Plan §5). M1 shipped and merged to `main` on 2026-07-18 (PR #7), with a small post-merge follow-up (PR #8) and the M1 retro's Actions 1-4 (PR #9) on 2026-07-19.
 
-M2's task cards (`M2-00` through `M2-15`) and their owner-approved design decisions live on `milestone/M2`, not `main` — per the one-branch-per-milestone model, they land on `main` only when M2's own PR opens. Take the lowest-numbered unclaimed card on that branch.
+M2's task cards (`M2-00` through `M2-15`) and their owner-approved design decisions live on `milestone/M2`, not `main` — M2 is grandfathered on the old one-branch-per-milestone model (see Branching and PRs), so they land on `main` only when M2's own PR opens. Take the lowest-numbered unclaimed card on that branch. M3 onward switches to always-shippable trunk: no milestone branch, task cards land straight on `main`.
 
 Plan §9's schedule posture names the project's falsifiable bet: "if M1's solo trade loop isn't fun with templates and one clock, stop and redesign before M2." The M1 retro (`docs/retros/M1.md`, Action 5) left the owner's own account of that question open when M2 planning began on 2026-07-18.
