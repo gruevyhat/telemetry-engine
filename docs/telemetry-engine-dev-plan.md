@@ -11,7 +11,7 @@
 |---|---|---|
 | **Owner** | the human maintainer | approves milestone gates, spec amendments, dependency additions, test weakenings; writes retros; final word everywhere |
 | **Implementer** | an LLM coding session (or the owner) | executes exactly one task per session-thread; may extrapolate where the Spec is silent **only** with a written note (Spec §21.5.3) |
-| **Reviewer** | the owner, optionally assisted by a second LLM session in review-only mode | operates the PR gate (§6) |
+| **Reviewer** | the owner, optionally assisted by a second LLM session in review-only mode | operates the review gate (§6) — the M2 PR gate, and from M3 onward the trunk-based review of commits landed on `main` plus the milestone closure checkpoint |
 
 An implementer session that cannot complete its task within scope **stops and writes a handoff** (§4.4). It never expands scope to "get something working."
 
@@ -19,10 +19,10 @@ An implementer session that cannot complete its task within scope **stops and wr
 
 ## 2. REPOSITORY PROCESS BASICS
 
-- **Branching:** trunk-based. `main` is always green. One long-lived branch per milestone (`milestone/M0`, `milestone/M1`, ...) — not one branch per task. Each task still lands as its own red-then-green commit pair on the milestone branch; only the PR cadence changed (below), not how a task is built.
+- **Branching:** always-shippable trunk, effective M3 (2026-07-19). `main` is always green and always demoable. Every task lands as its own red-then-green commit pair directly on `main` — no milestone branch, no per-task PR, no per-milestone PR. **M2 is grandfathered** on the pre-2026-07-19 model: it finishes on its existing `milestone/M2` branch with one PR at milestone end, exactly as already underway (74 commits landed as of the switch) — do not carry that model forward to M3 or later.
 - **Commits:** conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`). Every commit compiles and passes the unit suite. Test-first commits are explicitly ordered: the failing-test commit (`test: add failing INV-3 replay property`) precedes the implementation commit.
-- **PRs:** one milestone = one PR (`milestone/M0 → main`), opened once every task in the milestone is done and its acceptance list (§21.3) is met — not one PR per task. Run the full local gate after every task's green commit regardless; CI also runs on every push to a `milestone/*` branch, so defects surface immediately rather than waiting for the milestone PR. The PR template (§6.1) is mandatory and now covers every task landed in the milestone; CI rejects PRs whose description omits required sections.
-- **CLAUDE.md at repo root** distills this Plan's session protocol, the Spec's Do-not list, and the command reference (§3) into the standing instructions every agent session loads. The Plan is the source; CLAUDE.md is the cache. When the Plan changes, updating CLAUDE.md is part of the same PR.
+- **PRs:** M2 only — one PR (`milestone/M2 → main`), opened once every M2 task is done and its acceptance list (§21.3) is met. From M3 onward there is no milestone PR and no per-task PR: task work lands straight on `main` (see Branching, above). Run the full local gate after every task's green commit regardless; CI runs on every push to `milestone/M2` through M2's close, and on every push to `main` from M3 onward, so defects surface immediately rather than waiting on any merge event.
+- **CLAUDE.md at repo root** distills this Plan's session protocol, the Spec's Do-not list, and the command reference (§3) into the standing instructions every agent session loads. The Plan is the source; CLAUDE.md is the cache. When the Plan changes, updating CLAUDE.md is part of the same change — the same PR through M2, the same commit(s) from M3 onward.
 
 ## 3. COMMAND REFERENCE (single source of truth for tooling)
 
@@ -55,9 +55,9 @@ Every task ships tests before implementation. The loop, mechanically:
 3. **Green.** Implement the minimum that passes. No speculative generality. Run the full PR-gate suite locally. Commit: `feat: ...`.
 4. **Refactor.** Only with green tests, only within task scope. Commit separately.
 5. **Trace check.** If the task touches how The Skim flows through the system, update Spec Appendix A in the same commit (Spec §21.5.5).
-6. **Record, don't PR yet.** Write the task's extrapolations, do-not compliance, and INV coverage into the green commit's message — same content the old per-task PR description held. When the milestone's last task lands, **open one PR** (`milestone/M0 → main`) using the template, rolling up every task's commit-message notes into its sections. Fill every section honestly; "none" is an acceptable answer, silence is not.
+6. **Record.** Write the task's extrapolations, do-not compliance, and INV coverage into the green commit's message. **M2 only:** when M2's last task lands, roll every task's commit-message notes up into one PR (`milestone/M2 → main`) using the template below, and open it — M2 is the last milestone that works this way. **M3 onward:** there is no PR, ever, for task work — the green commit message is the permanent record. Fill it out honestly; "none" is an acceptable answer, silence is not. When a milestone's cards are all landed on `main`, the owner runs that milestone's gate (§6.2) as a closure checkpoint, not a merge — nothing moves, because it's already on `main`.
 
-**Hard rules (restating Spec §21.5, because they gate merges):** tests are never deleted, skipped, or weakened except in a commit the owner approves whose message says so · no new `packages/engine` dependencies without owner sign-off · extrapolations beyond the Spec are recorded in the task's commit message (and rolled up into the milestone PR's *Extrapolations* section) — an unrecorded correct guess is still a defect.
+**Hard rules (restating Spec §21.5, because they gate merges):** tests are never deleted, skipped, or weakened except in a commit the owner approves whose message says so · no new `packages/engine` dependencies without owner sign-off · extrapolations beyond the Spec are recorded in the task's commit message (M2: also rolled up into the milestone PR's *Extrapolations* section; M3 onward: the commit message is the only record, there's no PR to roll up into) — an unrecorded correct guess is still a defect.
 
 ### 4.3 Session-start checklist (paste into every implementer session)
 1. Read CLAUDE.md.
@@ -81,9 +81,11 @@ Write `docs/handoffs/<task-id>-<n>.md`: state of the branch · what's red/green 
 
 Tasks are sized for one focused session (≤ ~600 changed lines including tests). M0–M1 are broken down fully now; M2–M5 are epic-level and get task breakdown at milestone planning, informed by the prior retro (§8). Task cards live in `docs/tasks/` as files with this front-matter: `{id, title, spec_refs[], invariants[], tests_first[], done_when[], do_not[]}`.
 
+A task that stands up a whole new package (multiple real sub-deliverables under one `packages/*` directory that didn't exist before, the way M1-12 built `packages/sim`'s roster enumeration, campaign loop, lineup configs, metric collectors, export, and headless runner as a single card) should default to being split into one card per sub-deliverable at milestone-planning time, the way M1-11 was split into M1-11a/M1-11b — not sized down after the fact once it's already overrun. Flagged at the M1 retro after M1-12 landed at 1015 changed lines under one card.
+
 ### Demo at every milestone
 
-Every milestone MUST end with a runnable demo of the capability that milestone adds. A local demo is the minimum acceptable form; a hosted build MAY supplement it but MUST NOT be required to prove the milestone. The demo must use shipped UI and content, exercise the milestone's defining path end to end, and be repeatable from a clean checkout with documented commands and a short walkthrough under `docs/demos/M<n>.md`. The owner runs that walkthrough before the milestone PR opens and records the outcome in the retro. Passing automated gates without a runnable demo does not close a milestone.
+Every milestone MUST end with a runnable demo of the capability that milestone adds. A local demo is the minimum acceptable form; a hosted build MAY supplement it but MUST NOT be required to prove the milestone. The demo must use shipped UI and content, exercise the milestone's defining path end to end, and be repeatable from a clean checkout with documented commands and a short walkthrough under `docs/demos/M<n>.md`. Through M2, the owner runs that walkthrough before the milestone PR opens; from M3 onward, with no milestone PR to gate, the walkthrough stands alone as the milestone's closure checkpoint against current `main`. Either way the outcome is recorded in the retro, and passing automated gates without a runnable demo does not close a milestone.
 
 ### M0 — the spine
 | ID | Task | Spec | INVs | Tests first |
@@ -153,9 +155,10 @@ Every milestone MUST end with a runnable demo of the capability that milestone a
 
 ## 6. REVIEW GATES
 
-### 6.1 PR gate (one PR per milestone, `milestone/M<n> → main`)
-**Automated, on every push to a `milestone/*` branch (not just at the final PR):** `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. This means defects surface task-by-task even though the PR itself only opens once, at milestone end.
-**PR template (all sections required; each section rolls up every task landed in the milestone — repeat the section's shape once per task, e.g. "M0-01: ...", "M0-02: ..."):**
+### 6.1 Review gate — M2's PR gate, and M3-onward trunk review
+**Automated, on every push:** `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm build:stub` (INV-1) · `pnpm lint:content` and `pnpm sim:smoke` when `content/` changed · diff guard flags test deletions/`.skip`/threshold edits for mandatory owner review. Through M2 this runs on every push to `milestone/M2`, so defects surface task-by-task even though the PR itself only opens once, at milestone end. From M3 onward it runs on every push to `main`, since that's the only place task work lands.
+
+**M2's PR template** (all sections required; each section rolls up every task landed in the milestone — repeat the section's shape once per task, e.g. "M2-01: ...", "M2-02: ..."). From M3 onward there is no PR, so no template applies — the equivalent content (extrapolations, do-not compliance, INV coverage) lives in each task's green commit message instead, per §4 step 6:
 ```
 ## Task
 <milestone id and the tasks it bundles, one line each>
@@ -170,13 +173,13 @@ Every milestone MUST end with a runnable demo of the capability that milestone a
 ## Appendix A impact
 <updated / not touched, and why>
 ```
-Each section leads with one plain-English sentence — what actually changed or what actually happens — before citing Spec sections or invariant codes; a citation is not an explanation. Gloss any invariant code in a few plain words on first use in the PR. Avoid unexplained jargon/shorthand; define it inline or say the plain thing instead. A PR description is written for a human inspecting the change, not just an implementer holding the Spec in their head.
+Each section leads with one plain-English sentence — what actually changed or what actually happens — before citing Spec sections or invariant codes; a citation is not an explanation. Gloss any invariant code in a few plain words on first use. Avoid unexplained jargon/shorthand; define it inline or say the plain thing instead. This applies equally to M2's PR description and, from M3 onward, to every task's green commit message — both are written for a human inspecting the change, not just an implementer holding the Spec in their head.
 
-**Reviewer checklist:** every task's red commit genuinely precedes its green commit · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · PR description is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
+**Reviewer checklist** (applied to M2's PR description; applied to each task's commits on `main` from M3 onward): every task's red commit genuinely precedes its green commit · tests assert behavior, not implementation details · no engine→plugin/content imports · visibility handling untouched or explicitly on-card · extrapolations are sound and now candidates for Spec amendments · prose in templates is TTS-safe · the description (PR or commit message) is legible without the Spec memorized (plain-English lead sentences, jargon defined on first use).
 
 ### 6.2 Milestone gate (owner, manual)
 
-Runs the Spec §21.3 acceptance list for the milestone · runs the milestone's local demo from a clean checkout using `docs/demos/M<n>.md` and records pass/fail plus observations · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · any additional live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. A hosted demo may be added, but local launch and completion of the documented walkthrough are mandatory. This gate and the §6.1 PR gate now happen together, since the milestone PR only opens once the milestone is done. **A milestone does not close until its demo passes and its retro (§8) is written.**
+Runs the Spec §21.3 acceptance list for the milestone · runs the milestone's local demo from a clean checkout using `docs/demos/M<n>.md` and records pass/fail plus observations · `pnpm sim:full` within §21.4 thresholds (from M2 onward) · any additional live manual script (M1: the solo cycle; M2: the rulebook §14 transcript re-enacted with three humans or three owner-driven seats) · docs current: Spec amendments merged, CLAUDE.md synced, no orphan handoffs. A hosted demo may be added, but local launch and completion of the documented walkthrough are mandatory. Through M2, this gate and the §6.1 PR gate happen together, since the milestone PR only opens once the milestone is done. From M3 onward there is no PR for it to happen together with — the milestone gate stands alone as a closure checkpoint against whatever is currently on `main`, confirming what continuous landing already shipped rather than merging anything. **Either way, a milestone does not close until its demo passes and its retro (§8) is written.**
 
 ---
 
@@ -207,10 +210,10 @@ Written by the owner after the milestone gate, before planning the next. File: `
 ## Fun check (M1 onward)
 <the honest paragraph: did the owner want to play the next turn? what dragged?>
 ## Actions
-<each: change, owner, lands-by (next milestone at latest); Plan/CLAUDE.md edits made in this PR>
+<each: change, owner, lands-by (next milestone at latest); Plan/CLAUDE.md edits made in this PR (M2 and earlier) or this commit (M3 onward)>
 ```
 
-Retro actions that change process are edited into the Plan and CLAUDE.md **in the retro PR itself** — a retro whose actions live only in the retro file has not happened.
+Retro actions that change process are edited into the Plan and CLAUDE.md **in the same commit(s) as the retro file** (M2 and earlier: inside the retro's milestone PR; M3 onward: committed straight to `main`, no PR) — a retro whose actions live only in the retro file has not happened.
 
 ---
 

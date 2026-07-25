@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 340" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa4b2"/>
+    </marker>
+  </defs>
+  <rect width="940" height="340" fill="#0f1117"/>
+  <text x="470" y="34" text-anchor="middle" font-size="17" font-weight="700" fill="#e8ecf3">ONE TURN = ONE WEEK</text>
+
+  <!-- Beat 1 -->
+  <rect x="30" y="60" width="200" height="120" rx="10" fill="#16301f" stroke="#4caf7d" stroke-width="1.6"/>
+  <text x="130" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#7ee2a8">1 · DOCKSIDE</text>
+  <text x="130" y="114" text-anchor="middle" font-size="12" fill="#c9d1da">the board · patrons</text>
+  <text x="130" y="132" text-anchor="middle" font-size="12" fill="#c9d1da">ship business</text>
+  <text x="130" y="150" text-anchor="middle" font-size="12" fill="#c9d1da">evidence actions</text>
+
+  <!-- Beat 2 -->
+  <rect x="262" y="60" width="200" height="120" rx="10" fill="#25203a" stroke="#c77dff" stroke-width="1.6"/>
+  <text x="362" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#d9a9ff">2 · COMMS</text>
+  <text x="362" y="114" text-anchor="middle" font-size="12" fill="#c9d1da">phones up · 30 seconds</text>
+  <text x="362" y="132" text-anchor="middle" font-size="12" fill="#c9d1da">everyone · in silence</text>
+  <text x="362" y="150" text-anchor="middle" font-size="12" fill="#c9d1da">do not watch faces</text>
+
+  <!-- Beat 3 -->
+  <rect x="494" y="60" width="200" height="120" rx="10" fill="#1a2233" stroke="#4a9eff" stroke-width="1.6"/>
+  <text x="594" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#9fd0ff">3 · TRANSIT</text>
+  <text x="594" y="114" text-anchor="middle" font-size="12" fill="#c9d1da">name the hex · plot jump</text>
+  <text x="594" y="132" text-anchor="middle" font-size="12" fill="#c9d1da">fuel burns · week passes</text>
+  <text x="594" y="150" text-anchor="middle" font-size="12" fill="#c9d1da">transit event (open roll)</text>
+
+  <!-- Beat 4 -->
+  <rect x="726" y="60" width="200" height="120" rx="10" fill="#332a17" stroke="#e0a94c" stroke-width="1.6"/>
+  <text x="826" y="90" text-anchor="middle" font-size="15" font-weight="700" fill="#f0c674">4 · ARRIVAL</text>
+  <text x="826" y="114" text-anchor="middle" font-size="12" fill="#c9d1da">resolution vs current truth</text>
+  <text x="826" y="132" text-anchor="middle" font-size="12" fill="#c9d1da">discrepancies surface</text>
+  <text x="826" y="150" text-anchor="middle" font-size="12" fill="#c9d1da">suspicion phase · upkeep</text>
+
+  <!-- arrows between beats -->
+  <line x1="230" y1="120" x2="259" y2="120" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr)"/>
+  <line x1="462" y1="120" x2="491" y2="120" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr)"/>
+  <line x1="694" y1="120" x2="723" y2="120" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr)"/>
+
+  <!-- return loop -->
+  <polyline points="826,180 826,236 130,236 130,183" fill="none" stroke="#9aa4b2" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="330" y="218" width="296" height="36" rx="18" fill="#161a22" stroke="#3a3f4b"/>
+  <text x="478" y="241" text-anchor="middle" font-size="13" font-weight="600" fill="#e8ecf3">next week · Obligation −7 days</text>
+
+  <!-- footnotes -->
+  <text x="470" y="292" text-anchor="middle" font-size="12.5" fill="#8f96a3">Confrontations can be declared at DOCKSIDE or ARRIVAL — or forced by any clock, anywhere.</text>
+  <text x="470" y="314" text-anchor="middle" font-size="12.5" fill="#8f96a3">Every evidence action, failed check, and day of deliberation is a tick the Obligation keeps.</text>
+</svg>

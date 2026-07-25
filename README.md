@@ -77,7 +77,6 @@ This repository separates licensing along the same line as its IP boundary:
   is licensed under **CC BY-NC-SA 4.0** (attribution, non-commercial, share-alike) —
   see [`LICENSE.content`](LICENSE.content).
 - **`packages/plugin-traveller`** is a Fair Use Policy compatibility layer over
-  Mongoose Publishing's Traveller game. It carries its own disclaimer
-  (`NOTICE.traveller`, also pending M0-00) and must not be distributed until that
-  notice lands. Telemetry Engine is a non-commercial fan work; the Traveller game in
-  all forms is owned by Mongoose Publishing.
+  Mongoose Publishing's Traveller game. It carries its own disclaimer — see
+  [`NOTICE.traveller`](NOTICE.traveller). Telemetry Engine is a non-commercial fan work;
+  the Traveller game in all forms is owned by Mongoose Publishing.

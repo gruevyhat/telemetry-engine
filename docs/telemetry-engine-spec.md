@@ -1,5 +1,5 @@
 # TELEMETRY ENGINE — Implementation Specification
-**Short name:** the Spec · **Status:** v0.2 · **Supersedes:** telemetry-engine-tdd.md (v0.1)
+**Short name:** the Spec · **Status:** v0.3 · **Supersedes:** telemetry-engine-tdd.md (v0.1)
 **Audience:** implementing agents, human and LLM. Significant portions of this project will be built by weaker models under supervision. The Spec is therefore written to be *executed*, not just read: every load-bearing module carries a *Contract*, explicit *Invariants*, a *Why* (so an implementer who hits an unspecified case can extrapolate the intent instead of guessing), a worked *Example*, and *Do-not* items naming the tempting wrong turns.
 
 **Conventions.** MUST/SHOULD/MAY per RFC 2119. `code` identifiers are normative names. "Content" means data files under `content/`; "engine" means code under `packages/engine`. A requirement tagged **[INV-n]** is a testable invariant; the Test Plan (§21) enumerates all of them.
@@ -121,6 +121,12 @@ interface PhaseStep {
 
 Guarantees: exactly one active step; every transition logged as a fact; resumable from any save mid-step. The four beats are `content/frames/*/turn.json`; confrontations are a sub-script invoked by clock triggers or player declaration.
 **Do not:** hard-code any beat sequence in engine code. If a frame wants five beats, that's a content file.
+
+**Mid-beat player actions.** Not every ledger write is a beat transition. A player-initiated action reachable *during* a beat (interrogating an NPC, pursuing evidence) still falls under INV-6 ("nothing writes to the ledger except the phase-engine interpreter"), but has no natural `PhaseStep.kind`/`resolveStep` case, since it's chosen live rather than pre-scripted. Two sanctioned shapes, decided case by case against the action's actual needs (M1-15/M1-16, 2026-07-18):
+- **A `PhaseInterpreter` action method**, sibling to `advance()`, when the action needs to compute something from live input and append through the interpreter's own state — e.g. `reportCheck(t, actor, {skill, dm, total, difficulty})`, which computes `effect = total - difficulty` and appends one `check.reported` fact without moving `currentStep()`.
+- **A standalone commit function** under `packages/engine/src/phases/` (not a `PhaseInterpreter` method) when the action's proposal is already assembled by a pure function elsewhere and the only remaining job is the ledger write itself — e.g. `commitEvidenceReveal(ledger, plan)` wrapping `ledger.appendAll` for a plan `rankAndPlanReveal` already built, or `commitInterrogationAnswer(ledger, answer, t)` committing the `npc.statement`(table)/`npc.truthTierAssigned`(referee) fact pair (fact-kinds-v0.md §3). These exist because INV-6's boundary is the `phases/` directory, not the `PhaseInterpreter` type — a function needing only a `Ledger`, no script/step context, doesn't need to be a method.
+
+Before adding a new action of either shape, check `packages/engine/src/phases/commits.ts` for one that already does it — both M1-15 and M1-16 initially proposed a new interpreter method before finding the real commit function already existed there with zero callers.
 
 ---
 

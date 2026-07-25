@@ -39,4 +39,26 @@ describe("exportLineupMetrics [Spec §20/§21.4]", () => {
     const exported = exportLineupMetrics("L4", 4, [RESULT_A]);
     expect(() => JSON.stringify(exported)).not.toThrow();
   });
+
+  it("does not count the same frameId firing in two different campaigns as a recurrence [Spec §21.4]", () => {
+    // Neither campaign has an internal repeat, but both happen to fire "trade:a" on turn 1 --
+    // a naive flatMap-then-recurrenceRate over the pooled events would compare across campaign
+    // boundaries and wrongly count campaign 2's draw as a recurrence of campaign 1's.
+    const campaignOne: CampaignResult = {
+      events: [
+        { turn: 1, kind: "incident", frameId: "trade:a", causeActorId: "npc:x" },
+        { turn: 2, kind: "incident", frameId: "trade:b", causeActorId: "npc:y" },
+      ],
+      facts: [],
+    };
+    const campaignTwo: CampaignResult = {
+      events: [
+        { turn: 1, kind: "incident", frameId: "trade:a", causeActorId: "npc:z" },
+        { turn: 2, kind: "incident", frameId: "trade:c", causeActorId: "npc:w" },
+      ],
+      facts: [],
+    };
+    const exported = exportLineupMetrics("L1", 4, [campaignOne, campaignTwo]);
+    expect(exported.recurrenceRate).toBe(0);
+  });
 });

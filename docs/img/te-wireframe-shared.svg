@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 620" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="940" height="620" fill="#0f1117"/>
+  <text x="470" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#e8ecf3">WIREFRAME — SHARED SCREEN (MAGGIE)</text>
+
+  <!-- device frame -->
+  <rect x="60" y="52" width="680" height="530" rx="14" fill="#161a22" stroke="#8f96a3" stroke-width="2"/>
+
+  <!-- status bar -->
+  <rect x="76" y="68" width="648" height="44" rx="8" fill="#1c1f2a" stroke="#3a3f4b"/>
+  <text x="96" y="95" font-size="13" font-weight="700" fill="#7ee2a8">Cr 194,400</text>
+  <line x1="192" y1="76" x2="192" y2="104" stroke="#3a3f4b"/>
+  <text x="210" y="95" font-size="13" font-weight="700" fill="#ff9a9a">OBLIGATION T−14d</text>
+  <line x1="368" y1="76" x2="368" y2="104" stroke="#3a3f4b"/>
+  <text x="386" y="95" font-size="13" fill="#d4d9e1">HALCYON REACH · 2114</text>
+  <line x1="568" y1="76" x2="568" y2="104" stroke="#3a3f4b"/>
+  <text x="586" y="95" font-size="13" fill="#d4d9e1">FUEL 62%</text>
+  <line x1="662" y1="76" x2="662" y2="104" stroke="#3a3f4b"/>
+  <text x="678" y="95" font-size="13" fill="#d4d9e1">HOLD 0/82</text>
+
+  <!-- phase track -->
+  <rect x="76" y="122" width="648" height="36" rx="18" fill="#12151d" stroke="#3a3f4b"/>
+  <rect x="84" y="128" width="150" height="24" rx="12" fill="#1c1f2a"/>
+  <text x="159" y="145" text-anchor="middle" font-size="12" fill="#8f96a3">DOCKSIDE</text>
+  <rect x="244" y="128" width="150" height="24" rx="12" fill="#1c1f2a"/>
+  <text x="319" y="145" text-anchor="middle" font-size="12" fill="#8f96a3">COMMS</text>
+  <rect x="404" y="128" width="150" height="24" rx="12" fill="#1c1f2a"/>
+  <text x="479" y="145" text-anchor="middle" font-size="12" fill="#8f96a3">TRANSIT</text>
+  <rect x="564" y="128" width="152" height="24" rx="12" fill="#332a17" stroke="#e0a94c"/>
+  <text x="640" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="#f0c674">ARRIVAL ●</text>
+
+  <!-- main panel -->
+  <rect x="76" y="170" width="648" height="330" rx="8" fill="#12151d" stroke="#3a3f4b"/>
+  <text x="96" y="198" font-size="13" font-weight="700" fill="#9fd0ff">MAGGIE — event narration</text>
+  <rect x="96" y="212" width="540" height="10" rx="5" fill="#2a2f3c"/>
+  <rect x="96" y="230" width="600" height="10" rx="5" fill="#2a2f3c"/>
+  <rect x="96" y="248" width="480" height="10" rx="5" fill="#2a2f3c"/>
+
+  <!-- staleness-tagged feed -->
+  <rect x="96" y="276" width="380" height="92" rx="8" fill="#161a22" stroke="#3a3f4b"/>
+  <text x="112" y="300" font-size="12" font-weight="700" fill="#d4d9e1">FEED · staleness tags</text>
+  <text x="112" y="322" font-size="12" fill="#c9d1da">REGINA GRAIN — Cr4,400/t</text>
+  <text x="392" y="322" font-size="11" fill="#e0a94c">(4w old)</text>
+  <text x="112" y="344" font-size="12" fill="#c9d1da">EFATE WAR REPORT — front stable</text>
+  <text x="392" y="344" font-size="11" fill="#e0a94c">(2w old)</text>
+
+  <!-- world dice widget -->
+  <rect x="496" y="276" width="200" height="92" rx="8" fill="#161a22" stroke="#3a3f4b"/>
+  <text x="596" y="300" text-anchor="middle" font-size="12" font-weight="700" fill="#d4d9e1">WORLD DICE (visible)</text>
+  <rect x="536" y="314" width="36" height="36" rx="6" fill="#1c1f2a" stroke="#8f96a3"/>
+  <text x="554" y="339" text-anchor="middle" font-size="16" font-weight="700" fill="#e8ecf3">4</text>
+  <rect x="588" y="314" width="36" height="36" rx="6" fill="#1c1f2a" stroke="#8f96a3"/>
+  <text x="606" y="339" text-anchor="middle" font-size="16" font-weight="700" fill="#e8ecf3">2</text>
+
+  <!-- check request chip -->
+  <rect x="96" y="388" width="380" height="44" rx="22" fill="#1a2233" stroke="#4a9eff"/>
+  <text x="286" y="415" text-anchor="middle" font-size="13" font-weight="600" fill="#9fd0ff">CHECK REQUESTED: Admin · difficulty 8 · roll and report</text>
+
+  <!-- vote / timer widget -->
+  <rect x="496" y="388" width="200" height="84" rx="8" fill="#25203a" stroke="#c77dff"/>
+  <text x="596" y="412" text-anchor="middle" font-size="12" font-weight="700" fill="#d9a9ff">VOTE / TIMER</text>
+  <text x="596" y="440" text-anchor="middle" font-size="22" font-weight="700" fill="#e8ecf3">4:31</text>
+  <text x="596" y="462" text-anchor="middle" font-size="11.5" fill="#c9d1da">confrontation in progress</text>
+
+  <!-- log ticker -->
+  <rect x="76" y="512" width="648" height="54" rx="8" fill="#0f1520" stroke="#3a3f4b"/>
+  <text x="96" y="534" font-size="11.5" fill="#8f96a3">SHIP'S LOG — append only</text>
+  <text x="96" y="554" font-size="12" fill="#c9d1da">... D14 0812 SALE POSTED Cr169,200 · D14 0814 EVIDENCE: OKONKWO→MANIFEST (fail) · D14 0902 CONFRONTATION DECLARED ...</text>
+
+  <!-- callouts -->
+  <line x1="740" y1="90" x2="790" y2="90" stroke="#8f96a3" stroke-width="1.2"/>
+  <text x="798" y="86" font-size="12" fill="#8f96a3">status bar:</text>
+  <text x="798" y="102" font-size="12" fill="#8f96a3">the Obligation, always</text>
+
+  <line x1="740" y1="140" x2="790" y2="140" stroke="#8f96a3" stroke-width="1.2"/>
+  <text x="798" y="136" font-size="12" fill="#8f96a3">phase track:</text>
+  <text x="798" y="152" font-size="12" fill="#8f96a3">live beat lit</text>
+
+  <line x1="740" y1="322" x2="790" y2="322" stroke="#8f96a3" stroke-width="1.2"/>
+  <text x="798" y="310" font-size="12" fill="#8f96a3">every remote fact</text>
+  <text x="798" y="326" font-size="12" fill="#8f96a3">carries its age —</text>
+  <text x="798" y="342" font-size="12" fill="#8f96a3">1 week per parsec</text>
+
+  <line x1="740" y1="540" x2="790" y2="540" stroke="#8f96a3" stroke-width="1.2"/>
+  <text x="798" y="528" font-size="12" fill="#8f96a3">the ticker: nobody</text>
+  <text x="798" y="544" font-size="12" fill="#8f96a3">edits history,</text>
+  <text x="798" y="560" font-size="12" fill="#8f96a3">including MAGGIE</text>
+</svg>

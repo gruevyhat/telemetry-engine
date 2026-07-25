@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 660" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="940" height="660" fill="#0f1117"/>
+  <text x="470" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#e8ecf3">WIREFRAME — PLAYER PHONE (private channel)</text>
+
+  <!-- ================= PHONE A: idle ================= -->
+  <rect x="120" y="60" width="280" height="540" rx="24" fill="#161a22" stroke="#8f96a3" stroke-width="2"/>
+  <text x="260" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="#d4d9e1">A — BETWEEN WINDOWS</text>
+
+  <!-- tabs -->
+  <rect x="138" y="104" width="244" height="34" rx="17" fill="#12151d" stroke="#3a3f4b"/>
+  <rect x="142" y="108" width="78" height="26" rx="13" fill="#1a2233" stroke="#4a9eff"/>
+  <text x="181" y="126" text-anchor="middle" font-size="11.5" font-weight="700" fill="#9fd0ff">SHEET</text>
+  <text x="260" y="126" text-anchor="middle" font-size="11.5" fill="#8f96a3">OBJECTIVE</text>
+  <text x="345" y="126" text-anchor="middle" font-size="11.5" fill="#8f96a3">COMMS</text>
+
+  <!-- character sheet -->
+  <text x="142" y="168" font-size="13" font-weight="700" fill="#e8ecf3">ZHAN OKONKWO</text>
+  <text x="142" y="186" font-size="11.5" fill="#8f96a3">Merchant (4 terms) · Captain</text>
+  <rect x="138" y="198" width="244" height="40" rx="8" fill="#12151d" stroke="#3a3f4b"/>
+  <text x="150" y="223" font-size="12" fill="#c9d1da">UPP 6879A7</text>
+  <text x="280" y="223" font-size="12" fill="#c9d1da">Age 42</text>
+
+  <text x="142" y="262" font-size="11.5" font-weight="700" fill="#8f96a3">SKILLS (tap to view mods)</text>
+  <rect x="138" y="272" width="244" height="26" rx="6" fill="#12151d"/>
+  <text x="150" y="290" font-size="12" fill="#c9d1da">Broker 2 · Admin 1 · Pilot 1</text>
+  <rect x="138" y="304" width="244" height="26" rx="6" fill="#12151d"/>
+  <text x="150" y="322" font-size="12" fill="#c9d1da">Persuade 1 · Gun Combat 0</text>
+
+  <text x="142" y="356" font-size="11.5" font-weight="700" fill="#8f96a3">CAREER EDGE (1/session)</text>
+  <rect x="138" y="366" width="244" height="30" rx="8" fill="#16301f" stroke="#4caf7d"/>
+  <text x="260" y="386" text-anchor="middle" font-size="11.5" fill="#7ee2a8">Merchant: reroll one Broker check</text>
+
+  <text x="142" y="424" font-size="11.5" font-weight="700" fill="#8f96a3">PRIVATE OBJECTIVE (yours alone)</text>
+  <rect x="138" y="434" width="244" height="52" rx="8" fill="#12151d" stroke="#3a3f4b"/>
+  <rect x="150" y="446" width="200" height="8" rx="4" fill="#2a2f3c"/>
+  <rect x="150" y="462" width="160" height="8" rx="4" fill="#2a2f3c"/>
+
+  <rect x="138" y="504" width="244" height="34" rx="8" fill="#0f1520" stroke="#3a3f4b"/>
+  <text x="260" y="526" text-anchor="middle" font-size="11.5" fill="#8f96a3">comms feed idle — no window open</text>
+
+  <text x="260" y="572" text-anchor="middle" font-size="10.5" font-style="italic" fill="#666e7a">envelope stays on the table, not in the app</text>
+
+  <!-- ================= PHONE B: comms window ================= -->
+  <rect x="540" y="60" width="280" height="540" rx="24" fill="#161a22" stroke="#c77dff" stroke-width="2"/>
+  <text x="680" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="#d9a9ff">B — COMMS WINDOW OPEN</text>
+
+  <!-- timer -->
+  <rect x="558" y="104" width="244" height="52" rx="10" fill="#25203a" stroke="#c77dff"/>
+  <text x="680" y="130" text-anchor="middle" font-size="20" font-weight="700" fill="#e8ecf3">0:27</text>
+  <text x="680" y="148" text-anchor="middle" font-size="10.5" fill="#c9d1da">eyes on your own screen</text>
+
+  <!-- private feed -->
+  <text x="558" y="184" font-size="11.5" font-weight="700" fill="#8f96a3">PRIVATE FEED</text>
+  <rect x="558" y="194" width="244" height="70" rx="8" fill="#12151d" stroke="#3a3f4b"/>
+  <rect x="570" y="206" width="210" height="8" rx="4" fill="#2a2f3c"/>
+  <rect x="570" y="222" width="180" height="8" rx="4" fill="#2a2f3c"/>
+  <rect x="570" y="238" width="196" height="8" rx="4" fill="#2a2f3c"/>
+
+  <!-- context slot -->
+  <text x="558" y="292" font-size="11.5" font-weight="700" fill="#8f96a3">CONTEXT SLOT</text>
+  <rect x="558" y="302" width="244" height="150" rx="8" fill="#12151d" stroke="#3a3f4b" stroke-dasharray="6,4"/>
+  <text x="680" y="332" text-anchor="middle" font-size="11.5" fill="#c9d1da">renders identically for everyone;</text>
+  <text x="680" y="350" text-anchor="middle" font-size="11.5" fill="#c9d1da">content differs by holder:</text>
+  <text x="680" y="378" text-anchor="middle" font-size="11.5" fill="#8f96a3">· routine traffic (most crew)</text>
+  <text x="680" y="398" text-anchor="middle" font-size="11.5" fill="#8f96a3">· objective update (some)</text>
+  <text x="680" y="418" text-anchor="middle" font-size="11.5" fill="#8f96a3">· quiet action menu (whoever</text>
+  <text x="680" y="434" text-anchor="middle" font-size="11.5" fill="#8f96a3">  has business being quiet)</text>
+
+  <!-- acknowledge -->
+  <rect x="558" y="470" width="244" height="40" rx="20" fill="#1c1f2a" stroke="#8f96a3"/>
+  <text x="680" y="495" text-anchor="middle" font-size="12" fill="#d4d9e1">ACKNOWLEDGE — active at 0:00 for all</text>
+
+  <text x="680" y="540" text-anchor="middle" font-size="10.5" font-style="italic" fill="#666e7a">nobody can finish early;</text>
+  <text x="680" y="556" text-anchor="middle" font-size="10.5" font-style="italic" fill="#666e7a">the button waits for the timer</text>
+
+  <!-- center annotation -->
+  <text x="470" y="300" text-anchor="middle" font-size="12" fill="#8f96a3">identical layout,</text>
+  <text x="470" y="318" text-anchor="middle" font-size="12" fill="#8f96a3">every phone,</text>
+  <text x="470" y="336" text-anchor="middle" font-size="12" fill="#8f96a3">every window —</text>
+  <text x="470" y="354" text-anchor="middle" font-size="12" fill="#e0a94c">screen time</text>
+  <text x="470" y="372" text-anchor="middle" font-size="12" fill="#e0a94c">reveals nothing</text>
+
+  <text x="470" y="636" text-anchor="middle" font-size="12" font-style="italic" fill="#666e7a">The comms window is the game's one sacred ritual. The interface enforces what etiquette requests.</text>
+</svg>

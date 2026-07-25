@@ -21,13 +21,31 @@ export interface LineupMetricsExport {
   readonly obligationFailureCurve: null;
 }
 
+/**
+ * recurrenceRate compares turn numbers with no campaign identifier, so it must be evaluated
+ * once per campaign (never over events pooled across campaigns) or a frame drawn in one
+ * campaign and again in another at a nearby turn number reads as a false recurrence. Each
+ * campaign's rate is weighted by its own incident count, which is equivalent to pooling
+ * (recurrences summed / incidents summed) rather than a plain mean of per-campaign rates.
+ */
+function aggregateRecurrenceRate(campaignResults: readonly CampaignResult[]): number {
+  let totalIncidents = 0;
+  let totalRecurrences = 0;
+  for (const result of campaignResults) {
+    const incidentCount = result.events.filter((event) => event.kind === "incident").length;
+    totalIncidents += incidentCount;
+    totalRecurrences += recurrenceRate(result.events) * incidentCount;
+  }
+  return totalIncidents === 0 ? 0 : totalRecurrences / totalIncidents;
+}
+
 export function exportLineupMetrics(lineup: LineupName, turnsPerCampaign: number, campaignResults: readonly CampaignResult[]): LineupMetricsExport {
   const allEvents = campaignResults.flatMap((result) => result.events);
   return {
     lineup,
     campaigns: campaignResults.length,
     turnsPerCampaign,
-    recurrenceRate: recurrenceRate(allEvents),
+    recurrenceRate: aggregateRecurrenceRate(campaignResults),
     degradationRate: degradationRate(allEvents),
     misattributionRate: null,
     evidenceInformativeness: null,
