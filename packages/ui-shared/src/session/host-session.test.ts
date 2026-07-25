@@ -222,7 +222,7 @@ describe("host session [M2-15b]", () => {
     expect(changeCount).toBeGreaterThan(0);
   });
 
-  it("skips a leading automatic step on its own, so advanceStep's first real call closes comms, not the automatic step [M2-15b]", async () => {
+  it("crosses a leading automatic step and performs the next real step's transition in one advanceStep call [M2-15b]", async () => {
     const scriptWithIntro = loadPhaseScript({
       frame: "social-scene",
       start: "scene-opened",
@@ -247,21 +247,8 @@ describe("host session [M2-15b]", () => {
       channel: createFakeChannelHub().hostChannel,
     });
 
-    await waitForCondition(() => host.interpreter.currentStep() === "comms");
-
+    expect(host.interpreter.currentStep()).toBe("scene-opened");
     await host.advanceStep();
     expect(host.interpreter.currentStep()).toBe("incident");
   });
 });
-
-function waitForCondition(check: () => boolean): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const poll = () => {
-      if (check()) return resolve();
-      if (Date.now() - start > 1000) return reject(new Error("condition never became true"));
-      setTimeout(poll, 5);
-    };
-    poll();
-  });
-}

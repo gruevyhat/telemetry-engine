@@ -233,8 +233,18 @@ export function createHostSession(config: HostSessionConfig): HostSession {
     },
 
     async advanceStep() {
-      const result = await socialSession.advanceStep(config.t, REFEREE);
-      recordPreimages(result.commitmentPreimages);
+      // [App.tsx's own skipAutomaticSteps, same rationale] Content may declare literal-fact
+      // automatic steps (this script's own "scene-opened" intro line) that no human or phone
+      // needs to click through: loop performing them silently, then perform exactly one real
+      // (non-automatic) step's transition and stop -- one call always means "one meaningful
+      // action," however many automatic steps had to be crossed to reach it. Looping inside the
+      // single async method call (rather than a separate startup step) avoids racing this
+      // against a caller's own advanceStep() call for the operator's first real action.
+      let result: Awaited<ReturnType<typeof socialSession.advanceStep>>;
+      do {
+        result = await socialSession.advanceStep(config.t, REFEREE);
+        recordPreimages(result.commitmentPreimages);
+      } while (config.script.stepsById.get(result.fromStep)?.automatic);
       await snapshotAll();
       config.onChange?.();
       return { rendered: result.rendered };
