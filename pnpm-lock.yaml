@@ -123,6 +123,9 @@ importers:
       '@telemetry/engine':
         specifier: workspace:*
         version: link:../engine
+      '@telemetry/plugin-traveller':
+        specifier: workspace:*
+        version: link:../plugin-traveller
       '@telemetry/transport':
         specifier: workspace:*
         version: link:../transport

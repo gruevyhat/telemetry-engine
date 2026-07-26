@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@telemetry/engine": "workspace:*",
+    "@telemetry/plugin-traveller": "workspace:*",
     "@telemetry/transport": "workspace:*",
     "@telemetry/transport-webrtc": "workspace:*",
     "idb": "^8.0.3",
