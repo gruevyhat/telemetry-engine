@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { CrewMember } from "../../engine/src/plugin-api/index.js";
+import type { CrewMember } from "@telemetry/engine";
 import {
   characteristicModifier,
   exportCharacter,
