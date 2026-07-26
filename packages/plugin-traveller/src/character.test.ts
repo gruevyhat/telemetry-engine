@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { CrewMember } from "@telemetry/engine";
 import {
   characteristicModifier,
   exportCharacter,
@@ -27,7 +26,20 @@ import {
  *
  * The source hash and crew-member id are deterministic for the same source payload; this packet
  * does not prescribe a hash algorithm. M3-08 relies on stable identity, not a particular digest.
+ *
+ * `CrewMemberContract` is deliberately structural and local. This package does not depend on the
+ * engine package; M3-03 separately proves the canonical interface, and M3-11 assembles the
+ * structurally compatible implementation.
  */
+
+interface CrewMemberContract {
+  readonly crewMemberId: string;
+  readonly name: string;
+  readonly career: string | undefined;
+  readonly sourceHash: string;
+  readonly attributes: Readonly<Record<string, number>>;
+  readonly skills: Readonly<Record<string, number>>;
+}
 
 const fixtureUrls = [
   new URL("../fixtures/characters/fictional-merchant.json", import.meta.url),
@@ -64,7 +76,7 @@ describe("travtools character import", () => {
     const raw = { name: "Mara Venn", ...standardCharacteristics };
     const imported = expectSuccess(importCharacter(raw));
 
-    const member: CrewMember = imported.crewMember;
+    const member: CrewMemberContract = imported.crewMember;
     expect(member.name).toBe("Mara Venn");
     expect(member.career).toBeUndefined();
     expect(member.attributes).toEqual(standardCharacteristics);
