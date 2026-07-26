@@ -8,13 +8,15 @@ docs: Spec `docs/telemetry-engine-spec.md` (invariants INV-1..14), Plan
 `docs/telemetry-engine-dev-plan.md`, rulebook, `docs/design/`.
 
 ## Current milestone
-Between milestones. M2 (the social game) merged to `main` 2026-07-25 via PR #15 —
-the project's only milestone PR; from here on, always-shippable trunk, everything
-lands directly on `main` as red/green commit pairs with per-task commit scopes
-(Plan §4). M3 (import & interop) is not yet decomposed. Before M3 planning starts,
-the gating backlog item is BL-10 (phone client never retries phone→host messages —
-pairing deadlocks on real transport; frontier work), which also blocks the deferred
-M2 real-device walkthrough (Action 2) and BL-02.
+M3 — the Traveller plugin: distance and BYO characters (Spec §22; Plan §5's M3 table).
+Decomposed 2026-07-25 into 13 packets, `docs/tasks/M3-00..M3-12` — the first milestone
+planned under the two-tier method, so cards are packets with `depends_on`,
+`owned_paths`, `read_context`, and a lead-authored acceptance-test path. M3-00 (design
+doc) is `ready`; everything else is `blocked` until its dependencies integrate.
+Spec §21.3's acceptance list is the definition of done: travtools JSON round-trips ·
+INV-9 green over imported sector data · trust-mode path tested with no data loaded.
+Always-shippable trunk applies from here: red/green commit pairs straight to `main`,
+per-task commit scopes, no PRs.
 
 ## Constraints
 - Milestone acceptance, security policy, and release authorization are the human
@@ -50,3 +52,6 @@ M2 real-device walkthrough (Action 2) and BL-02.
 - 2026-07-25 — BL-11 filed: near-simultaneous multi-peer pairing (three phones submitting pair.claim in the same instant) stalled two of three phones for 60+ seconds with hundreds of decrypt-exception cross-talk errors, while the same three phones paired in ~6s each when staggered by a few seconds. Found during the first full real-browser walkthrough of the M2 social scene (post-BL-10). Root cause not identified — distinct from BL-10, which is confirmed correct and is why staggered pairing works at all. Board: ready, frontier-routed.
 - 2026-07-25 — BL-04 closed: pnpm typecheck now covers plugin-stub/plugin-traveller/sim (was 4 of 8 checkable packages, now 7). Root cause of sim's failures was a missing @telemetry/engine workspace dependency plus relative cross-package imports, not missing TS project references as the card speculated -- fixed by switching sim to the package-specifier pattern plugin-stub already used. content-lint stays excluded: it has the same import-boundary issue plus separate genuine type errors in test fixtures needing its own domain-scoped card, not guessed at here. Done as frontier work (new dependency declaration is forbidden to workers) despite the card's `assignee: agent`.
 - 2026-07-25 — BL-03 closed: no-ledger-writes-outside-interpreter.js is now type-checked (via @typescript-eslint/utils's getParserServices) rather than name-matching the identifier "ledger" -- it follows the real Ledger type through renames, and correctly ignores unrelated types that happen to share the name. Owner approved @typescript-eslint/utils + type-utils as new devDependencies (^8.19.0, resolved 8.65.0) before work started, per the card's own stop condition. Type-aware linting scoped to packages/engine/src only (pnpm lint still ~1.2s). Falls back to the old name-heuristic when no TS parser services are available, so untyped test coverage is unaffected.
+- 2026-07-25 — M3 planned (13 packets, `docs/tasks/M3-00..M3-12`). Owner decisions taken at planning: (1) the committed sector fixture is **fictional** — no third-party map data in the repo, real travellermap exports are user-imported at runtime only, matching Spec §15's "user-driven import" and "original entries only" hygiene; (2) character import targets travtools' real `Character` interface (`/Users/gvh/Development/travtools/apps/travtools-web/src/types/index.ts`, backed by its Supabase `characters` table) — **recorded deviation:** travtools imports XLSX and exports CSV and emits no character JSON today, so Spec §21.3's "round-trips travtools JSON" is engine-internal round-tripping of that shape, not validation against a real travtools export; (3) `Ship` is minimal (jump rating, fuel capacity, current fuel) so §15's `validateJump`/`fuelCost` are real without building a shipyard travtools already has; (4) career edges implement only Merchant (reroll a Broker check) and the negotiated catch-all, with Scout/Agent/Army declared in the registry and marked deferred to M4/M5 — complete data, no faked mechanics.
+- 2026-07-25 — Board gains a `blocked` state (CLAUDE.md updated): the two-tier method requires that only packets whose `depends_on` are all integrated go `ready`, and the previous state list had no way to express "not yet dispatchable". Only the lead promotes blocked → ready.
+- 2026-07-25 — M3 scope exclusions recorded at planning, to be confirmed in M3-00's design doc: in-app character creation (rulebook §13's "career walk") is out — M3 is BYO characters; inventory/gear/weapons posting is out (no inventory system exists; it is a separate schema needing its own fact-kinds catalog entry); contacts-become-journal-seeds and linking events (rulebook §13.4–5) are deferred to the milestone owning patron/incident generation.

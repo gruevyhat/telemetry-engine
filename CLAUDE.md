@@ -71,8 +71,9 @@ frontier work**. Log which.
 ## Board
 
 Task cards in `docs/tasks/`, each with a `status` field. The board is
-`grep -i status docs/tasks/*.md`. No other tool. States: ready → working → review →
-done, with escalated branching off working.
+`grep -i status docs/tasks/*.md`. No other tool. States: blocked → ready → working →
+review → done, with escalated branching off working. `blocked` means a packet's
+`depends_on` are not all integrated yet — only the lead promotes blocked → ready.
 
 ## Commits and branches
 
