@@ -150,10 +150,16 @@ export function validateCommit({ subject, changes, taskCards }) {
     const acceptancePath = card.acceptanceTests.includes(path);
 
     if (acceptancePath) {
-      if (status !== "A") {
+      // Immutable to the worker, not frozen forever: a lead may still amend a test they got
+      // wrong (CLAUDE.md's escalation format names "amend packet and re-dispatch" as one of
+      // exactly two resolutions). What must never happen is a non-test commit — the worker's
+      // implementation lands as feat/fix/etc — touching this path at all, or the file being
+      // removed out from under the contract.
+      if (status !== "A" && status !== "M") {
         findings.push(`${path}: lead-authored acceptance test is immutable (status ${status})`);
       } else if (parsed.type !== "test") {
-        findings.push(`${path}: acceptance tests may be added only by test(${parsed.scope})`);
+        const verb = status === "A" ? "added" : "amended";
+        findings.push(`${path}: acceptance tests may be ${verb} only by test(${parsed.scope})`);
       }
       continue;
     }

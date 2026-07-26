@@ -74,7 +74,26 @@ describe("packet commit enforcement", () => {
       changes: [{ status: "M", path: "packages/plugin-traveller/src/sec.test.ts" }],
       taskCards: TASKS,
     });
+    expect(findings.join("\n")).toContain("acceptance tests may be amended only by test(m3-02)");
+  });
+
+  it("rejects acceptance-test deletion outright, even by a test commit", () => {
+    const findings = validateCommit({
+      subject: "test(m3-02): drop SEC parser acceptance tests",
+      changes: [{ status: "D", path: "packages/plugin-traveller/src/sec.test.ts" }],
+      taskCards: TASKS,
+    });
     expect(findings.join("\n")).toContain("acceptance test is immutable");
+  });
+
+  it("allows a lead test commit to amend an acceptance test it got wrong (escalation resolved as amend-and-re-dispatch)", () => {
+    expect(
+      validateCommit({
+        subject: "test(m3-02): fix a bug in the SEC parser acceptance tests",
+        changes: [{ status: "M", path: "packages/plugin-traveller/src/sec.test.ts" }],
+        taskCards: TASKS,
+      }),
+    ).toEqual([]);
   });
 
   it("rejects files outside the packet's owned paths", () => {
