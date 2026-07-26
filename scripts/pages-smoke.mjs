@@ -3,6 +3,11 @@ import { join } from "node:path";
 import { chromium } from "playwright-core";
 import { killGroup, spawnGroup } from "./lib/process-tree.mjs";
 
+if (process.argv.includes("pairing")) {
+  await import("./pairing-live.mjs");
+  process.exit(0);
+}
+
 const host = "127.0.0.1";
 const port = Number(process.env.PAGES_SMOKE_PORT ?? 4173);
 const projectUrl = `http://${host}:${port}/telemetry-engine/`;
