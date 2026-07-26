@@ -112,13 +112,18 @@ export const careerEdges: Record<string, TravellerEdgeDef> = {
   Negotiated: NEGOTIATED,
 };
 
+const CAREER_EDGES_BY_LOWER_CAREER: ReadonlyMap<string, TravellerEdgeDef> = new Map(
+  Object.values(careerEdges).map((edge) => [edge.career.toLowerCase(), edge]),
+);
+
 /** An unrecognised or absent career falls back to the negotiated edge — never an error, never
- * Merchant's edge by accident. */
+ * Merchant's edge by accident. Case-insensitive: found while exercising M3-12's real fixture
+ * (`packages/plugin-traveller/fixtures/characters/fictional-merchant.json`), whose travtools
+ * `career` field is `"merchant"`, lowercase — an exact-match lookup against this registry's
+ * `"Merchant"` key silently fell through to Negotiated for every real import. */
 export function resolveEdge(career: string | undefined): TravellerEdgeDef {
-  if (career !== undefined && career in careerEdges) {
-    return careerEdges[career]!;
-  }
-  return NEGOTIATED;
+  if (career === undefined) return NEGOTIATED;
+  return CAREER_EDGES_BY_LOWER_CAREER.get(career.toLowerCase()) ?? NEGOTIATED;
 }
 
 function hasUsedEdge(facts: readonly EdgeUseFact[], crewMemberId: string, edgeId: string): boolean {
