@@ -54,3 +54,12 @@ export function commitInterrogationAnswer(ledger: Ledger, answer: InterrogationA
 export function commitImportBenefits(ledger: Ledger, proposals: readonly AppendInput[]): Fact[] {
   return ledger.appendAll(proposals);
 }
+
+/** [M3-09, INV-6] Commits a career-edge-use proposal built by the setting plugin's own edge
+ * module. Generic and career-agnostic: this function knows nothing about Merchant, Broker, or
+ * any other setting-specific vocabulary (INV-1) — it appends whatever `edge.used` proposal the
+ * plugin already decided was valid. One fact, so `append` rather than `appendAll`; there is
+ * nothing to batch. */
+export function commitEdgeUsed(ledger: Ledger, proposal: AppendInput): Fact {
+  return ledger.append(proposal);
+}
