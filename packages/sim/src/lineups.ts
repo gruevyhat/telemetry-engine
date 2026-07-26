@@ -1,4 +1,4 @@
-import type { Disposition } from "../../engine/src/npc/policy.js";
+import type { Disposition } from "@telemetry/engine";
 
 export interface LineupMember {
   readonly actorId: string;

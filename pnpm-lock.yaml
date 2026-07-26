@@ -54,7 +54,11 @@ importers:
 
   packages/plugin-traveller: {}
 
-  packages/sim: {}
+  packages/sim:
+    dependencies:
+      '@telemetry/engine':
+        specifier: workspace:*
+        version: link:../engine
 
   packages/transport: {}
 

@@ -5,15 +5,20 @@ import {
   fireFrame,
   initialCooldownState,
   recordFired,
+  runDegradeLadder,
+  degradeReportedProposal,
+  ask,
+  createRng,
+  decideSocial,
   type CooldownState,
   type IncidentFrame,
-} from "../../engine/src/generate/frame.js";
-import { runDegradeLadder, degradeReportedProposal, type DegradeOutcome } from "../../engine/src/degrade/ladder.js";
-import { ask } from "../../engine/src/oracle/oracle.js";
-import { createRng, type Rng } from "../../engine/src/rng/index.js";
-import type { GameTime } from "../../engine/src/time/index.js";
-import type { ActorRef, Fact } from "../../engine/src/ledger/types.js";
-import { decideSocial, type SocialAction } from "../../engine/src/npc/policy.js";
+  type DegradeOutcome,
+  type Rng,
+  type GameTime,
+  type ActorRef,
+  type Fact,
+  type SocialAction,
+} from "@telemetry/engine";
 import { LINEUPS, LINEUP_AGENDA_ODDS, type LineupName } from "./lineups.js";
 
 const REFEREE: ActorRef = { kind: "referee", id: "referee" };

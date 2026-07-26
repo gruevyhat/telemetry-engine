@@ -5,5 +5,8 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "description": "Headless simulation harness (Spec §21.4). Runs in CI as pnpm sim:smoke / pnpm sim:full."
+  "description": "Headless simulation harness (Spec §21.4). Runs in CI as pnpm sim:smoke / pnpm sim:full.",
+  "dependencies": {
+    "@telemetry/engine": "workspace:*"
+  }
 }

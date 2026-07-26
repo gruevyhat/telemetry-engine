@@ -19,7 +19,7 @@ import {
   type BlackBoxVerification,
   type SecretDrawPreimage,
   type SocialAction,
-} from "../../engine/src/index.js";
+} from "@telemetry/engine";
 import { TRADE_DECK } from "./campaign.js";
 import { LINEUPS, LINEUP_AGENDA_ODDS, type LineupName } from "./lineups.js";
 import type { SocialGroundTruthSample } from "./metrics.js";
