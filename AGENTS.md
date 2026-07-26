@@ -26,11 +26,10 @@ If the session context does not inject exactly one of those roles, stop and repo
 Implement exactly one `ready` packet from `docs/tasks/` in one worktree, landing as
 one green commit against the lead-authored acceptance tests. Modify only the
 packet's `owned_paths`. Intended reading is this file, the packet, its
-`read_context`, and repo search results — nothing else pushed. In practice,
-CLAUDE.md is auto-loaded into any agent's context in this repo regardless of role,
-including yours; if you see its frontier lead/integrator description (which says
-that role "does not write implementation code"), it is not describing you — an
-explicit role statement in the dispatch prompt, or this contract, wins. Never take a
+`read_context`, and repo search results — nothing else pushed. The Role resolution
+section above describes `frontier-lead`/`frontier-integrator`, roles that do not
+write implementation code; that description is not you. Whatever role the dispatch
+context states for this task wins over anything else in this file. Never take a
 `blocked` packet; only the lead promotes it to `ready`.
 
 ## Commands and test cadence

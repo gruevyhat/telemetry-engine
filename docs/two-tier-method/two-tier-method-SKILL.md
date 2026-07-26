@@ -1,13 +1,15 @@
 ---
 name: two-tier-method
-description: Load when decomposing a milestone into work packets, authoring acceptance tests for dispatch, resolving an escalation, or running milestone close-out. Defines the packet contract, dispatch gate, quality gates, and metrics for the two-tier (frontier lead + Haiku worker) development method. Not needed for routine review turns — CLAUDE.md covers those.
+description: Load when decomposing a milestone into work packets, authoring acceptance tests for dispatch, resolving an escalation, or running milestone close-out. Defines the packet contract, dispatch gate, quality gates, and metrics for the two-tier (frontier lead + worker) development method. Not needed for routine review turns — your operating-contract file covers those.
 ---
 
 # Two-Tier Contract Development — Methodology
 
-Reference for the frontier lead. CLAUDE.md carries the every-turn spine (roles,
-routing, board, escalation format); this skill carries the procedures you need only
-when decomposing, dispatching, or resolving.
+Reference for the frontier lead. Your operating-contract file carries the every-turn
+spine (roles, routing, board, escalation format); this skill carries the procedures
+you need only when decomposing, dispatching, or resolving. Written to work the same
+way regardless of which concrete lead/worker pair your session runs under — it never
+needs to name one.
 
 ## The load-bearing rule
 
@@ -50,32 +52,32 @@ status: ready
 
 Before setting `status: ready`, answer one question: **"Can a worker complete this
 from read_context and the acceptance tests alone?"** If no, the packet is not ready —
-fix the decomposition, don't fix it later through escalations. Optionally have local
-Gemma lint the packet for missing paths, ambiguous objectives, or untestable criteria
-before you look at it.
+fix the decomposition, don't fix it later through escalations. Optionally have a local
+pre-flight model lint the packet for missing paths, ambiguous objectives, or
+untestable criteria before you look at it.
 
 ## Dispatching a worker subagent
 
 A dispatched worker runs in this repo's working directory, so the harness auto-loads
-CLAUDE.md into its context regardless of what you put in the dispatch prompt — the
-same way it auto-loads for you. CLAUDE.md's role section describes a frontier
-lead/integrator who "does not write implementation code," which directly contradicts
-what the worker is there to do. AGENTS.md's role-resolution section anticipates this
-exact ambiguity and says an unresolved role should make an agent stop and report
-`role-unresolved` rather than guess — so an unpinned dispatch can produce either a
-confused implementation or a worker that halts entirely.
+your session's operating-contract file into the worker's context too, regardless of
+what the dispatch prompt says — the same way it auto-loaded for you as lead. That
+file's lead/integrator role description says that role "does not write implementation
+code," which directly contradicts what a worker is dispatched to do, and a
+role-resolution section built to catch exactly this ambiguity can make an unpinned
+worker stop and report `role-unresolved` instead of guessing.
 
 State the role explicitly, at the top of every dispatch prompt, before any task
 detail:
 
-> Your role for this task is `luna-worker` per AGENTS.md's worker contract. If
-> CLAUDE.md's description of a "frontier lead/integrator" role appears anywhere in
-> your context, it does not apply to you — disregard it.
+> Your role for this task is the worker, not the lead or integrator described
+> elsewhere in your operating-contract file. Disregard any text there that says you
+> do not write implementation code — for this dispatch, you do.
 
 This is a no-op when the ambiguity doesn't bite and a real fix when it does; always
-include it.
+include it. Never substitute a worker identity from a different lead/worker pairing
+than the one this session actually runs under.
 
-## What routes to Haiku
+## What routes to the worker
 
 Tests for existing behavior, CRUD, data transformations, serialization/validation,
 adapters around stable interfaces, boilerplate, localized fixes with known root
@@ -87,7 +89,7 @@ predesigned interface, straightforward UI components.
 Architecture, requirements clarification, public API design, data-model changes,
 cross-service changes, auth, security-sensitive or performance-critical code,
 concurrency, hard debugging, dependency selection, migrations, integration
-conflicts — and anything Haiku failed twice.
+conflicts — and anything the worker failed twice.
 
 ## Resolving escalations
 
@@ -125,7 +127,7 @@ dead-code review, reconcile docs, then human accepts or rejects.
 3. Integrator rejection rate
 4. Frontier tokens per accepted packet
 5. Total cost per accepted packet
-6. % of packets completed by Haiku
+6. % of packets completed by the worker
 
 Leading indicator: frontier intervention per accepted packet. Rising = decomposition
 quality, architecture clarity, or worker fit degrading. Diagnose before adding process.
@@ -133,8 +135,8 @@ quality, architecture clarity, or worker fit degrading. Diagnose before adding p
 ## Economics check
 
 The model split is a cost hypothesis, not doctrine. Pilot ~10 packets against a
-frontier-only baseline with caching. If Haiku doesn't win on cost per accepted packet
-at acceptable quality, drop the tier and keep the contract discipline.
+frontier-only baseline with caching. If the worker tier doesn't win on cost per
+accepted packet at acceptable quality, drop the tier and keep the contract discipline.
 
 ## Two setup investments worth making (and nothing more)
 
