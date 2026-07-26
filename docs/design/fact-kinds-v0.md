@@ -85,7 +85,7 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 ### crew / import (M3, opened by `docs/design/travel-and-import-v1.md`)
 | kind | payload | vis | implies |
 |---|---|---|---|
-| `crew.imported` | {crewMemberId: string, name: string, career: string, sourceHash: string} — `sourceHash` hashes the imported character payload and is the idempotence identity: re-importing the same character must not re-post its benefits | table | — |
+| `crew.imported` | {crewMemberId: string, name: string, career?: string, sourceHash: string} — `career` is optional: the plugin-api `CrewMember` it mirrors allows an absent career (manual entry with no career selected). `sourceHash` hashes the imported character payload and is the idempotence identity: re-importing the same character must not re-post its benefits | table | — |
 | `benefit.cashGranted` | {crewMemberId: string, amount: number} — muster-out cash (rulebook §13.3); extends `fundsProjection`, which until M3 summed only `sale.settled`/`purchase.settled` | table | — |
 | `edge.used` | {crewMemberId: string, edgeId: string, targetFactId: FactID} — career edge consumption, and the state behind "once per session" (rulebook §13.2). No `edge.granted` companion: entitlement is derivable from the crew member's career, so granting needs no fact | public | — |
 

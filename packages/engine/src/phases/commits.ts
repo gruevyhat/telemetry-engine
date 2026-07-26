@@ -1,5 +1,5 @@
+import type { AppendInput, Ledger } from "../ledger/ledger.js";
 import type { EvidencePlan } from "../evidence/evidence.js";
-import type { Ledger } from "../ledger/ledger.js";
 import type { Fact } from "../ledger/types.js";
 import type { InterrogationAnswer } from "../npc/interrogation.js";
 import type { GameTime } from "../time/index.js";
@@ -44,4 +44,13 @@ export function commitInterrogationAnswer(ledger: Ledger, answer: InterrogationA
     causes: [statement.id],
   });
   return { statement, tierAssignment };
+}
+
+/** [M3-08, INV-6/11] Commits `planImportBenefits`' proposals atomically. Every proposal that
+ * function builds is valid-by-construction (a plain crewMemberId/name/sourceHash and a
+ * positive cashAmount), so — same as `commitEvidenceReveal` — there is no reachable input that
+ * makes a real plan fail `appendAll`; an empty array (already-imported sourceHash) is a no-op
+ * append, not a special case. */
+export function commitImportBenefits(ledger: Ledger, proposals: readonly AppendInput[]): Fact[] {
+  return ledger.appendAll(proposals);
 }

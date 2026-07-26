@@ -85,4 +85,13 @@ export const KINDS_V0: readonly KindDefinition[] = [
   // one of evasion|partial|trueWithTell|true (Spec §12) but FieldSchema has no enum type yet, so
   // any string currently validates.
   { kind: "npc.truthTierAssigned", defaultVisibility: "referee", payload: { tier: f("string") } },
+
+  // crew / import (M3, docs/design/travel-and-import-v1.md)
+  // `career` is optional here though fact-kinds-v0.md's table prints it without a `?`: the
+  // plugin-api CrewMember it mirrors (packages/engine/src/plugin-api/character.ts) allows an
+  // absent career (manual entry with no career selected), and the catalog table is corrected to
+  // match in the same commit (M3-08).
+  { kind: "crew.imported", defaultVisibility: "table", payload: { crewMemberId: f("string"), name: f("string"), career: f("string", true), sourceHash: f("string") } },
+  { kind: "benefit.cashGranted", defaultVisibility: "table", payload: { crewMemberId: f("string"), amount: f("number") } },
+  { kind: "edge.used", defaultVisibility: "public", payload: { crewMemberId: f("string"), edgeId: f("string"), targetFactId: f("string") } },
 ];
