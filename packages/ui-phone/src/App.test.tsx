@@ -3,13 +3,16 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it } from "vitest";
 import { loadPhaseScript, type AgendaDeck, type IncidentFrame } from "@telemetry/engine";
 import { createEnvelopeChannel, encodePairingPayload, groupManualCode, type EnvelopeChannel } from "@telemetry/transport-webrtc";
-import type { Room } from "trystero";
 import type { EncryptedEnvelope } from "@telemetry/transport";
 import { createHostSession } from "@telemetry/ui-shared/src/session/host-session.js";
 import tradeDeckJson from "../../../content/decks/trade/frames.json";
 import { App } from "./App.js";
 
 afterEach(cleanup);
+
+/** ui-phone deliberately has no direct trystero dependency; the room type is whatever
+ * createEnvelopeChannel accepts. */
+type Room = Parameters<typeof createEnvelopeChannel>[0];
 
 const T = { day: 7, slot: "COMMS" as const };
 
@@ -60,7 +63,6 @@ function createFakeChannelHub() {
 function createFakeRoomNetwork() {
   interface Node {
     room: Room;
-    onMessage: () => ((data: unknown, context: { peerId: string }) => void) | null;
     deliver: (data: unknown, fromPeerId: string) => void;
     connected: Set<string>;
   }
@@ -68,7 +70,6 @@ function createFakeRoomNetwork() {
 
   function createRoom(peerId: string): Room {
     const connected = new Set<string>();
-    let handler: ((data: unknown, context: { peerId: string }) => void) | null = null;
     const action = {
       onMessage: null as ((data: unknown, context: { peerId: string }) => void) | null,
       send: async (data: unknown, options?: { target?: string }) => {
@@ -81,10 +82,8 @@ function createFakeRoomNetwork() {
       getPeers: () => Object.fromEntries([...connected].map((id) => [id, {}])),
       onPeerJoin: null,
     } as unknown as Room;
-    void handler;
     nodes.set(peerId, {
       room,
-      onMessage: () => action.onMessage,
       deliver: (data, fromPeerId) => action.onMessage?.(data, { peerId: fromPeerId }),
       connected,
     });
