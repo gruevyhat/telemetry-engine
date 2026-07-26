@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { importCharacter, importSector, type ImportedCrewMember, type TravellerSector } from "@telemetry/plugin-traveller";
 import { SectorImport } from "./SectorImport.js";
 import { CharacterImport } from "./CharacterImport.js";
 import { Roster } from "./Roster.js";
+
+// This workspace's vitest config doesn't set `test.globals`, so @testing-library/react's
+// afterEach-based auto-cleanup never registers (it feature-detects a bare global `afterEach`).
+// Unlike this repo's other RTL suites, several tests below render the *same* accessible names
+// (e.g. "Sector file", "Enter by hand") across `it` blocks, so leftover DOM from a prior test
+// would collide. Clean up explicitly rather than relying on the accident of unique names.
+afterEach(cleanup);
 
 /**
  * M3-10 acceptance tests — lead-authored, worker read-only. Fixtures below are the minimal valid
@@ -15,14 +23,25 @@ import { Roster } from "./Roster.js";
  */
 
 // M3-02's committed fictional fixture: 5 worlds, hexes 0101/0202/3240/1616/2427.
+// fileURLToPath first: under `@vitest-environment jsdom`, `new URL(relative, import.meta.url)`
+// resolves against jsdom's page location (http://...), not the module file, so a bare relative
+// URL silently stops being a file:// URL. Resolving to an absolute path before constructing any
+// further relative access avoids that.
+const HERE = fileURLToPath(import.meta.url);
 const VALID_SEC = readFileSync(
-  new URL("../../../plugin-traveller/fixtures/fictional-sector.sec", import.meta.url),
+  fileURLToPath(new URL("../../../plugin-traveller/fixtures/fictional-sector.sec", `file://${HERE}`)),
   "utf8",
 );
 
+// importCharacter (M3-07) expects characteristics at the top level, not nested.
 const VALID_CHARACTER_JSON = JSON.stringify({
   name: "Zhan",
-  characteristics: { str: 7, dex: 8, end_stat: 9, int_stat: 6, edu: 5, soc: 10 },
+  str: 7,
+  dex: 8,
+  end_stat: 9,
+  int_stat: 6,
+  edu: 5,
+  soc: 10,
   career: "Merchant",
   skills: [{ name: "Broker", level: 2 }],
 });
