@@ -95,10 +95,17 @@ function authenticatedHeader(header: BoundHeader): Uint8Array {
   }));
 }
 
-function bufferOf(bytes: Uint8Array): ArrayBuffer {
-  const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+// Returns a densely-packed Uint8Array view (no leftover offset/padding from a subarray) rather
+// than an ArrayBuffer: WebCrypto's own realm may bind `ArrayBuffer` differently than this
+// module's realm (observed under CI's jsdom-hosted test environment on Node 24, not locally),
+// making an `instanceof ArrayBuffer`-style check inside importKey/encrypt/decrypt reject an
+// ArrayBuffer built here even though the bytes are valid. TypedArray views are accepted by the
+// WebCrypto BufferSource type and are identified structurally, not via realm-bound instanceof,
+// so they survive the cross-realm boundary.
+function bufferOf(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
-  return copy.buffer;
+  return copy;
 }
 
 async function importKey(keyBytes: Uint8Array, usage: "encrypt" | "decrypt"): Promise<CryptoKey> {
@@ -108,7 +115,7 @@ async function importKey(keyBytes: Uint8Array, usage: "encrypt" | "decrypt"): Pr
 
 /** AES-GCM authenticates the full routing header; there is deliberately no plaintext payload API. */
 export async function encryptMessage(keyBytes: Uint8Array, message: ProtocolMessage): Promise<EncryptedEnvelope> {
-  const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(12)));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv, additionalData: bufferOf(authenticatedHeader(message.header)), tagLength: 128 },
     await importKey(keyBytes, "encrypt"),
