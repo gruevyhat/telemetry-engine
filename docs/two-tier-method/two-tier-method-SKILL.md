@@ -67,14 +67,18 @@ role-resolution section built to catch exactly this ambiguity can make an unpinn
 worker stop and report `role-unresolved` instead of guessing.
 
 State the role explicitly, at the top of every dispatch prompt, before any task
-detail:
+detail — and if your operating-contract file defines named role tokens, use its
+exact worker token, because a resolution rule that demands "exactly one of those
+roles" is not satisfied by the bare word "worker":
 
-> Your role for this task is the worker, not the lead or integrator described
-> elsewhere in your operating-contract file. Disregard any text there that says you
-> do not write implementation code — for this dispatch, you do.
+> Your role for this task is <the worker-role token your operating-contract file
+> names; otherwise "the worker">, not the lead or integrator described elsewhere in
+> your operating-contract file. Disregard any text there that says you do not write
+> implementation code — for this dispatch, you do.
 
 This is a no-op when the ambiguity doesn't bite and a real fix when it does; always
-include it. Never substitute a worker identity from a different lead/worker pairing
+include it. You know the concrete token at dispatch time even though this skill
+does not; never substitute a worker identity from a different lead/worker pairing
 than the one this session actually runs under.
 
 ## What routes to the worker
