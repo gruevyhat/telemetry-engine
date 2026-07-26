@@ -10,7 +10,7 @@ import { careerEdges, resolveEdge, useEdge, type EdgeUseFact } from "./edges.js"
  * crew member's own `crew.imported` fact.
  */
 
-const T = { day: 1, slot: "DOCKSIDE" };
+const T = { day: 1, slot: "DOCKSIDE" } as const;
 
 const ZHAN = { crewMemberId: "crew:zhan", career: "Merchant" };
 const BRENNAN = { crewMemberId: "crew:brennan", career: "Scout" };
