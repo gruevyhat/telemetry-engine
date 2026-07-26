@@ -1,0 +1,53 @@
+{
+  "id": "fictional-merchant-01",
+  "name": "Ilya March",
+  "player": null,
+  "portrait_url": null,
+  "str": 6,
+  "dex": 8,
+  "end_stat": 7,
+  "int_stat": 10,
+  "edu": 9,
+  "soc": 7,
+  "psi": null,
+  "chr": 8,
+  "mor": 9,
+  "lck": 6,
+  "career": "merchant",
+  "rank": "Broker",
+  "homeworld": "Lumen",
+  "homeworld_details": {
+    "name": "Lumen",
+    "sector": "Far Lantern",
+    "subsector": "Ember"
+  },
+  "skills": [
+    {
+      "name": "Broker",
+      "level": 2
+    },
+    {
+      "name": "Pilot",
+      "level": 1
+    }
+  ],
+  "finances": {
+    "cash_on_hand": 12000,
+    "yearly_pension": null
+  },
+  "contacts": [],
+  "lifepath": [
+    {
+      "term": 1,
+      "career": "Merchant",
+      "assignment": "Free Trader",
+      "survived": true,
+      "commissioned": false,
+      "advanced": true,
+      "rank": "Broker",
+      "notes": null
+    }
+  ],
+  "notes": "Invented fixture character.",
+  "created_at": "2026-01-12T00:00:00.000Z"
+}

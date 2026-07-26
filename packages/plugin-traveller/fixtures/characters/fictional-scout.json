@@ -1,0 +1,51 @@
+{
+  "id": "fictional-scout-01",
+  "status": "active",
+  "name": "Ren Aster",
+  "player": null,
+  "portrait_url": null,
+  "str": 7,
+  "dex": 9,
+  "end_stat": 6,
+  "int_stat": 11,
+  "edu": 10,
+  "soc": 5,
+  "psi": null,
+  "chr": null,
+  "mor": null,
+  "lck": null,
+  "career": "scout",
+  "rank": "Surveyor",
+  "homeworld": "Kestrel",
+  "homeworld_details": null,
+  "skills": [
+    {
+      "name": "Astrogation",
+      "level": 2
+    },
+    {
+      "name": "Electronics (Sensors)",
+      "level": 1
+    },
+    {
+      "name": "Survival",
+      "level": 0
+    }
+  ],
+  "finances": null,
+  "contacts": [
+    {
+      "id": "fictional-contact-01",
+      "npc_id": null,
+      "name": "Toma Vale",
+      "gender_species": "Human",
+      "type": "Ally",
+      "description": "Invented fixture contact.",
+      "link": null,
+      "alive": true
+    }
+  ],
+  "lifepath": [],
+  "notes": null,
+  "created_at": "2026-02-03T00:00:00.000Z"
+}
