@@ -1,0 +1,8 @@
+# Fictional sector data created for Telemetry Engine acceptance testing.
+Name             Hex  UWP       B Remarks              Z PBG A  Stellar
+---------------- ---- --------- - -------------------- - --- -- -------
+Cinder Wake      0101 A867A74-C N Ag Ri Cp               703 Na G2 V
+Glass Harbor     0202 B554678-9   Ni Ag                  411 Na K4 V
+High Lantern     3240 AABCDEF-H   Hi                     9AF Na F7 V
+Quiet Meridian   1616 C310445-A S De Ni Po             A 210 Im M1 V
+Ember Archive    2427 D777777-7   Ag                     503 Cs G8 V
