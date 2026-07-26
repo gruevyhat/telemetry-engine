@@ -328,6 +328,8 @@ interface TravelModel {
 
 **Comms-window enforcement:** acknowledge is timer-gated host-side; early acks are ignored and re-locked. The ritual survives client tampering.
 
+**Host-derived authority contexts [INV-13]:** whenever the host acts on a client command whose meaning depends on game state — the worked case is `vote.cast`, whose voting context (eligible players, the target's objective fact, envelope contents) determines what a ballot resolves — that context is always derived host-side from ledger state at handling time, never taken from the client payload. A client payload may carry only the player's *intent* (topic, value, target id); anything referee-adjacent that the intent resolves against comes from the host's own ledger. (Promoted from an M2-15b handoff footnote by the M2 retro, Action 6: this was implemented correctly by reasoning from INV-13, but was recorded nowhere normative.)
+
 ---
 
 ## 17. DEGRADED MODES — "MAGGIE IS NEVER SPEECHLESS"

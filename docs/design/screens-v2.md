@@ -197,6 +197,8 @@ The accused has no voluntary-open control but may vote and may call a vote on th
 
 Any required-phone disconnect pauses the timer before another tick. The comms batch remains unresolved. Reconnect receives the latest snapshot plus the same remaining duration; duplicate client command ids are ignored. Hotseat fallback discards no intent and routes each private view through the existing hand-to interstitial.
 
+**Disconnect detection is operator-declared, not inferred from the transport.** The pause above is triggered by a human at the table pressing a pause control (or a phone explicitly signaling departure), never by waiting on WebRTC's own peer-leave detection: an ICE timeout takes an unpredictable 10–30 seconds, and a live table should not sit through that to learn what everyone can already see — the player holding a dead phone. `room.onPeerLeave` may *supplement* this (marking a seat's indicator stale), but no timer-pausing or vote-pausing behavior keys off it. (Promoted from the M2-15b handoff by the M2 retro, Action 6.)
+
 A phone page reload loses its key and returns to pairing. The host remains paused until that seat re-pairs or hotseat is chosen. Re-pairing increments the binding epoch and supplies a fresh client-sequence base; delayed commands from every older epoch are rejected. A host reload also loses all phone keys, restores every binding as `re-pair required`, and keeps an active timed step paused.
 
 ## 6. Black-box verification

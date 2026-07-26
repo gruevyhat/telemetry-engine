@@ -59,6 +59,8 @@ Every task ships tests before implementation. The loop, mechanically:
 
 **Hard rules (restating Spec §21.5, because they gate merges):** tests are never deleted, skipped, or weakened except in a commit the owner approves whose message says so · no new `packages/engine` dependencies without owner sign-off · extrapolations beyond the Spec are recorded in the task's commit message (M2: also rolled up into the milestone PR's *Extrapolations* section; M3 onward: the commit message is the only record, there's no PR to roll up into) — an unrecorded correct guess is still a defect.
 
+**Commit scope is the task id (M2 retro, Action 7).** Every commit belonging to a task card carries that card's specific id as its conventional-commit scope — `test(m3-04): ...`, `feat(bl-10): ...` — never a bare milestone scope like `(m2)`. M0/M1 could reconstruct a per-task diff-size table from history; M2-01 through M2-14 cannot, because 37 commits carry only the generic `(m2)` tag. The per-task table is a real retro signal (it is how the ~600-line ceiling gets audited), so losing it is a process defect, not a formatting nit.
+
 ### 4.3 Session-start checklist (paste into every implementer session)
 1. Read CLAUDE.md.
 2. Read your task card (§5) and every Spec section it references. Read Spec Appendix A.
