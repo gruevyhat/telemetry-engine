@@ -59,6 +59,10 @@ importers:
         version: link:../engine
 
   packages/plugin-traveller:
+    dependencies:
+      '@telemetry/engine':
+        specifier: workspace:*
+        version: link:../engine
     devDependencies:
       fast-check:
         specifier: ^3.23.1
