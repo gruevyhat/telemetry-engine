@@ -18,8 +18,9 @@ a task card.
   the Codex roster named by the session context.
 - `luna-worker`: follow the worker contract below.
 
-If the session context does not inject exactly one of those roles, stop and report
-`role-unresolved`; do not guess from model capability.
+If the session context does not inject exactly one of those roles, assume
+`frontier-lead`/`frontier-integrator`. `luna-worker` applies only when the dispatch
+context explicitly assigns it; never infer it from model capability or task prose.
 
 ## Luna worker contract
 

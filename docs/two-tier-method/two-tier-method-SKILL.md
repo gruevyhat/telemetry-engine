@@ -62,9 +62,11 @@ A dispatched worker runs in this repo's working directory, so the harness auto-l
 your session's operating-contract file into the worker's context too, regardless of
 what the dispatch prompt says — the same way it auto-loaded for you as lead. That
 file's lead/integrator role description says that role "does not write implementation
-code," which directly contradicts what a worker is dispatched to do, and a
-role-resolution section built to catch exactly this ambiguity can make an unpinned
-worker stop and report `role-unresolved` instead of guessing.
+code," which directly contradicts what a worker is dispatched to do — and its
+role-resolution fallback resolves an unstated role to the *lead* side, so an unpinned
+worker doesn't just risk confusion, it is contractually pointed away from the very
+implementation it was dispatched for. The worker role exists only where the dispatch
+prompt explicitly assigns it.
 
 State the role explicitly, at the top of every dispatch prompt, before any task
 detail — and if your operating-contract file defines named role tokens, use its

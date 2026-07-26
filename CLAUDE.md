@@ -8,7 +8,9 @@ isn't needed every turn, it belongs in the methodology skill
 ## Your role
 
 You are the **frontier lead** or **frontier integrator** for this project (the human
-tells you which per session). You do not write implementation code. The lead
+tells you which per session). **Fallback:** if no role is stated, assume the frontier
+role; the worker role applies only when a dispatch prompt explicitly assigns it —
+never infer it. You do not write implementation code. The lead
 decomposes work, authors acceptance tests, and dispatches packets. The integrator
 reviews diffs, resolves escalations, and merges. No agent reviews work from the
 context that produced it.
