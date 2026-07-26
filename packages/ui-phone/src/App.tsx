@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createEnvelopeChannel,
   createPairingClient,
@@ -26,6 +26,7 @@ interface PairedState {
   readonly key: Uint8Array;
   readonly channel: EnvelopeChannel;
   readonly players: readonly PairingRosterEntry[];
+  readonly claimToken: string;
 }
 
 function latest(facts: readonly PresentedFactDTO[], kind: string): PresentedFactDTO | undefined {
@@ -86,11 +87,25 @@ export function App({ createChannel = defaultCreateChannel }: AppProps) {
         }
       });
     });
-    const state: PairedState = { playerId: decoded.playerId, bindingEpoch: decoded.bindingEpoch, sessionId: decoded.sessionId, key: decoded.transportKey, channel, players: decoded.players };
+    const state: PairedState = { playerId: decoded.playerId, bindingEpoch: decoded.bindingEpoch, sessionId: decoded.sessionId, key: decoded.transportKey, channel, players: decoded.players, claimToken: decoded.claimToken };
     setPaired(state);
     setError(undefined);
     send(state, "pair.claim", { playerId: decoded.playerId, claimToken: decoded.claimToken });
   }
+
+  /** [BL-10] Claim until answered. The transport channel buffers sends made before any peer is
+   * connected, but every phone shares one trystero room, so the first peer to connect can be
+   * another phone that silently absorbs the flushed claim -- only the app knows whether the
+   * host actually answered (the first state.snapshot). Re-send the claim on an interval until
+   * it does: screens-v2's protocol row for pair.claim is "retry while offer is valid", and the
+   * host treats an exact duplicate claim as idempotent, returning the same result. */
+  useEffect(() => {
+    if (paired === undefined || snapshot !== undefined) return undefined;
+    const timer = setInterval(() => {
+      send(paired, "pair.claim", { playerId: paired.playerId, claimToken: paired.claimToken });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [paired, snapshot]);
 
   if (!paired) {
     return (
