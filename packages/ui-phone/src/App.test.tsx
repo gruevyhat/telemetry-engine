@@ -253,4 +253,60 @@ describe("ui-phone App [M2-15b]", () => {
     // And the snapshot the host answers with must reach the phone: it leaves the waiting state.
     await waitFor(() => expect(screen.queryByText("Waiting for the host.")).toBeNull());
   });
+
+  it("keeps claiming until the host answers, even when another phone connects first [BL-10]", async () => {
+    // The real three-seat failure: all phones share one trystero room, so the first peer to
+    // reach a pairing phone can be another phone, not the host. A single flush at first-join
+    // hands the claim to a peer that ignores it; only claim-until-answered survives this.
+    const net = createFakeRoomNetwork();
+    const players = [
+      { playerId: "pc:zhan", label: "Zhan" },
+      { playerId: "pc:deuce", label: "Deuce" },
+    ];
+    const host = createHostSession({
+      sessionId: "session-mesh",
+      origin: "https://example.test/telemetry-engine/",
+      campaignSeed: "ui-phone-mesh-seed",
+      campaignSalt: "ui-phone-mesh-salt",
+      t: T,
+      script: SCRIPT,
+      deck: DECK,
+      currentHex: "Regina",
+      incidentDeck: TRADE_DECK,
+      players,
+      channel: createEnvelopeChannel(net.createRoom("host")),
+    });
+    net.createRoom("phone-zhan"); // another phone, present in the room but not the host
+
+    const material = host.pairingMaterialFor("pc:deuce");
+    const code = groupManualCode(encodePairingPayload(material));
+
+    let claimLeftApp = false;
+    const createPhoneChannel = (): EnvelopeChannel => {
+      const real = createEnvelopeChannel(net.createRoom("phone-deuce"));
+      return {
+        send(sendEnvelope, targetPeerId) {
+          claimLeftApp = true;
+          real.send(sendEnvelope, targetPeerId);
+        },
+        onReceive(handler) {
+          real.onReceive(handler);
+        },
+      };
+    };
+
+    render(<App createChannel={createPhoneChannel} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "pairing code" }), { target: { value: code } });
+    fireEvent.click(screen.getByRole("button", { name: "Pair" }));
+
+    // The claim is buffered in the channel; the wrong peer arrives first and absorbs the flush.
+    await waitFor(() => expect(claimLeftApp).toBe(true));
+    net.connect("phone-deuce", "phone-zhan");
+    expect(host.claimedPlayerIds()).toEqual([]);
+
+    // The host connects afterwards; the phone must still get its seat.
+    net.connect("phone-deuce", "host");
+    await waitFor(() => expect(host.claimedPlayerIds()).toContain("pc:deuce"), { timeout: 5000 });
+    await waitFor(() => expect(screen.queryByText("Waiting for the host.")).toBeNull());
+  });
 });
