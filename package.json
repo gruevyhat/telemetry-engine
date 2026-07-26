@@ -17,6 +17,7 @@
     "build:pages": "pnpm --filter @telemetry/ui-shared build",
     "demo:m0": "pnpm --filter @telemetry/ui-shared exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "test:e2e": "node scripts/pages-smoke.mjs",
+    "test:pairing:live": "node scripts/pairing-live.mjs",
     "check:packets": "node scripts/check-packet-commits.mjs",
     "dev:shared": "pnpm --filter @telemetry/ui-shared dev",
     "dev:phone": "pnpm --filter @telemetry/ui-phone dev"

@@ -9,6 +9,7 @@ import {
 } from "@telemetry/transport-webrtc";
 import { encryptMessage, PROTOCOL_VERSION, type BoundHeader, type MessageType, type PresentedFactDTO, type ProtocolMessage, type ProtocolPayloadMap } from "@telemetry/transport";
 import { CommsScreen } from "@telemetry/ui-shared/src/phone-screen/index.js";
+import { receivePairingEnvelope } from "./pairing-receive.js";
 
 export interface AppProps {
   /** Injected for testability; defaults to a real trystero room join. */
@@ -79,10 +80,14 @@ export function App({ createChannel = defaultCreateChannel }: AppProps) {
       return;
     }
     const client = createPairingClient({ playerId: decoded.playerId, bindingEpoch: decoded.bindingEpoch, claimToken: decoded.claimToken, key: decoded.transportKey });
-    const channel = createChannel(decoded.sessionId);
+    // BL-11: the encrypted protocol keeps its original session id, while signaling uses one
+    // two-peer room per seat so simultaneous phones never need to form a phone-to-phone mesh.
+    const channel = createChannel(
+      `${decoded.sessionId}:${encodeURIComponent(decoded.playerId)}`,
+    );
     channel.onReceive((envelope) => {
-      void client.receive(envelope).then((message) => {
-        if (message.header.type === "state.snapshot") {
+      void receivePairingEnvelope(client, envelope).then((message) => {
+        if (message?.header.type === "state.snapshot") {
           setSnapshot(message.payload as ProtocolPayloadMap["state.snapshot"]);
         }
       });

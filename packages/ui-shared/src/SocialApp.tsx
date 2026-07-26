@@ -7,6 +7,7 @@ import tradeFramesJson from "../../../content/decks/trade/frames.json";
 import socialSceneScriptJson from "../../../content/frames/social-scene/turn.json";
 import { ConfrontationPanel, PairingCard } from "./shared-screen/index.js";
 import { createHostSession, type HostSession } from "./session/host-session.js";
+import { createSeatIsolatedHostChannel } from "./session/seat-isolated-channel.js";
 
 const DECK = agendaDeckJson as unknown as AgendaDeck;
 const INCIDENT_DECK = tradeFramesJson as unknown as readonly IncidentFrame[];
@@ -33,7 +34,14 @@ function qrEncoder(value: string): Promise<string> {
 }
 
 function defaultCreateChannel(sessionId: string): EnvelopeChannel {
-  return createEnvelopeChannel(joinSessionRoom({ appId: "telemetry-engine", sessionId }));
+  return createSeatIsolatedHostChannel({
+    sessionId,
+    playerIds: PLAYERS.map((player) => player.playerId),
+    createChannel: (roomId) =>
+      createEnvelopeChannel(
+        joinSessionRoom({ appId: "telemetry-engine", sessionId: roomId }),
+      ),
+  });
 }
 
 export interface SocialAppProps {
