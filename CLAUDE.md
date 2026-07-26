@@ -43,6 +43,13 @@ Use only the pnpm scripts in package.json — never invoke tools directly.
 - Layout:  pnpm workspace — `packages/engine` (pure core), `plugin-traveller`,
   `plugin-stub`, `content`, `ui-shared`, `ui-phone`, `sim`, `content-lint`.
 
+**Test only what answers the question.** While iterating, run the single affected test
+file, never `pnpm test`. The full gate runs at exactly two moments: before a commit and
+after a merge — once each, not repeatedly. Never loop the suite to chase a flake, and
+never re-run a gate whose inputs have not changed since it passed. At the gate, run each
+command as its own step and check its own exit code; `&&`-chaining through `grep`/`tail`
+tests the filter's status, not the suite's, and has already pushed a red commit.
+
 Docs, in precedence order: Spec `docs/telemetry-engine-spec.md` (what; invariants
 INV-1..14), Plan `docs/telemetry-engine-dev-plan.md` (how), rulebook, and
 `docs/design/` (fact-kinds catalog, sim-bot policies, maggie-voice — mandatory for
