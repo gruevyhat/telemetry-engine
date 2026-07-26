@@ -15,13 +15,13 @@ a task card.
   cards, resolve frontier boundaries, author acceptance tests, review diffs, and
   merge. Do not implement a worker packet unless the human explicitly asks you to
   take it as frontier work.
-- `luna-worker`: follow the worker contract below.
+- `worker`: follow the worker contract below.
 
 If the session context does not inject exactly one of those roles, assume
-`frontier`. `luna-worker` applies only when the dispatch context explicitly assigns
-it; never infer it from model capability or task prose.
+`frontier`. `worker` applies only when the dispatch context explicitly assigns it;
+never infer it from model capability or task prose.
 
-## Luna worker contract
+## Worker contract
 
 Implement exactly one `ready` packet from `docs/tasks/` in one worktree, landing as
 one green commit against the lead-authored acceptance tests. Modify only the

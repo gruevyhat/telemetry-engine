@@ -155,15 +155,15 @@ Only packets whose dependencies are integrated are `ready`; the rest sit at `blo
 |---|---|---|---|---|---|
 | M3-00 | travel + import decision map and design doc | §15, §18 | 1, 3, 9 | frontier | — |
 | M3-01 | Traveller hex coordinates and parsec distance | §15 | 1 | haiku | M3-00 |
-| M3-02 | SEC sector-file parser | §15, §19 | 1 | haiku | M3-00 |
+| M3-02 | SEC sector-file parser | §15, §19 | 1 | worker | M3-00 |
 | M3-03 | engine plugin API: TravelModel, Ship, character contracts | §1, §15 | 1 | frontier | M3-00 |
 | M3-04 | sector import, local storage, offline reuse | §15, §18 | 3 | frontier | M3-02, M3-03 |
 | M3-05 | real distance drives the information horizon; trust mode | §7.2, §21.3 | 9 | frontier | M3-01, M3-04 |
-| M3-06 | Ship, jump validation, fuel cost (completes TravelModel) | §15 | 1 | haiku | M3-01, M3-03 |
-| M3-07 | travtools character import and JSON round-trip | §15, §21.3 | 1 | haiku | M3-03 |
+| M3-06 | Ship, jump validation, fuel cost (completes TravelModel) | §15 | 1 | worker | M3-01, M3-03 |
+| M3-07 | travtools character import and JSON round-trip | §15, §21.3 | 1 | worker | M3-03 |
 | M3-08 | muster-out benefits post to the ledger | §2, rulebook §13 | 2, 3, 6 | frontier | M3-07 |
-| M3-09 | career edges: registry + edges whose systems exist | §15, rulebook §13 | 2, 6 | haiku | M3-07 |
-| M3-10 | import UI: sector file and character roster | §15, rulebook §13 | 13 | haiku | M3-04, M3-07 |
+| M3-09 | career edges: registry + edges whose systems exist | §15, rulebook §13 | 2, 6 | worker | M3-07 |
+| M3-10 | import UI: sector file and character roster | §15, rulebook §13 | 13 | worker | M3-04, M3-07 |
 | M3-11 | Traveller plugin assembly — a real Plugin object | §1, §15 | 1 | frontier | M3-05, 06, 08, 09, 10 |
 | M3-12 | exit demo, walkthrough, §21.3 acceptance | §21.3 | 1, 3, 9 | frontier | M3-11 |
 

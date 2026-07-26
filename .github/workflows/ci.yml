@@ -1,27 +1,16 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main, "milestone/**"]
+    branches: [main]
 
 jobs:
-  pr-template:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check PR description has all required sections
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          printf '%s' "$PR_BODY" > /tmp/pr-body.md
-          node scripts/check-pr-body.mjs /tmp/pr-body.md
-
   gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -30,6 +19,16 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check packet commit contracts
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          base="$PUSH_BEFORE"
+          if ! git rev-parse --quiet --verify "$base^{commit}" >/dev/null; then
+            base="$(git rev-parse HEAD^)"
+          fi
+          pnpm check:packets -- "$base" "$HEAD_SHA"
       - run: pnpm test
       - run: pnpm test:integration
       - run: pnpm lint
@@ -45,16 +44,13 @@ jobs:
       - name: Detect content/ changes
         id: changes
         env:
-          # PR events diff against the PR's base branch. Pushes diff against the tip before
-          # the push (github.event.before): on a push to main, origin/main already points at
+          # Pushes diff against the tip before the push (github.event.before): on main,
+          # origin/main already points at
           # HEAD, so origin/main...HEAD is empty and would skip the gate on the very branch
           # that deploys. A missing/zero before-tip (new branch, force-push) runs the gate.
-          BASE_REF: ${{ github.base_ref }}
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          if [ -n "$BASE_REF" ]; then
-            range="origin/$BASE_REF...HEAD"
-          elif git rev-parse --quiet --verify "$PUSH_BEFORE^{commit}" >/dev/null 2>&1; then
+          if git rev-parse --quiet --verify "$PUSH_BEFORE^{commit}" >/dev/null 2>&1; then
             range="$PUSH_BEFORE...HEAD"
           else
             range=""
