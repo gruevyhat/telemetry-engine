@@ -82,8 +82,25 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 | `npc.statement` | {npcId: string, topic: string} | table | — (companion `npc.truthTierAssigned` fact carries the referee-scoped tier, see below and §3) |
 | `npc.truthTierAssigned` | {tier: string — intended values `'evasion'\|'partial'\|'trueWithTell'\|'true'`, not yet enum-enforced by the registry (`FieldSchema` has no enum type as of M0)} | referee | — (linked to its `npc.statement` via the fact-level `causes` field, not a payload field — see §3; named at the M0 retro, closing the gap the original table left as prose-only) |
 
+### crew / import (M3, opened by `docs/design/travel-and-import-v1.md`)
+| kind | payload | vis | implies |
+|---|---|---|---|
+| `crew.imported` | {crewMemberId: string, name: string, career: string, sourceHash: string} — `sourceHash` hashes the imported character payload and is the idempotence identity: re-importing the same character must not re-post its benefits | table | — |
+| `benefit.cashGranted` | {crewMemberId: string, amount: number} — muster-out cash (rulebook §13.3); extends `fundsProjection`, which until M3 summed only `sale.settled`/`purchase.settled` | table | — |
+| `edge.used` | {crewMemberId: string, edgeId: string, targetFactId: FactID} — career edge consumption, and the state behind "once per session" (rulebook §13.2). No `edge.granted` companion: entitlement is derivable from the crew member's career, so granting needs no fact | public | — |
+
+Ship shares and inventory are deliberately absent. Rulebook §13.3 also says ship shares reduce
+the Obligation's principal and that gear enters inventory, but neither has substrate: `obligation`
+exists only as a clock id (an integer counter summed by `clocksProjection`; clocks are counters,
+not money) and no inventory system exists at all. Both are deferred to the milestones that build
+debt and inventory properly, rather than invented sideways through a character-import card. See
+`travel-and-import-v1.md` §5.3.
+
+`implies` is `—` for all three: these are import-time and table-level bookkeeping with no
+`referee`-scoped cause behind them, so there is nothing to annotate. When unsure, omit (§1).
+
 ### reserved namespaces
-`survey.*` (M4) · `engage.*` (M5) · `legend.*`, `heat.*` (M5). Opening a namespace = catalog PR defining kinds + implies before any code.
+`survey.*` (M4) · `engage.*` (M5) · `legend.*`, `heat.*` (M5). Opening a namespace = catalog PR defining kinds + implies before any code. `benefit.*` and `edge.*` were opened this way by M3.
 
 ## 3. Notes for implementers
 
