@@ -38,6 +38,12 @@ describe("careerEdges registry [M3-09, Spec §15, rulebook §13.2]", () => {
     const edge = resolveEdge("Barbarian");
     expect(edge).toBe(careerEdges.Negotiated);
   });
+
+  it("resolves case-insensitively — real travtools exports use lowercase career values (found via M3-12's fictional-merchant.json fixture)", () => {
+    expect(resolveEdge("merchant")).toBe(careerEdges.Merchant);
+    expect(resolveEdge("MERCHANT")).toBe(careerEdges.Merchant);
+    expect(resolveEdge("scout")).toBe(careerEdges.Scout);
+  });
 });
 
 describe("useEdge — Merchant reroll [M3-09]", () => {
