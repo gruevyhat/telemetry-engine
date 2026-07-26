@@ -81,7 +81,17 @@ export function createLedger(registry: KindRegistry): Ledger {
   }
 
   function visibleTo(viewer: Viewer): readonly Fact[] {
-    return facts.filter((fact) => isVisibleTo(fact.visibility, viewer));
+    const fullyRevealed = new Set<FactID>();
+    for (const fact of facts) {
+      if (fact.kind !== "reveal" || !isVisibleTo(fact.visibility, viewer)) continue;
+      const targets = fact.payload.targets;
+      const fields = fact.payload.fields;
+      if (!Array.isArray(targets) || !Array.isArray(fields) || !fields.includes("*")) continue;
+      for (const target of targets) {
+        if (typeof target === "string") fullyRevealed.add(target);
+      }
+    }
+    return facts.filter((fact) => fullyRevealed.has(fact.id) || isVisibleTo(fact.visibility, viewer));
   }
 
   return { append, appendAll, all, activeFacts: () => activeFactsOf(facts), visibleTo };

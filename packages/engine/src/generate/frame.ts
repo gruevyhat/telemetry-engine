@@ -32,12 +32,9 @@ export interface IncidentFrame {
   readonly id: string;
   readonly pillar: string;
   readonly surfaceTables: SlotTables;
-  /** [M1-11a, Spec §10.2] Forward-looking: which agenda action, if any, would claim this frame
-   * instead of the innocent twin instantiating. No Agenda/AgendaAction type exists yet (§10.2's
-   * machinery is M2) and nothing reads this field today -- it exists so content authored now
-   * doesn't need reshaping once claiming lands, per this task's own "claimant field" Done-when.
-   * There is still deliberately no traitorAction field: unlike claimant (a reference content can
-   * carry inertly), a real traitor-action *effect* needs the M2 machinery to mean anything. */
+  /** [M2-04, Spec §10.2] A matching, validated agenda action claims this frame; otherwise the
+   * innocent twin instantiates. The action content owns the cause proposals, so the frame keeps
+   * only this referential seam and never duplicates an executable traitor-action shape. */
   readonly claimant?: { readonly agendaActionId: string };
   readonly innocentTwin: readonly CauseFactSpec[];
   readonly evidenceTrail: readonly EvidenceTrailEntry[];
@@ -50,6 +47,13 @@ export interface FiredIncident {
   readonly frameId: string;
   readonly surface: SurfaceDescriptor;
   readonly causeProposals: readonly AppendInput[];
+  readonly causeSource: "agenda" | "innocentTwin";
+  readonly innocentAlternativeProposals: readonly AppendInput[];
+}
+
+export interface AgendaFrameClaim {
+  readonly agendaActionId: string;
+  readonly proposals: readonly AppendInput[];
 }
 
 function actorRefFromId(id: string): ActorRef {
@@ -67,16 +71,23 @@ function actorRefFromId(id: string): ActorRef {
  * byte-identical regardless of how many other frames fired first or whether the interpreter
  * was recreated mid-script (Spec §6, INV-2/3).
  */
-export function fireFrame(frame: IncidentFrame, t: GameTime, rng: Rng): FiredIncident {
+export function fireFrame(frame: IncidentFrame, t: GameTime, rng: Rng, claim?: AgendaFrameClaim): FiredIncident {
   const surface = compose(frame.surfaceTables, rng.derive(`compose:${frame.id}:surface:${t.day}:${t.slot}`)).surface;
 
-  const causeProposals: AppendInput[] = frame.innocentTwin.map((spec, index) => {
+  const innocentAlternativeProposals: AppendInput[] = frame.innocentTwin.map((spec, index) => {
     const stream = rng.derive(`compose:${frame.id}:twin:${index}:${t.day}:${t.slot}`);
     const composed = compose(spec.tables, stream);
     return { t, kind: spec.kind, actor: actorRefFromId(composed.chosen.actor), payload: composed.factBundle.fields };
   });
 
-  return { frameId: frame.id, surface, causeProposals };
+  const claimed = claim !== undefined && frame.claimant?.agendaActionId === claim.agendaActionId;
+  return {
+    frameId: frame.id,
+    surface,
+    causeProposals: claimed ? claim.proposals : innocentAlternativeProposals,
+    causeSource: claimed ? "agenda" : "innocentTwin",
+    innocentAlternativeProposals,
+  };
 }
 
 /**

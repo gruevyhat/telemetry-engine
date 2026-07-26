@@ -1,10 +1,21 @@
 import { derive, type Projection } from "../ledger/derive.js";
+import { rankAndPlanReveal, type AccessContext, type EvidenceQuery } from "../evidence/evidence.js";
+import { generateCommittedWeeklyTicks, type GenerateCommittedWeeklyTicksInput } from "../economy/market.js";
+import { agendaFizzleProposal, evaluateAgendaAction, planAgendaDeal, type AgendaActionContent, type AgendaDeck } from "../agenda/index.js";
 import { fireFrame, type IncidentFrame } from "../generate/frame.js";
 import type { AppendInput, Ledger } from "../ledger/ledger.js";
+import type { KindRegistry } from "../ledger/registry.js";
 import type { ActorRef, Fact } from "../ledger/types.js";
 import { ask } from "../oracle/oracle.js";
 import { degradeReportedProposal, runDegradeLadder, type DegradeOutcome } from "../degrade/index.js";
-import type { Rng } from "../rng/index.js";
+import {
+  createCampaignSeedCommitment,
+  createRecordedSecretDrawCommitment,
+  type CampaignSeedPreimage,
+  type Rng,
+  type RngStream,
+  type SecretDrawPreimage,
+} from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 import type { LoadedPhaseScript } from "./load.js";
 import type { PhaseStep, StepRef } from "./types.js";
@@ -28,6 +39,61 @@ export interface AdvanceResult {
 export interface PhaseInterpreterDeps {
   rng: Rng;
   deck: readonly IncidentFrame[];
+  commitReveal?: {
+    readonly campaignSeed: string;
+    readonly campaignSalt: string;
+  };
+  agenda?: {
+    readonly actions: readonly AgendaActionContent[];
+    readonly currentHex: string;
+    readonly registry: KindRegistry;
+  };
+}
+
+interface RecordedDraw {
+  readonly streamId: string;
+  readonly drawIndex: number;
+  readonly result: number;
+}
+
+function recordingRng(base: Rng): { rng: Rng; drain: () => readonly RecordedDraw[] } {
+  const records: RecordedDraw[] = [];
+  const streams = new Map<string, RngStream>();
+
+  function shouldCommit(streamId: string): boolean {
+    return streamId.includes(":twin:") || streamId.includes("comms-order:");
+  }
+
+  return {
+    rng: {
+      derive(streamId) {
+        let wrapped = streams.get(streamId);
+        if (wrapped) return wrapped;
+        const stream = base.derive(streamId);
+        const draw = (): number => {
+          const drawIndex = stream.drawCount;
+          const result = stream.next();
+          if (shouldCommit(streamId)) records.push({ streamId, drawIndex, result });
+          return result;
+        };
+        wrapped = {
+          name: stream.name,
+          get drawCount() {
+            return stream.drawCount;
+          },
+          next: draw,
+          nextInt(maxExclusive) {
+            return Math.floor(draw() * maxExclusive);
+          },
+        };
+        streams.set(streamId, wrapped);
+        return wrapped;
+      },
+    },
+    drain() {
+      return records.splice(0, records.length);
+    },
+  };
 }
 
 /** [INV-12] Stands in for M1-09's real MAGGIE-voice renderer: a plain key:value join of the
@@ -119,7 +185,8 @@ function requirePlainNext(step: PhaseStep): StepRef {
   return step.next;
 }
 
-/** Per-kind resolution. vote/confrontation UI+generation are out of scope (M0-07/M2) — steps just transition. */
+/** Per-kind resolution. Confrontation mechanics remain content-ordered; the terminal vote
+ * transaction is committed by resolveConfrontation below. */
 function resolveStep(
   step: PhaseStep,
   t: GameTime,
@@ -217,10 +284,15 @@ function resolveStep(
       ]);
     }
     case "announce":
-    case "vote":
       return resolved(requirePlainNext(step));
+    case "vote": {
+      if (typeof step.next === "string") return resolved(step.next);
+      const branchKey = input?.branchKey;
+      if (!branchKey || !(branchKey in step.next)) throw new Error(`step "${step.id}": vote requires a valid input.branchKey`);
+      return resolved(step.next[branchKey]!);
+    }
     case "confrontation":
-      throw new Error(`step "${step.id}": confrontation sub-script is not implemented until M2`);
+      return resolved(requirePlainNext(step));
   }
 }
 
@@ -237,12 +309,74 @@ export interface CheckReportInput {
 export interface PhaseInterpreter {
   currentStep(): StepRef;
   advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult;
-  queueCommsAction(action: Readonly<Record<string, unknown>>): void;
+  advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }>;
+  commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
+  dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }>;
+  queueCommsAction(action: QueueCommsActionInput): Fact;
+  declareConfrontation(t: GameTime, actor: ActorRef, input: { mode: string; target?: string }): Fact;
+  resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] };
+  resolveConfrontationSearch(input: ResolveConfrontationSearchInput): ConfrontationSearchResult;
+  resolveConfrontationBranch(input: ConfrontationBranchInput): { committed: readonly Fact[] };
   /** [Spec §12, INV-6] A player-initiated action that isn't a beat transition (interrogating an
    * NPC, mid-beat) still must go through the interpreter to append a fact. Commits exactly one
    * `check.reported` fact and does not move `currentStep()`. */
   reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact;
 }
+
+export interface ResolveConfrontationSearchInput {
+  readonly t: GameTime;
+  readonly actorId: string;
+  readonly check: CheckReportInput;
+  readonly query: EvidenceQuery;
+  readonly accessContext: AccessContext;
+  readonly costTick?: { readonly clockId: string; readonly delta: number };
+}
+
+export type ConfrontationSearchResult =
+  | { readonly ok: true; readonly committed: readonly Fact[] }
+  | { readonly ok: false; readonly reason: "access-denied"; readonly message: string };
+
+interface GovernanceVoteInput {
+  readonly t: GameTime;
+  readonly actorId: string;
+  readonly eligiblePlayerIds: readonly string[];
+  readonly ballots: Readonly<Record<string, boolean>>;
+}
+
+export type ConfrontationBranchInput =
+  | { readonly kind: "let-lie"; readonly t: GameTime; readonly actorId: string; readonly reason: string }
+  | ({ readonly kind: "replace-captain"; readonly candidateId: string } & GovernanceVoteInput)
+  | ({ readonly kind: "put-off-ship"; readonly targetId: string; readonly atHex: string } & GovernanceVoteInput)
+  | { readonly kind: "timer-expiry"; readonly t: GameTime; readonly captainId: string; readonly decision: "let-lie" };
+
+export interface ResolveConfrontationInput {
+  readonly t: GameTime;
+  readonly declarer: string;
+  readonly target: { readonly kind: "pc" | "npc"; readonly id: string };
+  readonly eligiblePlayerIds: readonly string[];
+  readonly ballots: Readonly<Record<string, boolean>>;
+  readonly objectiveFactId: string;
+  readonly contents: unknown;
+}
+
+export interface QueueCommsActionInput {
+  readonly t: GameTime;
+  readonly playerId: string;
+  readonly windowId: string;
+  readonly actionId: string;
+  readonly targetFactId?: string;
+  readonly clientCommandId: string;
+}
+
+export interface CommitmentPreimages {
+  readonly seed?: CampaignSeedPreimage;
+  readonly draws: readonly SecretDrawPreimage[];
+}
+
+export type CommitMarketTicksInput = Omit<
+  GenerateCommittedWeeklyTicksInput,
+  "rng" | "campaignSeed" | "campaignSalt" | "seedCommitment"
+>;
 
 /**
  * [Spec §3.2, INV-6] The only ledger.append call site in the codebase. Holds no state of its
@@ -252,13 +386,66 @@ export interface PhaseInterpreter {
  * uninterrupted run: nothing survives a restart except what's already committed.
  */
 export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript, deps?: PhaseInterpreterDeps): PhaseInterpreter {
-  let commsQueue: Record<string, unknown>[] = [];
+  const recorder = deps?.commitReveal ? recordingRng(deps.rng) : undefined;
+  const resolvedDeps = deps ? { ...deps, rng: recorder?.rng ?? deps.rng } : undefined;
 
   function currentStep(): StepRef {
     return currentStepOf(ledger.all(), script);
   }
 
-  function advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
+  function planCommsClose(t: GameTime, activeDeps?: PhaseInterpreterDeps): readonly AppendInput[] {
+    const facts = ledger.all();
+    const intentsById = new Map(facts.filter((fact) => fact.kind === "agenda.actionTaken").map((fact) => [fact.id, fact]));
+    const resolvedWindows = new Set(facts.flatMap((fact) => (fact.causes ?? []).map((id) => intentsById.get(id)?.payload.windowId)).filter((id): id is string => typeof id === "string"));
+    const unresolved = [...intentsById.values()].filter((fact) => !resolvedWindows.has(fact.payload.windowId as string));
+    if (unresolved.length === 0) return [];
+    if (!activeDeps?.agenda) throw new Error("COMMS close with queued actions requires agenda actions in interpreter deps");
+    const windows = new Set(unresolved.map((fact) => fact.payload.windowId as string));
+    if (windows.size !== 1) throw new Error("COMMS close found intents from more than one unresolved window");
+    const windowId = [...windows][0]!;
+    const latestByPlayer = new Map<string, Fact>();
+    for (const fact of unresolved) latestByPlayer.set(fact.payload.playerId as string, fact);
+    const ordered = [...latestByPlayer.values()].sort((a, b) => a.actor.id.localeCompare(b.actor.id));
+    const stream = activeDeps.rng.derive(`comms-order:${windowId}`);
+    for (let index = ordered.length - 1; index > 0; index -= 1) {
+      const swap = stream.nextInt(index + 1);
+      [ordered[index], ordered[swap]] = [ordered[swap]!, ordered[index]!];
+    }
+
+    const proposals: AppendInput[] = [];
+    const workingFacts: Fact[] = [...facts];
+    const claimedTargets = new Set<string>();
+    for (const intent of ordered) {
+      const playerId = intent.payload.playerId as string;
+      const actionId = intent.payload.actionId as string;
+      const targetFactId = intent.payload.targetFactId as string | undefined;
+      const action = activeDeps.agenda.actions.find((candidate) => candidate.id === actionId);
+      const target = targetFactId ? facts.find((fact) => fact.id === targetFactId) : undefined;
+      let effects: readonly AppendInput[];
+      if (targetFactId && claimedTargets.has(targetFactId)) {
+        effects = [agendaFizzleProposal(t, playerId, actionId, "target-conflict")];
+      } else if (!action) {
+        effects = [agendaFizzleProposal(t, playerId, actionId, "content-invalid")];
+      } else {
+        const evaluated = evaluateAgendaAction({
+          action, playerId, windowId, clientCommandId: intent.payload.clientCommandId as string,
+          ...(target ? { target } : {}), t, currentHex: activeDeps.agenda.currentHex,
+          accessContext: { presence: { declarations: {} }, actorId: playerId, day: t.day, slot: t.slot, heldGear: new Set(), codeHolders: new Set(), holdsPrisoner: false },
+          priorFacts: workingFacts, registry: activeDeps.agenda.registry,
+        });
+        effects = evaluated.ok ? evaluated.proposals.slice(1) : evaluated.proposals;
+        if (evaluated.ok && targetFactId) claimedTargets.add(targetFactId);
+      }
+      for (const effect of effects) {
+        const linked = { ...effect, causes: [...(effect.causes ?? []), intent.id] };
+        proposals.push(linked);
+        workingFacts.push({ id: `pending-comms-${workingFacts.length}`, wall: 0, visibility: { level: "referee" }, ...linked });
+      }
+    }
+    return proposals;
+  }
+
+  function advanceCore(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
     const fromStep = currentStep();
     const step = script.stepsById.get(fromStep);
     if (!step) {
@@ -266,30 +453,106 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     }
 
     const visitSalt = `step:${fromStep}:${priorVisitCount(ledger, script, fromStep)}`;
-    const { nextStepId, proposals, rendered } = resolveStep(step, t, actor, input, deps, visitSalt);
-
-    const committed: Fact[] = [];
-    for (const proposal of proposals) {
-      committed.push(ledger.append(proposal));
-    }
-    committed.push(
-      ledger.append({
+    const resolved = resolveStep(step, t, actor, input, resolvedDeps, visitSalt);
+    const proposals = step.kind === "commsWindow" ? planCommsClose(t, resolvedDeps) : resolved.proposals;
+    const committed = ledger.appendAll([
+      ...proposals,
+      {
         t,
         kind: "phase.transition",
         actor,
-        payload: { fromStep, toStep: nextStepId, frame: script.frame },
-      }),
-    );
+        payload: { fromStep, toStep: resolved.nextStepId, frame: script.frame },
+      },
+    ]);
 
-    if (step.kind === "commsWindow") {
-      commsQueue = [];
-    }
-
-    return { fromStep, toStep: nextStepId, committed, ...(rendered !== undefined ? { rendered } : {}) };
+    return { fromStep, toStep: resolved.nextStepId, committed, ...(resolved.rendered !== undefined ? { rendered: resolved.rendered } : {}) };
   }
 
-  function queueCommsAction(action: Readonly<Record<string, unknown>>): void {
-    commsQueue.push(action);
+  function advance(t: GameTime, actor: ActorRef, input?: StepInput): AdvanceResult {
+    const step = script.stepsById.get(currentStep());
+    if ((step?.kind === "generate" || step?.kind === "commsWindow") && deps?.commitReveal) {
+      throw new Error(`${step.kind} steps with commit/reveal configured require await advanceCommitted()`);
+    }
+    return advanceCore(t, actor, input);
+  }
+
+  async function ensureSeedCommitment(t: GameTime): Promise<{
+    fact: Fact;
+    committed: readonly Fact[];
+    preimage?: CampaignSeedPreimage;
+  }> {
+    const context = deps?.commitReveal;
+    if (!context) {
+      throw new Error("committed random draws require commitReveal {campaignSeed, campaignSalt}");
+    }
+    const expected = await createCampaignSeedCommitment({ ...context, t });
+    const existing = ledger.all().find((fact) => fact.kind === "campaign.seedCommitted");
+    if (existing) {
+      if (existing.payload.hash !== expected.hash || existing.payload.scheme !== expected.proposal.payload.scheme) {
+        throw new Error("campaign seed commitment does not match the configured campaign seed/salt");
+      }
+      return { fact: existing, committed: [] };
+    }
+    const fact = ledger.append(expected.proposal);
+    return { fact, committed: [fact], preimage: expected.preimage };
+  }
+
+  async function advanceCommitted(t: GameTime, actor: ActorRef, input?: StepInput): Promise<AdvanceResult & { commitmentPreimages: CommitmentPreimages }> {
+    recorder?.drain();
+    const seed = await ensureSeedCommitment(t);
+    const result = advanceCore(t, actor, input);
+    const records = recorder?.drain() ?? [];
+    const drawFacts: Fact[] = [];
+    const drawPreimages: SecretDrawPreimage<number>[] = [];
+    for (const record of records) {
+      const committed = await createRecordedSecretDrawCommitment({
+        ...deps!.commitReveal!,
+        ...record,
+        seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string },
+        t,
+      });
+      drawFacts.push(ledger.append(committed.proposal));
+      drawPreimages.push(committed.preimage);
+    }
+    return {
+      ...result,
+      committed: [...seed.committed, ...result.committed, ...drawFacts],
+      commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: drawPreimages },
+    };
+  }
+
+  async function commitMarketTicks(input: CommitMarketTicksInput): Promise<{ committed: readonly Fact[]; commitmentPreimages: CommitmentPreimages }> {
+    const seed = await ensureSeedCommitment(input.t);
+    const context = deps!.commitReveal!;
+    const plan = await generateCommittedWeeklyTicks({
+      ...input,
+      ...context,
+      rng: deps!.rng,
+      seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string },
+    });
+    const committed = ledger.appendAll(plan.proposals);
+    return {
+      committed: [...seed.committed, ...committed],
+      commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: plan.preimages },
+    };
+  }
+
+  async function dealAgendas(input: { readonly t: GameTime; readonly players: readonly string[]; readonly deck: AgendaDeck }) {
+    const seed = await ensureSeedCommitment(input.t);
+    const context = deps!.commitReveal!;
+    const plan = await planAgendaDeal({ ...input, ...context, rng: deps!.rng, seedCommitment: { factId: seed.fact.id, hash: seed.fact.payload.hash as string } });
+    const committed = ledger.appendAll(plan.proposals);
+    return { committed: [...seed.committed, ...committed], commitmentPreimages: { ...(seed.preimage ? { seed: seed.preimage } : {}), draws: plan.preimages } };
+  }
+
+  function queueCommsAction(input: QueueCommsActionInput): Fact {
+    const duplicate = ledger.all().find((fact) => fact.kind === "agenda.actionTaken" && fact.payload.playerId === input.playerId && fact.payload.clientCommandId === input.clientCommandId);
+    if (duplicate) return duplicate;
+    if (!deps?.agenda?.actions.some((action) => action.id === input.actionId)) throw new Error(`unknown agenda action "${input.actionId}"`);
+    return ledger.append({
+      t: input.t, kind: "agenda.actionTaken", actor: { kind: "pc", id: input.playerId },
+      payload: { playerId: input.playerId, windowId: input.windowId, actionId: input.actionId, ...(input.targetFactId ? { targetFactId: input.targetFactId } : {}), clientCommandId: input.clientCommandId },
+    });
   }
 
   function reportCheck(t: GameTime, actor: ActorRef, input: CheckReportInput): Fact {
@@ -302,5 +565,134 @@ export function createPhaseInterpreter(ledger: Ledger, script: LoadedPhaseScript
     });
   }
 
-  return { currentStep, advance, queueCommsAction, reportCheck };
+  /** [M2-15b, Spec §4/§10.2, INV-6] "A majority forces the open" (Spec Appendix A) still needs
+   * one player to declare it first. Like `reportCheck`, a player-initiated action that isn't a
+   * beat transition still must go through the interpreter to append a fact -- the "confrontation"
+   * phase-script step itself commits nothing on advance (a stable wait step), and no accusation
+   * ever opens without this. Never voluntarily opens an envelope by itself; that only ever
+   * happens through a later carried `resolveConfrontation` call. */
+  function declareConfrontation(t: GameTime, actor: ActorRef, input: { mode: string; target?: string }): Fact {
+    return ledger.append({
+      t,
+      kind: "confrontation.opened",
+      actor,
+      payload: { declarer: actor.id, mode: input.mode, ...(input.target !== undefined ? { target: input.target } : {}) },
+    });
+  }
+
+  function resolveConfrontation(input: ResolveConfrontationInput): { committed: readonly Fact[] } {
+    if (input.target.kind === "npc") throw new Error("NPC targets cannot be burned; use interrogation and evidence");
+    const eligible = [...input.eligiblePlayerIds];
+    if (eligible.length === 0 || new Set(eligible).size !== eligible.length) throw new Error("confrontation eligibility must be a non-empty unique PC set");
+    if (!eligible.includes(input.target.id)) throw new Error("the accused PC must be eligible to vote");
+    const ballotIds = Object.keys(input.ballots);
+    if (ballotIds.some((id) => !eligible.includes(id))) throw new Error("confrontation ballot came from an ineligible player");
+    const threshold = Math.floor(eligible.length / 2) + 1;
+    const carried = Object.values(input.ballots).filter(Boolean).length >= threshold;
+    const failed = !carried && ballotIds.length === eligible.length;
+    const actor: ActorRef = { kind: "pc", id: input.declarer };
+    const vote = ledger.append({
+      t: input.t,
+      kind: "vote.recorded",
+      actor,
+      payload: { topic: `burn:${input.target.id}`, eligiblePlayerIds: eligible, threshold, ballots: { ...input.ballots }, status: carried ? "carried" : failed ? "failed" : "open" },
+    });
+
+    if (!carried && !failed) return { committed: [vote] };
+    if (failed) {
+      const resolution = ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "failed", logNote: "strict-majority-not-reached" }, causes: [vote.id] }]);
+      return { committed: [vote, ...resolution] };
+    }
+
+    const objective = ledger.all().find((fact) => fact.id === input.objectiveFactId);
+    if (!objective || objective.kind !== "objective.assigned" || objective.payload.playerId !== input.target.id) {
+      throw new Error("forced burn objectiveFactId must name the target PC's assigned objective");
+    }
+    const agendaFacts = ledger.all().filter((fact) =>
+      (fact.kind === "agenda.dealt" || fact.kind === "objective.assigned" || fact.kind === "agenda.actionTaken") && fact.payload.playerId === input.target.id,
+    );
+    const caused = (proposal: AppendInput): AppendInput => ({ ...proposal, causes: [...(proposal.causes ?? []), vote.id] });
+    const consequences = ledger.appendAll([
+      caused({ t: input.t, kind: "envelope.opened", actor: { kind: "pc", id: input.target.id }, payload: { playerId: input.target.id, contents: input.contents } }),
+      caused({ t: input.t, kind: "objective.forfeit", actor: { kind: "pc", id: input.target.id }, payload: { playerId: input.target.id } }),
+      caused({ t: input.t, kind: "deferredReveal.minted", actor: { kind: "referee", id: "referee" }, payload: { playerId: input.target.id, objectiveFactId: objective.id } }),
+      ...agendaFacts.map((fact) => caused({ t: input.t, kind: "reveal", actor: { kind: "referee", id: "referee" }, payload: { targets: [fact.id], fields: ["*"] } })),
+      caused({ t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "burned", logNote: "strict-majority-carried" } }),
+    ]);
+    return { committed: [vote, ...consequences] };
+  }
+
+  function resolveConfrontationSearch(input: ResolveConfrontationSearchInput): ConfrontationSearchResult {
+    const effect = input.check.total - input.check.difficulty;
+    const plan = rankAndPlanReveal(input.query, ledger.all(), effect, input.t, input.accessContext, input.costTick);
+    if (!plan.ok) return plan;
+    const actor: ActorRef = { kind: "pc", id: input.actorId };
+    const committed = ledger.appendAll([
+      {
+        t: input.t,
+        kind: "check.reported",
+        actor,
+        payload: { actor: input.actorId, ...input.check, effect },
+      },
+      ...plan.revealProposals,
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "searched", logNote: "investigation-complete" } },
+    ]);
+    return { ok: true, committed };
+  }
+
+  function validateGovernanceVote(input: GovernanceVoteInput, voters: readonly string[], threshold: number, topic: string): { vote: Fact; status: "open" | "failed" | "carried" } {
+    if (voters.length === 0 || new Set(voters).size !== voters.length) throw new Error("governance vote requires a non-empty unique voter set");
+    const ballotIds = Object.keys(input.ballots);
+    if (ballotIds.some((id) => !voters.includes(id))) throw new Error("governance ballot came from an ineligible player");
+    const carried = Object.values(input.ballots).filter(Boolean).length >= threshold;
+    const failed = !carried && ballotIds.length === voters.length;
+    const status = carried ? "carried" : failed ? "failed" : "open";
+    const vote = ledger.append({
+      t: input.t,
+      kind: "vote.recorded",
+      actor: { kind: "pc", id: input.actorId },
+      payload: { topic, eligiblePlayerIds: [...voters], threshold, ballots: { ...input.ballots }, status },
+    });
+    return { vote, status };
+  }
+
+  function resolveConfrontationBranch(input: ConfrontationBranchInput): { committed: readonly Fact[] } {
+    if (input.kind === "let-lie") {
+      return { committed: ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor: { kind: "pc", id: input.actorId }, payload: { outcome: "let-lie", logNote: input.reason } }]) };
+    }
+    if (input.kind === "timer-expiry") {
+      return { committed: ledger.appendAll([{ t: input.t, kind: "confrontation.resolved", actor: { kind: "pc", id: input.captainId }, payload: { outcome: input.decision, logNote: "timer-expired-captain-owned" } }]) };
+    }
+
+    const allEligible = [...input.eligiblePlayerIds];
+    if (allEligible.length === 0 || new Set(allEligible).size !== allEligible.length) throw new Error("governance eligibility must be a non-empty unique PC set");
+    if (input.kind === "replace-captain") {
+      const threshold = Math.floor(allEligible.length / 2) + 1;
+      const { vote, status } = validateGovernanceVote(input, allEligible, threshold, `replace-captain:${input.candidateId}`);
+      if (status === "open") return { committed: [vote] };
+      const actor: ActorRef = { kind: "pc", id: input.actorId };
+      const results = ledger.appendAll(status === "carried" ? [
+        { t: input.t, kind: "captain.assigned", actor, payload: { playerId: input.candidateId, reason: "majority-vote" }, causes: [vote.id] },
+        { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "captain-replaced", logNote: "strict-majority-carried" }, causes: [vote.id] },
+      ] : [
+        { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "captain-retained", logNote: "strict-majority-not-reached" }, causes: [vote.id] },
+      ]);
+      return { committed: [vote, ...results] };
+    }
+
+    const voters = allEligible.filter((id) => id !== input.targetId);
+    const { vote, status } = validateGovernanceVote(input, voters, voters.length, `put-off-ship:${input.targetId}`);
+    if (status === "open") return { committed: [vote] };
+    const actor: ActorRef = { kind: "pc", id: input.actorId };
+    const results = ledger.appendAll(status === "carried" ? [
+      { t: input.t, kind: "crew.removed", actor, payload: { actorId: input.targetId, atHex: input.atHex, reason: "unanimous-minus-target" }, causes: [vote.id] },
+      { t: input.t, kind: "presence.declared", actor, payload: { actor: input.targetId, hex: input.atHex, day: input.t.day, slot: input.t.slot }, causes: [vote.id] },
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "crew-removed", logNote: "unanimous-minus-target-carried" }, causes: [vote.id] },
+    ] : [
+      { t: input.t, kind: "confrontation.resolved", actor, payload: { outcome: "crew-retained", logNote: "unanimity-not-reached" }, causes: [vote.id] },
+    ]);
+    return { committed: [vote, ...results] };
+  }
+
+  return { currentStep, advance, advanceCommitted, commitMarketTicks, dealAgendas, queueCommsAction, declareConfrontation, resolveConfrontation, resolveConfrontationSearch, resolveConfrontationBranch, reportCheck };
 }

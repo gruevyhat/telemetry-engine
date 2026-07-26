@@ -1,0 +1,79 @@
+{
+  "id": "trade-campaign-agendas",
+  "odds": 0.28,
+  "tierWeights": { "orthogonal": 0.6, "parasitic": 0.3, "hostile": 0.1 },
+  "routineObjective": {
+    "id": "routine-watch",
+    "successCondition": { "kinds": ["clock.tick"], "rankBy": "probative", "threshold": 0 }
+  },
+  "templates": {
+    "agenda.skimCrate.label": "Divert one crate off the manifest.",
+    "agenda.quietSale.label": "Sell a lot through an off-book buyer.",
+    "agenda.sabotageManifest.label": "Report a manifest count that does not match the hold."
+  },
+  "agendas": [
+    {
+      "id": "agenda:independent-skim",
+      "faction": "independent",
+      "tier": "orthogonal",
+      "successCondition": { "kinds": ["cargo.diverted"], "rankBy": "probative", "threshold": 1 },
+      "exposureCost": { "clockId": "heat", "delta": 1 },
+      "actions": [
+        {
+          "id": "agenda:skim-crate",
+          "labelTemplate": "agenda.skimCrate.label",
+          "access": { "kind": "aboard" },
+          "target": { "kinds": ["cargo.loaded"] },
+          "proposals": [
+            { "kind": "cargo.diverted", "actor": { "ref": "self" }, "payload": { "lotId": { "ref": "target", "field": "lotId" }, "qty": 1, "channel": "private" } }
+          ],
+          "implies": [],
+          "payout": 1,
+          "exposure": { "clockId": "heat", "delta": 1 }
+        }
+      ]
+    },
+    {
+      "id": "agenda:broker-parasite",
+      "faction": "broker-syndicate",
+      "tier": "parasitic",
+      "successCondition": { "kinds": ["cargo.diverted"], "rankBy": "probative", "threshold": 1 },
+      "exposureCost": { "clockId": "heat", "delta": 2 },
+      "actions": [
+        {
+          "id": "agenda:quiet-sale",
+          "labelTemplate": "agenda.quietSale.label",
+          "access": { "kind": "aboard" },
+          "target": { "kinds": ["cargo.loaded"] },
+          "proposals": [
+            { "kind": "cargo.diverted", "actor": { "ref": "self" }, "payload": { "lotId": { "ref": "target", "field": "lotId" }, "qty": 1, "channel": "broker-syndicate" } }
+          ],
+          "implies": [],
+          "payout": 2,
+          "exposure": { "clockId": "heat", "delta": 2 }
+        }
+      ]
+    },
+    {
+      "id": "agenda:hostile-saboteur",
+      "faction": "rival-crew",
+      "tier": "hostile",
+      "successCondition": { "kinds": ["cargo.diverted"], "rankBy": "probative", "threshold": 1 },
+      "exposureCost": { "clockId": "heat", "delta": 3 },
+      "actions": [
+        {
+          "id": "agenda:sabotage-manifest",
+          "labelTemplate": "agenda.sabotageManifest.label",
+          "access": { "kind": "aboard" },
+          "target": { "kinds": ["cargo.loaded"] },
+          "proposals": [
+            { "kind": "cargo.diverted", "actor": { "ref": "self" }, "payload": { "lotId": { "ref": "target", "field": "lotId" }, "qty": 1, "channel": "sabotage" } }
+          ],
+          "implies": [],
+          "payout": 1,
+          "exposure": { "clockId": "heat", "delta": 3 }
+        }
+      ]
+    }
+  ]
+}

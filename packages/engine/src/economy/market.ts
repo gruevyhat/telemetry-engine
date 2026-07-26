@@ -2,7 +2,7 @@ import { derive, type Projection } from "../ledger/derive.js";
 import type { AppendInput } from "../ledger/ledger.js";
 import type { Fact } from "../ledger/types.js";
 import type { GoodDef } from "../plugin-api/index.js";
-import type { Rng } from "../rng/index.js";
+import { createSecretDrawCommitment, type Rng, type SecretDrawPreimage } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 
 /**
@@ -72,6 +72,58 @@ export function generateWeeklyTicks(input: GenerateWeeklyTicksInput): AppendInpu
   }
 
   return proposals;
+}
+
+export interface GenerateCommittedWeeklyTicksInput extends Omit<GenerateWeeklyTicksInput, "rng"> {
+  readonly rng: Rng;
+  readonly campaignSeed: string;
+  readonly campaignSalt: string;
+  readonly seedCommitment: { readonly factId: string; readonly hash: string };
+}
+
+export interface CommittedWeeklyTickPlan {
+  readonly proposals: readonly AppendInput[];
+  readonly preimages: readonly SecretDrawPreimage<number>[];
+}
+
+/** M2-02: market.tick is referee-scoped, so each weekly drift draw gets one public companion. */
+export async function generateCommittedWeeklyTicks(input: GenerateCommittedWeeklyTicksInput): Promise<CommittedWeeklyTickPlan> {
+  const week = Math.floor(input.t.day / 7);
+  const worldEvents = input.worldEvents ?? [];
+  const proposals: AppendInput[] = [];
+  const preimages: SecretDrawPreimage<number>[] = [];
+
+  for (const hex of input.activeHexes) {
+    const streamId = `market:${hex}`;
+    for (const good of input.goods) {
+      const draw = await createSecretDrawCommitment({
+        campaignSeed: input.campaignSeed,
+        campaignSalt: input.campaignSalt,
+        rng: input.rng,
+        streamId,
+        seedCommitment: input.seedCommitment,
+        t: input.t,
+        resolve: (unit) => unit,
+      });
+      const key = historyKey(hex, good.id);
+      const prior = input.priorPrices[key] ?? good.basePrice;
+      const drift = (draw.result * 2 - 1) * DRIFT_RANGE;
+      const shock = shockFor(worldEvents, hex, good.id, week);
+      const price = nextPrice(good.basePrice, prior, drift, shock, input.reversion);
+      proposals.push(
+        {
+          t: input.t,
+          kind: "market.tick",
+          actor: { kind: "world", id: "market" },
+          payload: { hex, good: good.id, price, week },
+        },
+        draw.proposal,
+      );
+      preimages.push(draw.preimage);
+    }
+  }
+
+  return { proposals, preimages };
 }
 
 type PriceHistory = Readonly<Record<string, readonly { week: number; price: number }[]>>;

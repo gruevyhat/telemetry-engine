@@ -13,6 +13,8 @@ import { ask } from "../../engine/src/oracle/oracle.js";
 import { createRng, type Rng } from "../../engine/src/rng/index.js";
 import type { GameTime } from "../../engine/src/time/index.js";
 import type { ActorRef, Fact } from "../../engine/src/ledger/types.js";
+import { decideSocial, type SocialAction } from "../../engine/src/npc/policy.js";
+import { LINEUPS, LINEUP_AGENDA_ODDS, type LineupName } from "./lineups.js";
 
 const REFEREE: ActorRef = { kind: "referee", id: "referee" };
 
@@ -33,6 +35,12 @@ export type CampaignEvent =
 export interface CampaignResult {
   readonly events: readonly CampaignEvent[];
   readonly facts: readonly Fact[];
+}
+
+export interface SocialCampaignResult extends CampaignResult {
+  readonly lineup: LineupName;
+  readonly agendaOdds: number;
+  readonly decisions: readonly { readonly turn: number; readonly actorId: string; readonly action: SocialAction }[];
 }
 
 function turnTime(turn: number): GameTime {
@@ -95,4 +103,28 @@ export function runCampaign(seed: string, turns: number, deck: readonly Incident
   }
 
   return { events, facts };
+}
+
+export function runSocialCampaign(seed: string, turns: number, lineup: LineupName): SocialCampaignResult {
+  const base = runCampaign(seed, turns);
+  const rng = createRng(seed);
+  const decisions = base.events.flatMap((event) => LINEUPS[lineup].map((member) => ({
+    turn: event.turn,
+    actorId: member.actorId,
+    action: decideSocial(
+      { situation: "accusation", candidates: LINEUPS[lineup].filter((candidate) => candidate.actorId !== member.actorId).map((candidate) => candidate.actorId), unresolvedDiscrepancies: event.turn % 3 },
+      member.disposition,
+      { facts: [], peekFullLedger(): never { throw new Error("social sim policy has no hidden-ledger access"); } },
+      rng.derive(`npc:${member.actorId}:turn:${event.turn}`),
+    ),
+  })));
+  return { ...base, lineup, agendaOdds: LINEUP_AGENDA_ODDS[lineup], decisions };
+}
+
+export function thresholdSweep(seeds: readonly string[], turns: number, lineup: LineupName, thresholds: readonly number[]) {
+  const posterior = 1 / Math.max(1, LINEUPS[lineup].length - 1);
+  return thresholds.map((threshold) => ({ threshold, values: seeds.map((seed) => {
+    const result = runSocialCampaign(seed, turns, lineup);
+    return posterior > threshold ? result.events.length * LINEUPS[lineup].filter((member) => member.disposition !== "naive" && member.disposition !== "loyalist").length : 0;
+  }) }));
 }

@@ -1,16 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SaveBlob } from "@telemetry/engine";
 import { openDB } from "idb";
 import { loadAutosave, saveAutosave } from "./autosave.js";
 
 vi.mock("idb", () => ({ openDB: vi.fn() }));
 
-const save: SaveBlob = {
-  schemaVersion: 1,
-  seedState: { campaignSeed: "skim" },
-  facts: [],
-  contentHashes: { "frames/turn.json": "sha256:turn-v1" },
-};
+const encryptedSave = JSON.stringify({ schemaVersion: 2, security: { ciphertext: "aabbcc" }, facts: [] });
 
 describe("IndexedDB autosave", () => {
   const put = vi.fn();
@@ -22,13 +16,13 @@ describe("IndexedDB autosave", () => {
   });
 
   it("stores and retrieves the latest save blob through idb", async () => {
-    get.mockResolvedValue(save);
+    get.mockResolvedValue(encryptedSave);
 
-    await saveAutosave(save);
-    await expect(loadAutosave()).resolves.toEqual(save);
+    await saveAutosave(encryptedSave);
+    await expect(loadAutosave()).resolves.toEqual(encryptedSave);
 
-    expect(openDB).toHaveBeenCalledWith("telemetry-engine", 1, expect.any(Object));
-    expect(put).toHaveBeenCalledWith("campaigns", save, "autosave");
+    expect(openDB).toHaveBeenCalledWith("telemetry-engine", 2, expect.any(Object));
+    expect(put).toHaveBeenCalledWith("campaigns", encryptedSave, "autosave");
     expect(get).toHaveBeenCalledWith("campaigns", "autosave");
   });
 });

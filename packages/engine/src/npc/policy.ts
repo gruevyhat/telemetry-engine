@@ -10,7 +10,7 @@ import type { RngStream } from "../rng/index.js";
  * omit" direction fact-kinds-v0.md §1 states for implies edges.
  */
 export type Disposition = "naive" | "diligent" | "paranoid" | "loyalist" | "selfish";
-export type SituationType = "market" | "patron" | "discrepancy" | "commsWindow" | "confrontation" | "vote" | "interrogation";
+export type SituationType = "market" | "patron" | "discrepancy" | "accusation" | "commsWindow" | "confrontation" | "vote" | "interrogation";
 
 /**
  * [sim-bot-policies.md §1, INV-13] "view is only the actor's visibility slice — bots never read
@@ -60,6 +60,20 @@ export interface DiscrepancyInput {
 }
 
 export type DecideInput = MarketInput | DiscrepancyInput;
+
+export type SocialInput =
+  | { readonly situation: "commsWindow"; readonly offers: readonly { readonly actionId: string; readonly payout: number; readonly exposure: number; readonly accessible: boolean }[] }
+  | { readonly situation: "accusation"; readonly candidates: readonly string[]; readonly unresolvedDiscrepancies: number }
+  | { readonly situation: "confrontation"; readonly accused: boolean; readonly loyal: boolean; readonly objectiveComplete: boolean }
+  | { readonly situation: "vote"; readonly captainVote: "guilty" | "innocent"; readonly majoritySoFar?: "guilty" | "innocent"; readonly posterior: number };
+
+export type SocialAction =
+  | { readonly kind: "comms.choose"; readonly actionId: string }
+  | { readonly kind: "comms.pass" }
+  | { readonly kind: "accuse"; readonly actorId: string }
+  | { readonly kind: "decline-accusation" }
+  | { readonly kind: "envelope.open" | "envelope.refuse" }
+  | { readonly kind: "vote"; readonly value: "guilty" | "innocent" };
 
 /** [sim-bot-policies.md §2 market] "λ default 0.04/week (tunable; sim sweeps it)." */
 const STALENESS_LAMBDA = 0.04;
@@ -122,5 +136,35 @@ export function decide(input: DecideInput, disposition: Disposition, _rng: RngSt
       return decideMarket(input, disposition);
     case "discrepancy":
       return decideDiscrepancy(input, disposition);
+  }
+}
+
+const RISK_BAR: Readonly<Record<Disposition, number>> = { naive: 0.2, diligent: 0.4, paranoid: 0.2, loyalist: 0, selfish: 0.8 };
+const ACCUSE_BAR: Readonly<Record<Disposition, number>> = { naive: 2, diligent: 0.75, paranoid: 0.5, loyalist: 2, selfish: 0.9 };
+
+/** M2 social tables. `view.facts` is intentionally the only ledger-shaped input. */
+export function decideSocial(input: SocialInput, disposition: Disposition, view: ActorView, _rng: RngStream): SocialAction {
+  void view.facts; // force all policy callers through ActorView; no ledger object is accepted.
+  switch (input.situation) {
+    case "commsWindow": {
+      if (disposition === "loyalist") return { kind: "comms.pass" };
+      const eligible = input.offers.filter((offer) => offer.accessible && offer.exposure < RISK_BAR[disposition]).sort((a, b) => b.payout - a.payout);
+      return eligible[0] ? { kind: "comms.choose", actionId: eligible[0].actionId } : { kind: "comms.pass" };
+    }
+    case "accusation": {
+      const candidates = input.candidates;
+      if (candidates.length === 0) return { kind: "decline-accusation" };
+      const posterior = 1 / candidates.length;
+      if ((disposition === "paranoid" && input.unresolvedDiscrepancies >= 2) || posterior > ACCUSE_BAR[disposition]) return { kind: "accuse", actorId: candidates[0]! };
+      return { kind: "decline-accusation" };
+    }
+    case "confrontation":
+      return input.accused && input.loyal && input.objectiveComplete ? { kind: "envelope.open" } : { kind: "envelope.refuse" };
+    case "vote": {
+      if (disposition === "loyalist") return { kind: "vote", value: input.captainVote };
+      if (disposition === "naive") return { kind: "vote", value: input.majoritySoFar ?? input.captainVote };
+      const bar = disposition === "paranoid" ? 0.4 : disposition === "diligent" ? 0.5 : 0.9;
+      return { kind: "vote", value: input.posterior > bar ? "guilty" : "innocent" };
+    }
   }
 }

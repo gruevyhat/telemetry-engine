@@ -24,13 +24,14 @@ re-guessing. `?` marks an optional field.
 | `phase.transition` | {fromStep: string, toStep: string, frame?: string} | public | — |
 | `clock.tick` | {clockId: string, delta: number, cause?: string} | per clock def | — |
 | `check.reported` | {actor: string, skill: string, dm: number, total: number, difficulty: number, effect: number} | public | — |
-| `secretRoll.committed` | {hash: string} | public | — |
+| `campaign.seedCommitted` | {hash: string, scheme: string} | public | — |
+| `secretRoll.committed` | {hash: string, scheme: string, seedCommitmentFactId: FactID} | public | — |
 | `oracle.answered` | {question: string, likelihood: string, answer: string, texture?: string} | table | — |
 | `correction` | {supersedes: FactID, note: string} | inherits target | — |
 | `reveal` | {targets: FactID[], fields: string[]} | public | — (reveals are meta; the checker evaluates their *targets*) |
 | `action.fizzled` | {attemptedActionId: string, reason: string} | referee | — |
 | `degrade.reported` | {rung: string, context: string} | referee | — |
-| `vote.recorded` | {topic: string, tally: object, captainBreak?: boolean} | public | — |
+| `vote.recorded` | {topic: string, eligiblePlayerIds: string[], threshold: number, ballots: object, status: string, captainBreak?: boolean} — each fact is the latest cumulative, per-player tally for the immutable eligibility set; ballots are final and public as cast | public | — |
 
 ### position / access
 | kind | payload | vis | implies |
@@ -67,11 +68,16 @@ Position model (Spec §24.1): per-beat station declarations. Every PC/NPC has ex
 | kind | payload | vis | implies |
 |---|---|---|---|
 | `agenda.dealt` | {playerId: string, result: boolean, tier?: string} | referee | — |
-| `agenda.actionTaken` | {playerId: string, actionId: string, frameClaim?: string} | referee | action-specific: each AgendaAction carries its own implies bundle in content, validated by content-lint against this catalog |
-| `envelope.opened` | {playerId: string, contents: unknown} | public | — |
+| `agenda.actionTaken` | {playerId: string, windowId: string, actionId: string, targetFactId?: FactID, clientCommandId: string, frameClaim?: string} — append-only selection/replacement; latest valid fact per player/window is current and command id makes retries idempotent | referee | action-specific: each AgendaAction carries its own implies bundle in content, validated by content-lint against this catalog |
+| `objective.assigned` | {playerId: string, objectiveId: string, successCondition: object} — committed explicitly `private:[playerId]`; registry default remains referee as fail-closed | referee | — |
+| `envelope.opened` | {playerId: string, contents: unknown} — committed only by the confrontation sub-script after a majority vote carries (rulebook §8.2's *burned* state, 2026-07-18 redesign); linked to its `vote.recorded` fact via `causes`; never voluntary | public | — |
 | `objective.forfeit` | {playerId: string} | public | — |
+| `deferredReveal.minted` | {playerId: string, objectiveFactId: FactID} | referee | — |
+| `deferredReveal.cashed` | {tokenFactId: FactID} — atomic with the public `reveal` it causes | referee | — |
 | `confrontation.opened` | {declarer: string, mode: string, target?: string} | public | — |
-| `confrontation.resolved` | {outcome: string, logNote: string} | public | — |
+| `confrontation.resolved` | {outcome: string, logNote: string} — the accusation vote's per-player tally is *not* here: it posts as the existing `vote.recorded` kind, linked via `causes` (2026-07-18 vote-forced-open redesign; rulebook §8.2 logs every yes on a carried open, accuser and count on a failed one) | public | — |
+| `captain.assigned` | {playerId: string, reason: string} | public | — |
+| `crew.removed` | {actorId: string, atHex: string, reason: string} | public | — |
 | `npc.hired` | {npcId: string, role: string, wage: number} | public | — |
 | `npc.statement` | {npcId: string, topic: string} | table | — (companion `npc.truthTierAssigned` fact carries the referee-scoped tier, see below and §3) |
 | `npc.truthTierAssigned` | {tier: string — intended values `'evasion'\|'partial'\|'trueWithTell'\|'true'`, not yet enum-enforced by the registry (`FieldSchema` has no enum type as of M0)} | referee | — (linked to its `npc.statement` via the fact-level `causes` field, not a payload field — see §3; named at the M0 retro, closing the gap the original table left as prose-only) |

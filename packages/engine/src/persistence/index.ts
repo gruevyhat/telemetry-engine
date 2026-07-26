@@ -12,7 +12,8 @@ export type SeedState = Readonly<Record<string, JsonValue>>;
 export type ContentHashes = Readonly<Record<string, string>>;
 
 /** The complete portable campaign record required by Spec §18. */
-export interface SaveBlob {
+/** Explicit legacy shape retained only as the input to M2's one-way v1 migration. */
+export interface LegacySaveV1 {
   readonly schemaVersion: number;
   readonly seedState: SeedState;
   readonly facts: readonly Fact[];
@@ -25,7 +26,7 @@ export interface ContentHashWarning {
   readonly message: string;
 }
 
-export interface LoadSaveOptions<S> {
+export interface LoadLegacyV1Options<S> {
   readonly schemaVersion: number;
   readonly contentHashes: ContentHashes;
   /**
@@ -36,7 +37,7 @@ export interface LoadSaveOptions<S> {
 }
 
 export interface LoadedSave<S> {
-  readonly save: SaveBlob;
+  readonly save: LegacySaveV1;
   readonly state: S;
   readonly warnings: readonly ContentHashWarning[];
 }
@@ -46,7 +47,7 @@ export function schemaVersionMismatchMessage(saved: number, supported: number): 
 }
 
 /** Export is deliberately one JSON blob so the same artifact can be saved or sent asynchronously. */
-export function exportSave(save: SaveBlob): string {
+export function exportLegacyV1Save(save: LegacySaveV1): string {
   return JSON.stringify(save);
 }
 
@@ -54,7 +55,7 @@ export function exportSave(save: SaveBlob): string {
  * Parses a save, enforces the reducer schema boundary, then always replays it. A content change
  * is visible to the caller but does not skip validation under the current content.
  */
-export function loadSave<S>(serialized: string, options: LoadSaveOptions<S>): LoadedSave<S> {
+export function loadLegacyV1Save<S>(serialized: string, options: LoadLegacyV1Options<S>): LoadedSave<S> {
   const save = parseSave(serialized);
 
   if (save.schemaVersion !== options.schemaVersion) {
@@ -78,7 +79,9 @@ export function loadSave<S>(serialized: string, options: LoadSaveOptions<S>): Lo
   return { save, state, warnings };
 }
 
-function parseSave(serialized: string): SaveBlob {
+export * from "./secure.js";
+
+function parseSave(serialized: string): LegacySaveV1 {
   let value: unknown;
   try {
     value = JSON.parse(serialized);
@@ -103,7 +106,7 @@ function parseSave(serialized: string): SaveBlob {
     throw invalidSave();
   }
 
-  return value as unknown as SaveBlob;
+  return value as unknown as LegacySaveV1;
 }
 
 function contentHashMismatches(saved: ContentHashes, current: ContentHashes): readonly string[] {

@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "agenda-deck.schema.json",
+  "definitions": {
+    "selector": {
+      "type": "object", "additionalProperties": false, "required": ["rankBy", "threshold"],
+      "properties": {
+        "kinds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "actors": { "type": "array", "items": { "$ref": "#/definitions/actorRef" } }, "timeRange": { "$ref": "#/definitions/timeRange" }, "location": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }, "rankBy": { "const": "probative" },
+        "threshold": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "access": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["aboard", "holdsGear", "hasCodes", "holdsPrisoner"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["kind", "hex"], "properties": { "kind": { "const": "atLocation" }, "hex": { "type": "string", "minLength": 1 } } }
+      ]
+    },
+    "actorRef": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["pc", "npc", "world", "referee"] }, "id": { "type": "string", "minLength": 1 } } },
+    "actionActor": { "oneOf": [{ "$ref": "#/definitions/actorRef" }, { "type": "object", "additionalProperties": false, "required": ["ref"], "properties": { "ref": { "const": "self" } } }] },
+    "timeRange": { "type": "object", "additionalProperties": false, "required": ["fromDay", "toDay"], "properties": { "fromDay": { "type": "number" }, "toDay": { "type": "number" } } },
+    "value": {
+      "oneOf": [
+        { "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }, { "type": "null" }] },
+        { "type": "object", "additionalProperties": false, "required": ["ref"], "properties": { "ref": { "enum": ["self", "currentDay", "currentHex"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["ref", "field"], "properties": { "ref": { "const": "target" }, "field": { "type": "string", "minLength": 1 } } }
+      ]
+    },
+    "action": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "labelTemplate", "access", "proposals", "implies", "payout", "exposure"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "labelTemplate": { "type": "string", "minLength": 1 },
+        "access": { "$ref": "#/definitions/access" },
+        "target": {
+          "type": "object", "additionalProperties": false, "required": ["kinds"],
+          "properties": {
+            "kinds": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[^.]+\\.[^*]+$" } },
+            "where": { "type": "object", "additionalProperties": false, "properties": { "actors": { "type": "array", "items": { "$ref": "#/definitions/actorRef" } }, "timeRange": { "$ref": "#/definitions/timeRange" }, "location": { "type": "string" }, "tags": { "type": "array", "items": { "type": "string" } } } }
+          }
+        },
+        "proposals": {
+          "type": "array", "items": {
+            "type": "object", "additionalProperties": false, "required": ["kind", "actor", "payload"],
+            "properties": { "kind": { "type": "string" }, "actor": { "$ref": "#/definitions/actionActor" }, "payload": { "type": "object", "additionalProperties": { "$ref": "#/definitions/value" } } }
+          }
+        },
+        "implies": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "type": "string" } } } },
+        "payout": { "type": "number" },
+        "exposure": { "type": "object", "additionalProperties": false, "required": ["clockId", "delta"], "properties": { "clockId": { "type": "string" }, "delta": { "type": "number" } } }
+      }
+    },
+    "agenda": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "faction", "tier", "successCondition", "exposureCost", "actions"],
+      "properties": {
+        "id": { "type": "string" }, "faction": { "type": "string" }, "tier": { "enum": ["orthogonal", "parasitic", "hostile"] },
+        "successCondition": { "$ref": "#/definitions/selector" },
+        "exposureCost": { "type": "object", "additionalProperties": false, "required": ["clockId", "delta"], "properties": { "clockId": { "type": "string" }, "delta": { "type": "number" } } },
+        "actions": { "type": "array", "items": { "$ref": "#/definitions/action" } }
+      }
+    }
+  },
+  "type": "object", "additionalProperties": false,
+  "required": ["id", "odds", "tierWeights", "routineObjective", "templates", "agendas"],
+  "properties": {
+    "id": { "type": "string" }, "odds": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tierWeights": { "type": "object", "additionalProperties": false, "required": ["orthogonal", "parasitic", "hostile"], "properties": { "orthogonal": { "type": "number", "minimum": 0 }, "parasitic": { "type": "number", "minimum": 0 }, "hostile": { "type": "number", "minimum": 0 } } },
+    "routineObjective": { "type": "object", "additionalProperties": false, "required": ["id", "successCondition"], "properties": { "id": { "type": "string" }, "successCondition": { "$ref": "#/definitions/selector" } } },
+    "templates": { "type": "object", "additionalProperties": { "type": "string" } },
+    "agendas": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/agenda" } }
+  }
+}

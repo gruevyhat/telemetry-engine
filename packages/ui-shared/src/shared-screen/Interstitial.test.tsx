@@ -15,14 +15,14 @@ describe("Interstitial [Spec section 16, INV-13]", () => {
       t: T,
       kind: "agenda.actionTaken",
       actor: ZHAN,
-      payload: { playerId: "pc:zhan", actionId: "skim-crate" },
+      payload: { playerId: "pc:zhan", windowId: "window-1", actionId: "skim-crate", clientCommandId: "zhan-1" },
       visibility: { level: "private", playerIds: ["pc:zhan"] },
     });
     const deucesFact = ledger.append({
       t: T,
       kind: "agenda.actionTaken",
       actor: DEUCE,
-      payload: { playerId: "pc:deuce", actionId: "forge-manifest" },
+      payload: { playerId: "pc:deuce", windowId: "window-1", actionId: "forge-manifest", clientCommandId: "deuce-1" },
       visibility: { level: "private", playerIds: ["pc:deuce"] },
     });
 
@@ -44,7 +44,7 @@ describe("Interstitial [Spec section 16, INV-13]", () => {
       t: T,
       kind: "agenda.actionTaken",
       actor: ZHAN,
-      payload: { playerId: "pc:zhan", actionId: "skim-crate" },
+      payload: { playerId: "pc:zhan", windowId: "window-1", actionId: "skim-crate", clientCommandId: "zhan-1" },
       visibility: { level: "private", playerIds: ["pc:zhan"] },
     });
 

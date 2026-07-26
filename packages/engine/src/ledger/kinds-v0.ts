@@ -19,7 +19,12 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "phase.transition", defaultVisibility: "public", payload: { fromStep: f("string"), toStep: f("string"), frame: f("string", true) } },
   { kind: "clock.tick", defaultVisibility: "referee", payload: { clockId: f("string"), delta: f("number"), cause: f("string", true) } },
   { kind: "check.reported", defaultVisibility: "public", payload: { actor: f("string"), skill: f("string"), dm: f("number"), total: f("number"), difficulty: f("number"), effect: f("number") } },
-  { kind: "secretRoll.committed", defaultVisibility: "public", payload: { hash: f("string") } },
+  { kind: "campaign.seedCommitted", defaultVisibility: "public", payload: { hash: f("string"), scheme: f("string") } },
+  {
+    kind: "secretRoll.committed",
+    defaultVisibility: "public",
+    payload: { hash: f("string"), scheme: f("string"), seedCommitmentFactId: f("string") },
+  },
   // likelihood corrected from number to string at M1-06: Spec §8.4's ladder is named rungs
   // (certain|likely|even|unlikely|remote), not a raw number -- see fact-kinds-v0.md §4.
   { kind: "oracle.answered", defaultVisibility: "table", payload: { question: f("string"), likelihood: f("string"), answer: f("string"), texture: f("string", true) } },
@@ -27,7 +32,7 @@ export const KINDS_V0: readonly KindDefinition[] = [
   { kind: "reveal", defaultVisibility: "public", payload: { targets: f("array"), fields: f("array") } },
   { kind: "action.fizzled", defaultVisibility: "referee", payload: { attemptedActionId: f("string"), reason: f("string") } },
   { kind: "degrade.reported", defaultVisibility: "referee", payload: { rung: f("string"), context: f("string") } },
-  { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), tally: f("object"), captainBreak: f("boolean", true) } },
+  { kind: "vote.recorded", defaultVisibility: "public", payload: { topic: f("string"), eligiblePlayerIds: f("array"), threshold: f("number"), ballots: f("object"), status: f("string"), captainBreak: f("boolean", true) } },
 
   // position / access
   {
@@ -62,11 +67,16 @@ export const KINDS_V0: readonly KindDefinition[] = [
 
   // social / meta-game
   { kind: "agenda.dealt", defaultVisibility: "referee", payload: { playerId: f("string"), result: f("boolean"), tier: f("string", true) } },
-  { kind: "agenda.actionTaken", defaultVisibility: "referee", payload: { playerId: f("string"), actionId: f("string"), frameClaim: f("string", true) } },
+  { kind: "objective.assigned", defaultVisibility: "referee", payload: { playerId: f("string"), objectiveId: f("string"), successCondition: f("object") } },
+  { kind: "agenda.actionTaken", defaultVisibility: "referee", payload: { playerId: f("string"), windowId: f("string"), actionId: f("string"), targetFactId: f("string", true), clientCommandId: f("string"), frameClaim: f("string", true) } },
   { kind: "envelope.opened", defaultVisibility: "public", payload: { playerId: f("string"), contents: f("unknown") } },
   { kind: "objective.forfeit", defaultVisibility: "public", payload: { playerId: f("string") } },
+  { kind: "deferredReveal.minted", defaultVisibility: "referee", payload: { playerId: f("string"), objectiveFactId: f("string") } },
+  { kind: "deferredReveal.cashed", defaultVisibility: "referee", payload: { tokenFactId: f("string") } },
   { kind: "confrontation.opened", defaultVisibility: "public", payload: { declarer: f("string"), mode: f("string"), target: f("string", true) } },
   { kind: "confrontation.resolved", defaultVisibility: "public", payload: { outcome: f("string"), logNote: f("string") } },
+  { kind: "captain.assigned", defaultVisibility: "public", payload: { playerId: f("string"), reason: f("string") } },
+  { kind: "crew.removed", defaultVisibility: "public", payload: { actorId: f("string"), atHex: f("string"), reason: f("string") } },
   { kind: "npc.hired", defaultVisibility: "public", payload: { npcId: f("string"), role: f("string"), wage: f("number") } },
   { kind: "npc.statement", defaultVisibility: "table", payload: { npcId: f("string"), topic: f("string") } },
   // Referee-scoped companion to npc.statement (fact-kinds-v0.md §2/§3): the ladder tier links to
