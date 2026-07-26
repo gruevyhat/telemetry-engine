@@ -11,9 +11,11 @@ import {
   derive,
   evaluateAccess,
   factsOwnedBy,
+  feedLine,
   fundsProjection,
   rankAndPlanReveal,
   renderFeed,
+  resolveInformationHorizon,
   KINDS_V0,
   loadPhaseScript,
   type AccessContext,
@@ -33,20 +35,26 @@ import {
   type PhaseScript,
   type PhaseStep,
 } from "@telemetry/engine";
+import { travellerPlugin, type ImportedCrewMember, type TravellerSector } from "@telemetry/plugin-traveller";
 import tradeTemplatesJson from "../../../content/frames/trade-campaign/announce-templates.json";
 import tradeTurnJson from "../../../content/frames/trade-campaign/turn.json";
 import tradeDeckJson from "../../../content/decks/trade/frames.json";
 import genericDeckJson from "../../../content/decks/generic/frames.json";
 import { Interstitial, MarketFeed, SharedScreen } from "./shared-screen/index.js";
+import { SectorImport } from "./setup/SectorImport.js";
+import { CharacterImport } from "./setup/CharacterImport.js";
+import { Roster } from "./setup/Roster.js";
 
 const REFEREE = { kind: "referee", id: "referee" } as const;
 const tradeTemplates = tradeTemplatesJson as Readonly<Record<string, string>>;
 const TRADE_DECK = tradeDeckJson as unknown as readonly IncidentFrame[];
 const GENERIC_DECK = genericDeckJson as unknown as readonly IncidentFrame[];
 
-/** [M1-13] Local, minimal goods list -- ui-shared has no plugin dependency (build:stub is
- * plugin-stub's job, not the browser UI's); base prices only feed feedLine's display, the
- * campaign script's own literal market.tick facts are what actually drives marketAt. */
+/** [M1-13] Local, minimal goods list for the fixed-hex "Regina" demo market, kept independent
+ * of any plugin (this content script's own literal `market.tick` facts are what drives
+ * `marketAt` for these two goods specifically, at that specific hex -- unrelated to any
+ * imported sector). [M3-13] The *remote* market check below uses `travellerPlugin.economy.goods`
+ * instead, since that panel is specifically about plugin-driven, sector-aware distance. */
 const GOODS: readonly GoodDef[] = [
   { id: "machine-parts", basePrice: 410 },
   { id: "refined-ore", basePrice: 188 },
@@ -214,6 +222,9 @@ export function App() {
   const [interrogationAnswer, setInterrogationAnswer] = useState<string | undefined>(undefined);
   const [evidenceStarted, setEvidenceStarted] = useState(false);
   const [evidenceResult, setEvidenceResult] = useState<string | undefined>(undefined);
+  const [importedSector, setImportedSector] = useState<TravellerSector | null>(null);
+  const [importedCrew, setImportedCrew] = useState<readonly ImportedCrewMember[]>([]);
+  const [remoteCrewCount, setRemoteCrewCount] = useState("");
   const { ledger, script, interpreter } = session;
   const facts = ledger.all();
   const clocks = derive(facts, clocksProjection);
@@ -222,6 +233,46 @@ export function App() {
   const currentTime = currentStep ? gameTimeFor(currentStep) : { day: 7, slot: "DOCKSIDE" as const };
   const hex = "Regina";
   const marketLines = renderFeed(facts, hex, currentTime.day, 0, GOODS);
+
+  /** [M3-13] The imported sector's own first two worlds stand in for "home" and "remote" --
+   * this demo has no ship-position/navigation model, so there is no independently-tracked
+   * "current hex" to check a foreign sector against. `hex` ("Regina") above is the
+   * trade-campaign content script's own fixed local market and is deliberately not reused here:
+   * "Regina" is a real Traveller location, not one of the fictional fixture's worlds, so it
+   * would never resolve to a real distance against an imported fictional sector. */
+  const sectorWorlds = importedSector?.record.worlds ?? [];
+  const remoteHomeHex = sectorWorlds[0]?.hex;
+  const remoteTargetHex = sectorWorlds[1]?.hex;
+  const remoteHorizon =
+    remoteHomeHex && remoteTargetHex
+      ? resolveInformationHorizon(
+          importedSector ?? { distance: () => "unknown" as const },
+          remoteHomeHex,
+          remoteTargetHex,
+          remoteCrewCount === "" ? undefined : Number(remoteCrewCount),
+        )
+      : undefined;
+  const remoteMarketLines =
+    remoteHorizon && remoteTargetHex ? renderFeed(facts, remoteTargetHex, currentTime.day, remoteHorizon, travellerPlugin.economy.goods) : [];
+
+  /** [M3-13, INV-6] `commitMarketTicks` is the interpreter's own public method (implemented
+   * inside `phases/interpreter.ts`, the sole `ledger.append` call site) -- seeding one real,
+   * committed historical tick at the sector's second world is what lets the remote-market
+   * check below show a real "N weeks stale" price rather than an empty (correctly honest, but
+   * undemonstrative) line the first time a sector is imported. */
+  async function handleSectorImport(sector: TravellerSector): Promise<void> {
+    setImportedSector(sector);
+    const worlds = sector.record.worlds;
+    if (worlds.length >= 2) {
+      await interpreter.commitMarketTicks({
+        t: { day: 0, slot: "DOCKSIDE" },
+        activeHexes: [worlds[1]!.hex],
+        goods: travellerPlugin.economy.goods,
+        priorPrices: {},
+      });
+      renderRevision((revision) => revision + 1);
+    }
+  }
   const announcement = currentStep?.render ? tradeTemplates[currentStep.render] : lastRendered;
   const status = {
     funds: derive(facts, fundsProjection),
@@ -293,7 +344,20 @@ export function App() {
     <>
       <SharedScreen status={status} currentSlot={currentSlot} facts={facts}>
         {currentSlot === "DOCKSIDE" ? (
-          <MarketFeed lines={marketLines} />
+          <>
+            <MarketFeed lines={marketLines} />
+            <RemoteMarketCheck
+              importedSector={importedSector}
+              importedCrew={importedCrew}
+              remoteHomeHex={remoteHomeHex}
+              remoteTargetHex={remoteTargetHex}
+              remoteCrewCount={remoteCrewCount}
+              onRemoteCrewCountChange={setRemoteCrewCount}
+              remoteMarketLines={remoteMarketLines}
+              onSectorImport={(sector) => void handleSectorImport(sector)}
+              onCharacterImport={(crewMember) => setImportedCrew((prev) => [...prev, crewMember])}
+            />
+          </>
         ) : (
           <p style={{ margin: 0 }}>{announcement}</p>
         )}
@@ -404,6 +468,66 @@ function InterrogationControl({
         Submit interrogation roll
       </button>
     </div>
+  );
+}
+
+/** [M3-13] Wires M3-10's real import components and M3-05's real information horizon into the
+ * shipped app: import a sector and/or a character, then check a remote world's market against
+ * the sector's own real distance (or trust mode, with an optional crew-supplied count, if no
+ * sector is loaded) -- closing the gap `docs/demos/M3.md` documented. Both imports are optional
+ * and repeatable, never gating the rest of the demo (rulebook §13.1: import is one path among
+ * several, never mandatory). */
+function RemoteMarketCheck({
+  importedSector,
+  importedCrew,
+  remoteHomeHex,
+  remoteTargetHex,
+  remoteCrewCount,
+  onRemoteCrewCountChange,
+  remoteMarketLines,
+  onSectorImport,
+  onCharacterImport,
+}: {
+  importedSector: TravellerSector | null;
+  importedCrew: readonly ImportedCrewMember[];
+  remoteHomeHex: string | undefined;
+  remoteTargetHex: string | undefined;
+  remoteCrewCount: string;
+  onRemoteCrewCountChange: (value: string) => void;
+  remoteMarketLines: readonly string[];
+  onSectorImport: (sector: TravellerSector) => void;
+  onCharacterImport: (crewMember: ImportedCrewMember) => void;
+}) {
+  return (
+    <section aria-label="remote market check" style={{ marginTop: "1em" }}>
+      <SectorImport onImport={onSectorImport} />
+      <CharacterImport onImport={onCharacterImport} />
+      <Roster crew={importedCrew} sector={importedSector} fromHex={remoteHomeHex ?? ""} toHex={remoteTargetHex ?? ""} />
+      {remoteTargetHex ? (
+        <div>
+          <label>
+            Crew-supplied distance in parsecs (only used if this sector isn't charted)
+            <input
+              type="number"
+              aria-label="remote crew-count parsecs"
+              value={remoteCrewCount}
+              onChange={(event) => onRemoteCrewCountChange(event.currentTarget.value)}
+            />
+          </label>
+          {remoteMarketLines.length > 0 ? (
+            <ul aria-label="remote market feed">
+              {remoteMarketLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>{travellerPlugin.persona.lexicon.trustMode}</p>
+          )}
+        </div>
+      ) : (
+        <p>Import a sector to check a remote world's real distance.</p>
+      )}
+    </section>
   );
 }
 
