@@ -58,7 +58,11 @@ importers:
         specifier: workspace:*
         version: link:../engine
 
-  packages/plugin-traveller: {}
+  packages/plugin-traveller:
+    devDependencies:
+      fast-check:
+        specifier: ^3.23.1
+        version: 3.23.2
 
   packages/sim:
     dependencies:
