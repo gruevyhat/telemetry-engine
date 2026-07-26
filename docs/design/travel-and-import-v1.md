@@ -163,6 +163,19 @@ Career edge consumption, and the state behind "once per session." Public because
 an open table action. No separate `edge.granted` kind: entitlement is derivable from the crew
 member's career, so granting needs no fact.
 
+**Addendum (2026-07-26, M3-09 escalation resolution).** "Once per session" assumed a
+real-world-session boundary that has no substrate anywhere in the codebase: no fact kind, no
+phase step, no milestone scheduled to build one (unlike Scout/Agent/Army's edges, which name
+M4/M5). Inventing one sideways through the career-edges card would repeat exactly the mistake
+§5.3 already named and rejected for ship shares/obligation. Resolution: drop the session-reset
+requirement from M3-09 entirely, with no milestone attached — `edge.used` availability means "not
+yet used this campaign, ever," until a future milestone builds real session lifecycle and this
+addendum is revisited. `targetFactId` for the Merchant edge is the reroll's own `check.reported`
+fact (no new "reroll" operation needed — Spec §6's "the engine never rolls for a PC" already means
+a reroll is just a second player-reported check, via the existing `reportCheck` interpreter
+method); for the negotiated edge, which has no check to target, it is the crew member's own
+`crew.imported` fact — the grant is recorded once, at import.
+
 **`implies` for all three: none.** These are import-time and table-level bookkeeping with no
 `referee`-scoped cause behind them, so there is nothing to annotate. The catalog's standing
 guidance applies — when unsure, omit; under-claiming costs a little evidence value, over-claiming
@@ -180,5 +193,9 @@ Amendments this doc makes to cards already written:
   current-price-for-a-remote-world bug. Its acceptance tests gain the uncounted state.
 - **M3-08** — posts **cash only**. Ship shares are deferred (§5.3). `funds.ts` joins its owned
   paths (§5.2).
+- **M3-09** — reclassified frontier work (2026-07-26 escalation; see §5.4 addendum). Drops the
+  session-reset acceptance case; "once per session" ships as "once ever" until a future milestone
+  builds session lifecycle. `phases/commits.ts` joins its owned paths for the `edge.used` commit
+  (INV-6); `edges.ts` itself stays free of any `@telemetry/engine` dependency.
 
 No other card changes.
