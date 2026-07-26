@@ -13,6 +13,12 @@
 
 export type EdgeAvailability = "available" | "deferred";
 
+/** Matches the engine's `BeatSlot` (`packages/engine/src/time/index.ts`) structurally, without
+ * importing it — same M3-01 precedent as `EdgeUseFact` below. A proposal's `t.slot` must be one
+ * of these exact literals for `EdgeProposal` to structurally satisfy the engine's `AppendInput`
+ * at `commitEdgeUsed`'s call site; a bare `string` does not (found while wiring M3-11). */
+export type EdgeBeatSlot = "DOCKSIDE" | "COMMS" | "TRANSIT" | "ARRIVAL" | "DOWNTIME";
+
 export interface TravellerEdgeDef {
   readonly id: string;
   readonly career: string;
@@ -31,7 +37,7 @@ export interface EdgeUseFact {
 
 /** What `commitEdgeUsed` (`phases/commits.ts`) appends, minus the ledger-assigned `id`/`wall`. */
 export interface EdgeProposal {
-  readonly t: { readonly day: number; readonly slot: string };
+  readonly t: { readonly day: number; readonly slot: EdgeBeatSlot };
   readonly kind: "edge.used";
   readonly actor: { readonly kind: "pc"; readonly id: string };
   readonly payload: {
@@ -130,7 +136,7 @@ export function useEdge(
   facts: readonly EdgeUseFact[],
   crewMember: { readonly crewMemberId: string; readonly career: string | undefined },
   context: EdgeUseContext,
-  t: { readonly day: number; readonly slot: string },
+  t: { readonly day: number; readonly slot: EdgeBeatSlot },
 ): EdgeUseResult {
   const edge = resolveEdge(crewMember.career);
 

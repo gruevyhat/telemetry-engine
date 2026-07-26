@@ -5,11 +5,12 @@
  * shape for yet, so it's left for a future task rather than guessed at.
  *
  * Slices are added incrementally by the task that needs them, never ahead of need. M3-03 adds
- * `./travel.js` and `./character.js`. Still out of scope: `persona`, `dice`, and the composed
- * `Plugin` object that binds every slice to one plugin id — that is M3-11.
+ * `./travel.js` and `./character.js`. M3-11 adds `./plugin.js`: `persona`, `dice`, and the
+ * composed `Plugin` object that binds every slice to one plugin id.
  */
 export * from "./travel.js";
 export * from "./character.js";
+export * from "./plugin.js";
 
 export interface GoodDef {
   readonly id: string;
