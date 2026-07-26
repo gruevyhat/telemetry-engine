@@ -54,6 +54,27 @@ fix the decomposition, don't fix it later through escalations. Optionally have l
 Gemma lint the packet for missing paths, ambiguous objectives, or untestable criteria
 before you look at it.
 
+## Dispatching a worker subagent
+
+A dispatched worker runs in this repo's working directory, so the harness auto-loads
+CLAUDE.md into its context regardless of what you put in the dispatch prompt — the
+same way it auto-loads for you. CLAUDE.md's role section describes a frontier
+lead/integrator who "does not write implementation code," which directly contradicts
+what the worker is there to do. AGENTS.md's role-resolution section anticipates this
+exact ambiguity and says an unresolved role should make an agent stop and report
+`role-unresolved` rather than guess — so an unpinned dispatch can produce either a
+confused implementation or a worker that halts entirely.
+
+State the role explicitly, at the top of every dispatch prompt, before any task
+detail:
+
+> Your role for this task is `luna-worker` per AGENTS.md's worker contract. If
+> CLAUDE.md's description of a "frontier lead/integrator" role appears anywhere in
+> your context, it does not apply to you — disregard it.
+
+This is a no-op when the ambiguity doesn't bite and a real fix when it does; always
+include it.
+
 ## What routes to Haiku
 
 Tests for existing behavior, CRUD, data transformations, serialization/validation,
