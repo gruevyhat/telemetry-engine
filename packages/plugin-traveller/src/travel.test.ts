@@ -1,6 +1,5 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import type { Ship, TravelModel } from "@telemetry/engine";
 import { travellerTravel } from "./travel.js";
 
 /**
@@ -15,10 +14,38 @@ import { travellerTravel } from "./travel.js";
  * This is intentionally a small travel model, not a ship-design system. Validation checks
  * unknown distance first, range second, and available fuel third. That ordering makes an
  * out-of-range jump report its primary problem even when the tank is also low.
+ *
+ * These structural contract types deliberately stay local. This package does not depend on the
+ * engine package; M3-03 separately proves the canonical interface, and TypeScript's structural
+ * typing lets M3-11 assemble this implementation without coupling the two packages here.
  */
 
-const model: TravelModel = travellerTravel;
-const ship: Ship = { jumpRating: 2, fuelCapacity: 40, currentFuel: 40 };
+interface ShipContract {
+  readonly jumpRating: number;
+  readonly fuelCapacity: number;
+  readonly currentFuel: number;
+}
+
+type JumpValidationContract =
+  | { readonly outcome: "ok"; readonly parsecs: number; readonly fuelRequired: number }
+  | { readonly outcome: "out-of-range"; readonly parsecs: number; readonly jumpRating: number }
+  | {
+      readonly outcome: "insufficient-fuel";
+      readonly parsecs: number;
+      readonly fuelRequired: number;
+      readonly fuelAvailable: number;
+    }
+  | { readonly outcome: "unknown-distance" };
+
+interface TravelModelContract {
+  distance(from: string, to: string): number | "unknown";
+  validateJump(ship: ShipContract, from: string, to: string): JumpValidationContract;
+  fuelCost(ship: ShipContract, parsecs: number): number;
+  stalenessWeeks(parsecs: number): number;
+}
+
+const model: TravelModelContract = travellerTravel;
+const ship: ShipContract = { jumpRating: 2, fuelCapacity: 40, currentFuel: 40 };
 
 describe("travellerTravel", () => {
   it("accepts a jump exactly at the rating and rejects rating plus one", () => {
