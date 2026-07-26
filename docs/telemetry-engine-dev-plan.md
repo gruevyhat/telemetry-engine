@@ -85,6 +85,14 @@ Tasks are sized for one focused session (≤ ~600 changed lines including tests)
 
 A task that stands up a whole new package (multiple real sub-deliverables under one `packages/*` directory that didn't exist before, the way M1-12 built `packages/sim`'s roster enumeration, campaign loop, lineup configs, metric collectors, export, and headless runner as a single card) should default to being split into one card per sub-deliverable at milestone-planning time, the way M1-11 was split into M1-11a/M1-11b — not sized down after the fact once it's already overrun. Flagged at the M1 retro after M1-12 landed at 1015 changed lines under one card.
 
+When a milestone introduces a new plugin or subsystem, "assembly" is two separate surfaces, not
+one: the package's own internal composition (e.g. M3-11's `Plugin` object) and its wiring into the
+actually-shipped app/UI (e.g. M3-13's `App.tsx` changes). Splitting out the first does not imply
+the second is covered — plan both explicitly. Flagged at the M3 retro after M3-11 assembled the
+plugin correctly but nothing wired it into the running app until the exit demo (M3-12) forced a
+third card (M3-13) to close the gap, the same "pieces never assembled" failure M1-13/M2-15 already
+named, one layer deeper.
+
 ### Demo at every milestone
 
 Every milestone MUST end with a runnable demo of the capability that milestone adds. A local demo is the minimum acceptable form; a hosted build MAY supplement it but MUST NOT be required to prove the milestone. The demo must use shipped UI and content, exercise the milestone's defining path end to end, and be repeatable from a clean checkout with documented commands and a short walkthrough under `docs/demos/M<n>.md`. Through M2, the owner runs that walkthrough before the milestone PR opens; from M3 onward, with no milestone PR to gate, the walkthrough stands alone as the milestone's closure checkpoint against current `main`. Either way the outcome is recorded in the retro, and passing automated gates without a runnable demo does not close a milestone.
