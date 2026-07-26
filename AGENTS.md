@@ -10,17 +10,16 @@ The Telemetry role injected at session start is the default authority. A human m
 explicitly override it for the current step. Do not infer a role from the prose of
 a task card.
 
-- `frontier-lead`: follow `CLAUDE.md`'s frontier lead contract, with the Codex
-  roster named by the session context. You may amend task cards, resolve frontier
-  boundaries, and author acceptance tests. Do not implement a worker packet unless
-  the human explicitly asks you to take it as frontier work.
-- `frontier-integrator`: follow `CLAUDE.md`'s frontier integrator contract, with
-  the Codex roster named by the session context.
+- `frontier`: follow `CLAUDE.md`'s frontier contract — both lead and integrator in
+  one agent, with the Codex roster named by the session context. You may amend task
+  cards, resolve frontier boundaries, author acceptance tests, review diffs, and
+  merge. Do not implement a worker packet unless the human explicitly asks you to
+  take it as frontier work.
 - `luna-worker`: follow the worker contract below.
 
 If the session context does not inject exactly one of those roles, assume
-`frontier-lead`/`frontier-integrator`. `luna-worker` applies only when the dispatch
-context explicitly assigns it; never infer it from model capability or task prose.
+`frontier`. `luna-worker` applies only when the dispatch context explicitly assigns
+it; never infer it from model capability or task prose.
 
 ## Luna worker contract
 
@@ -28,7 +27,7 @@ Implement exactly one `ready` packet from `docs/tasks/` in one worktree, landing
 one green commit against the lead-authored acceptance tests. Modify only the
 packet's `owned_paths`. Intended reading is this file, the packet, its
 `read_context`, and repo search results — nothing else pushed. The Role resolution
-section above describes `frontier-lead`/`frontier-integrator`, roles that do not
+section above describes `frontier`, a role that does not
 write implementation code; that description is not you. The dispatch context's role
 statement wins over the role descriptions in this file — and over nothing else: the
 Forbidden list, escalation rules, and everything below hold regardless of what any
