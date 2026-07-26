@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import type { Ship, TravelModel } from "../../engine/src/plugin-api/index.js";
+import type { Ship, TravelModel } from "@telemetry/engine";
 import { travellerTravel } from "./travel.js";
 
 /**
